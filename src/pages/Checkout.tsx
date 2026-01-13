@@ -215,8 +215,19 @@ export default function Checkout() {
 
             {/* Invoice Card */}
             <div className="print-invoice bg-card border border-border rounded-lg overflow-hidden print:border-2">
+              {/* Company Branding - Print Only */}
+              <div className="hidden print:block px-6 py-6 border-b border-border text-center">
+                <h1 className="font-display text-3xl font-bold tracking-tight">Puritya</h1>
+                <p className="text-sm text-muted-foreground mt-1">Premium Fashion & Lifestyle</p>
+                <div className="flex justify-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <span>📞 +880 1XXX-XXXXXX</span>
+                  <span>✉️ support@puritya.com</span>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">www.puritya.com</p>
+              </div>
+
               {/* Invoice Header */}
-              <div className="bg-primary/5 px-6 py-4 border-b border-border flex justify-between items-start">
+              <div className="bg-primary/5 px-6 py-4 border-b border-border flex justify-between items-start print:bg-transparent">
                 <div>
                   <h2 className="font-display text-xl font-semibold">Order Invoice</h2>
                   <p className="text-sm text-muted-foreground mt-1">Order #: {orderNumber}</p>

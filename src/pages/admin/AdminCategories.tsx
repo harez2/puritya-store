@@ -31,6 +31,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 
 interface Category {
   id: string;
@@ -279,12 +280,11 @@ export default function AdminCategories() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="image_url">Image URL</Label>
-              <Input
-                id="image_url"
-                value={formData.image_url}
-                onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                placeholder="https://example.com/image.jpg"
+              <Label>Category Image</Label>
+              <SingleImageUpload
+                image={formData.image_url || null}
+                onImageChange={(url) => setFormData({ ...formData, image_url: url || '' })}
+                folder="categories"
               />
             </div>
 

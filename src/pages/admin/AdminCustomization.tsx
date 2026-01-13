@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { useSiteSettings, SiteSettings, MenuItem } from '@/contexts/SiteSettingsContext';
+import { useSiteSettings, SiteSettings, MenuItem, CustomThemePreset } from '@/contexts/SiteSettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
@@ -183,6 +183,17 @@ export default function AdminCustomization() {
   };
 
   const getCurrentPresetId = (): string | undefined => {
+    // Check custom presets first
+    const customMatch = (localSettings.custom_presets || []).find((preset) => 
+      preset.colors.primary.h === localSettings.primary_color.h &&
+      preset.colors.primary.s === localSettings.primary_color.s &&
+      preset.colors.primary.l === localSettings.primary_color.l &&
+      preset.fonts.heading === localSettings.heading_font &&
+      preset.fonts.body === localSettings.body_font
+    );
+    if (customMatch) return customMatch.id;
+
+    // Then check built-in presets
     return THEME_PRESETS.find((preset) => 
       preset.colors.primary.h === localSettings.primary_color.h &&
       preset.colors.primary.s === localSettings.primary_color.s &&
@@ -190,6 +201,24 @@ export default function AdminCustomization() {
       preset.fonts.heading === localSettings.heading_font &&
       preset.fonts.body === localSettings.body_font
     )?.id;
+  };
+
+  const handleSaveCustomPreset = (preset: CustomThemePreset) => {
+    const updatedPresets = [...(localSettings.custom_presets || []), preset];
+    handleChange('custom_presets', updatedPresets);
+    toast({
+      title: 'Preset saved',
+      description: `"${preset.name}" has been saved. Don't forget to save your changes.`,
+    });
+  };
+
+  const handleDeleteCustomPreset = (presetId: string) => {
+    const updatedPresets = (localSettings.custom_presets || []).filter(p => p.id !== presetId);
+    handleChange('custom_presets', updatedPresets);
+    toast({
+      title: 'Preset deleted',
+      description: 'Custom preset has been removed.',
+    });
   };
 
   if (loading) {
@@ -597,7 +626,20 @@ export default function AdminCustomization() {
               <CardContent>
                 <ThemePresets
                   currentPreset={getCurrentPresetId()}
+                  customPresets={localSettings.custom_presets || []}
+                  currentColors={{
+                    primary: localSettings.primary_color,
+                    secondary: localSettings.secondary_color,
+                    accent: localSettings.accent_color,
+                    background: localSettings.background_color,
+                  }}
+                  currentFonts={{
+                    heading: localSettings.heading_font,
+                    body: localSettings.body_font,
+                  }}
                   onApply={handleApplyPreset}
+                  onSaveCustom={handleSaveCustomPreset}
+                  onDeleteCustom={handleDeleteCustomPreset}
                 />
               </CardContent>
             </Card>

@@ -5,17 +5,18 @@ import { ArrowRight, Truck, RefreshCw, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
-import { supabase, Product, Category } from '@/lib/supabase';
+import { supabase, Product } from '@/lib/supabase';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import heroImage from '@/assets/hero-image.jpg';
 import categoryDresses from '@/assets/category-dresses.jpg';
 import categoryAccessories from '@/assets/category-accessories.jpg';
 import categoryTops from '@/assets/category-tops.jpg';
 
-const features = [
-  { icon: Truck, title: 'Free Delivery', desc: 'On orders over ৳5,000' },
-  { icon: RefreshCw, title: 'Easy Returns', desc: '7-day return policy' },
-  { icon: Shield, title: 'Secure Payment', desc: 'bKash, Nagad & Cards accepted' },
-];
+const iconMap: Record<string, React.ElementType> = {
+  truck: Truck,
+  'refresh-cw': RefreshCw,
+  shield: Shield,
+};
 
 const categories = [
   { name: 'Dresses', slug: 'dresses', image: categoryDresses },
@@ -24,6 +25,7 @@ const categories = [
 ];
 
 export default function Index() {
+  const { settings } = useSiteSettings();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,13 +48,15 @@ export default function Index() {
     fetchProducts();
   }, []);
 
+  const heroImageUrl = settings.hero_image_url || heroImage;
+
   return (
     <Layout>
       {/* Hero Section */}
       <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
         <img
-          src={heroImage}
-          alt="Puritya Fashion"
+          src={heroImageUrl}
+          alt={settings.store_name}
           className="absolute inset-0 w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
@@ -64,20 +68,28 @@ export default function Index() {
             className="max-w-xl"
           >
             <span className="text-primary font-medium tracking-widest uppercase text-sm">
-              New Collection
+              {settings.hero_badge}
             </span>
             <h1 className="font-display text-5xl md:text-7xl mt-4 mb-6 leading-tight">
-              Elevate Your <br />
-              <span className="text-primary">Feminine</span> Style
+              {settings.hero_title.split(' ').map((word, i, arr) => (
+                <span key={i}>
+                  {i === Math.floor(arr.length / 2) ? (
+                    <span className="text-primary">{word}</span>
+                  ) : (
+                    word
+                  )}
+                  {i < arr.length - 1 && ' '}
+                  {i === Math.floor(arr.length / 2) && <br />}
+                </span>
+              ))}
             </h1>
             <p className="text-lg text-muted-foreground mb-8 max-w-md">
-              Discover curated fashion pieces imported from around the world. 
-              Timeless elegance for the modern woman.
+              {settings.hero_subtitle}
             </p>
             <div className="flex gap-4">
               <Button size="lg" asChild>
                 <Link to="/shop">
-                  Shop Now <ArrowRight className="ml-2 h-4 w-4" />
+                  {settings.hero_cta_text} <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button variant="outline" size="lg" asChild>
@@ -92,22 +104,25 @@ export default function Index() {
       <section className="py-12 border-b border-border">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, i) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.1 }}
-                viewport={{ once: true }}
-                className="flex items-center gap-4 justify-center"
-              >
-                <feature.icon className="h-8 w-8 text-primary" />
-                <div>
-                  <h3 className="font-medium">{feature.title}</h3>
-                  <p className="text-sm text-muted-foreground">{feature.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+            {settings.features.map((feature, i) => {
+              const IconComponent = iconMap[feature.icon] || Truck;
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex items-center gap-4 justify-center"
+                >
+                  <IconComponent className="h-8 w-8 text-primary" />
+                  <div>
+                    <h3 className="font-medium">{feature.title}</h3>
+                    <p className="text-sm text-muted-foreground">{feature.desc}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -182,12 +197,12 @@ export default function Index() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="bg-primary rounded-2xl p-12 md:p-20 text-center text-primary-foreground">
-            <h2 className="font-display text-3xl md:text-5xl mb-4">Join the Puritya Family</h2>
+            <h2 className="font-display text-3xl md:text-5xl mb-4">{settings.cta_title}</h2>
             <p className="text-primary-foreground/80 mb-8 max-w-md mx-auto">
-              Subscribe for exclusive access to new arrivals, special offers, and styling tips.
+              {settings.cta_subtitle}
             </p>
             <Button variant="secondary" size="lg" asChild>
-              <Link to="/auth">Create Account</Link>
+              <Link to="/auth">{settings.cta_button_text}</Link>
             </Button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 const footerLinks = {
   shop: [
@@ -27,6 +28,8 @@ const footerLinks = {
 };
 
 export default function Footer() {
+  const { settings } = useSiteSettings();
+
   return (
     <footer className="bg-secondary border-t border-border">
       <div className="container mx-auto px-4 py-16">
@@ -34,10 +37,18 @@ export default function Footer() {
           {/* Brand & Newsletter */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block mb-6">
-              <h2 className="text-3xl font-display font-semibold">PURITYA</h2>
+              {settings.logo_url ? (
+                <img 
+                  src={settings.logo_url} 
+                  alt={settings.store_name} 
+                  className="h-10 w-auto"
+                />
+              ) : (
+                <h2 className="text-3xl font-display font-semibold">{settings.store_name.toUpperCase()}</h2>
+              )}
             </Link>
             <p className="text-muted-foreground mb-6 max-w-sm">
-              Curated feminine fashion imported from around the world. Elevate your style with our carefully selected pieces.
+              {settings.footer_description}
             </p>
             <div className="mb-6">
               <h4 className="font-display text-lg mb-3">Subscribe to our newsletter</h4>
@@ -53,15 +64,34 @@ export default function Footer() {
               </form>
             </div>
             <div className="flex gap-4">
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
-                <Twitter className="h-5 w-5" />
-              </a>
+              {settings.social_instagram && (
+                <a href={settings.social_instagram} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Instagram className="h-5 w-5" />
+                </a>
+              )}
+              {settings.social_facebook && (
+                <a href={settings.social_facebook} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Facebook className="h-5 w-5" />
+                </a>
+              )}
+              {settings.social_twitter && (
+                <a href={settings.social_twitter} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                  <Twitter className="h-5 w-5" />
+                </a>
+              )}
+              {!settings.social_instagram && !settings.social_facebook && !settings.social_twitter && (
+                <>
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                  <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                  <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                    <Twitter className="h-5 w-5" />
+                  </a>
+                </>
+              )}
             </div>
           </div>
 
@@ -119,10 +149,10 @@ export default function Footer() {
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            © 2025 Puritya. All rights reserved.
+            {settings.copyright_text}
           </p>
           <p className="text-sm text-muted-foreground">
-            puritya.store • Shipping across Bangladesh 🇧🇩
+            {settings.footer_tagline}
           </p>
         </div>
       </div>

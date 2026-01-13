@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import CartDrawer from '@/components/cart/CartDrawer';
 
 const navLinks = [
@@ -23,6 +24,7 @@ export default function Header() {
   const { user } = useAuth();
   const { itemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
+  const { settings } = useSiteSettings();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -41,9 +43,11 @@ export default function Header() {
     <>
       <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
         {/* Announcement bar */}
-        <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-body">
-          Free shipping on orders over ₦50,000 | Use code PURITYA10 for 10% off
-        </div>
+        {settings.announcement_enabled && (
+          <div className="bg-primary text-primary-foreground text-center py-2 text-sm font-body">
+            {settings.announcement_text}
+          </div>
+        )}
 
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between h-16 md:h-20">
@@ -72,9 +76,17 @@ export default function Header() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              <h1 className="text-2xl md:text-3xl font-display font-semibold tracking-wide text-foreground">
-                PURITYA
-              </h1>
+              {settings.logo_url ? (
+                <img 
+                  src={settings.logo_url} 
+                  alt={settings.store_name} 
+                  className="h-8 md:h-10 w-auto"
+                />
+              ) : (
+                <h1 className="text-2xl md:text-3xl font-display font-semibold tracking-wide text-foreground">
+                  {settings.store_name.toUpperCase()}
+                </h1>
+              )}
             </Link>
 
             {/* Desktop Navigation */}

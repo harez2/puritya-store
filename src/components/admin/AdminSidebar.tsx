@@ -6,7 +6,8 @@ import {
   Tags,
   Settings,
   Store,
-  LogOut
+  LogOut,
+  Palette
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,6 +37,7 @@ const mainNavItems = [
 ];
 
 const settingsItems = [
+  { title: 'Customization', url: '/admin/customization', icon: Palette },
   { title: 'Settings', url: '/admin/settings', icon: Settings },
 ];
 

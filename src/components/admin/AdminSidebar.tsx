@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { 
   LayoutDashboard, 
   Package, 
@@ -7,11 +8,21 @@ import {
   Settings,
   Store,
   LogOut,
-  Palette
+  Palette,
+  Type,
+  ALargeSmall,
+  Menu,
+  Image,
+  Layout,
+  MessageSquare,
+  Code,
+  FileCode2,
+  Facebook,
+  ChevronDown
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
   SidebarContent,
@@ -21,12 +32,20 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubItem,
+  SidebarMenuSubButton,
   SidebarHeader,
   SidebarFooter,
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
@@ -36,20 +55,36 @@ const mainNavItems = [
   { title: 'Categories', url: '/admin/categories', icon: Tags },
 ];
 
-const settingsItems = [
-  { title: 'Customization', url: '/admin/customization', icon: Palette },
-  { title: 'Settings', url: '/admin/settings', icon: Settings },
+const customizationSubItems = [
+  { title: 'Branding', tab: 'branding', icon: Type },
+  { title: 'Fonts', tab: 'typography', icon: ALargeSmall },
+  { title: 'Theme', tab: 'theme', icon: Palette },
+  { title: 'Menus', tab: 'menus', icon: Menu },
+  { title: 'Hero', tab: 'hero', icon: Image },
+  { title: 'Homepage', tab: 'homepage', icon: Layout },
+  { title: 'Footer', tab: 'footer', icon: MessageSquare },
+  { title: 'CSS', tab: 'custom-css', icon: Code },
+  { title: 'Scripts', tab: 'scripts', icon: FileCode2 },
+  { title: 'Facebook', tab: 'facebook', icon: Facebook },
 ];
 
 export function AdminSidebar() {
   const { state } = useSidebar();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const collapsed = state === 'collapsed';
+  
+  const isCustomizationActive = location.pathname === '/admin/customization';
+  const [customizationOpen, setCustomizationOpen] = useState(isCustomizationActive);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  const handleCustomizationTabClick = (tab: string) => {
+    navigate(`/admin/customization?tab=${tab}`);
   };
 
   return (
@@ -93,20 +128,60 @@ export function AdminSidebar() {
           <SidebarGroupLabel>System</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild tooltip={item.title}>
-                    <NavLink 
-                      to={item.url}
-                      className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-muted/50"
-                      activeClassName="bg-primary/10 text-primary font-medium"
+              {/* Customization with sub-menu */}
+              <Collapsible
+                open={customizationOpen}
+                onOpenChange={setCustomizationOpen}
+                className="group/collapsible"
+              >
+                <SidebarMenuItem>
+                  <CollapsibleTrigger asChild>
+                    <SidebarMenuButton 
+                      tooltip="Customization"
+                      className={`flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-muted/50 w-full ${isCustomizationActive ? 'bg-primary/10 text-primary font-medium' : ''}`}
                     >
-                      <item.icon className="h-5 w-5 shrink-0" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
+                      <Palette className="h-5 w-5 shrink-0" />
+                      {!collapsed && (
+                        <>
+                          <span className="flex-1 text-left">Customization</span>
+                          <ChevronDown className="h-4 w-4 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-180" />
+                        </>
+                      )}
+                    </SidebarMenuButton>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    {!collapsed && (
+                      <SidebarMenuSub>
+                        {customizationSubItems.map((item) => (
+                          <SidebarMenuSubItem key={item.tab}>
+                            <SidebarMenuSubButton
+                              onClick={() => handleCustomizationTabClick(item.tab)}
+                              className="flex items-center gap-2 cursor-pointer"
+                            >
+                              <item.icon className="h-4 w-4" />
+                              <span>{item.title}</span>
+                            </SidebarMenuSubButton>
+                          </SidebarMenuSubItem>
+                        ))}
+                      </SidebarMenuSub>
+                    )}
+                  </CollapsibleContent>
                 </SidebarMenuItem>
-              ))}
+              </Collapsible>
+
+              {/* Settings */}
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild tooltip="Settings">
+                  <NavLink 
+                    to="/admin/settings"
+                    className="flex items-center gap-3 px-3 py-2 rounded-md transition-colors hover:bg-muted/50"
+                    activeClassName="bg-primary/10 text-primary font-medium"
+                  >
+                    <Settings className="h-5 w-5 shrink-0" />
+                    {!collapsed && <span>Settings</span>}
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -82,6 +84,10 @@ export default function AdminOrders() {
   const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
+  const [statusUpdateOrderId, setStatusUpdateOrderId] = useState<string | null>(null);
+  const [statusUpdateNewStatus, setStatusUpdateNewStatus] = useState<string>('');
+  const [statusUpdateNotes, setStatusUpdateNotes] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -155,27 +161,37 @@ export default function AdminOrders() {
     setIsDetailsOpen(true);
   };
 
-  const handleUpdateStatus = async (orderId: string, newStatus: string) => {
-    const order = orders.find(o => o.id === orderId);
+  const openStatusUpdateDialog = (orderId: string, newStatus: string) => {
+    setStatusUpdateOrderId(orderId);
+    setStatusUpdateNewStatus(newStatus);
+    setStatusUpdateNotes('');
+    setIsStatusUpdateOpen(true);
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!statusUpdateOrderId || !statusUpdateNewStatus) return;
+    
+    const order = orders.find(o => o.id === statusUpdateOrderId);
     const oldStatus = order?.status;
     
     try {
       // Update order status
       const { error: updateError } = await supabase
         .from('orders')
-        .update({ status: newStatus })
-        .eq('id', orderId);
+        .update({ status: statusUpdateNewStatus })
+        .eq('id', statusUpdateOrderId);
 
       if (updateError) throw updateError;
 
-      // Record status change in history
+      // Record status change in history with notes
       const { error: historyError } = await supabase
         .from('order_status_history')
         .insert({
-          order_id: orderId,
+          order_id: statusUpdateOrderId,
           old_status: oldStatus,
-          new_status: newStatus,
+          new_status: statusUpdateNewStatus,
           changed_by: user?.id,
+          notes: statusUpdateNotes.trim() || null,
         });
 
       if (historyError) {
@@ -183,16 +199,21 @@ export default function AdminOrders() {
       }
 
       toast.success('Order status updated');
+      setIsStatusUpdateOpen(false);
       fetchOrders();
       
-      if (selectedOrder?.id === orderId) {
-        setSelectedOrder({ ...selectedOrder, status: newStatus });
-        fetchStatusHistory(orderId);
+      if (selectedOrder?.id === statusUpdateOrderId) {
+        setSelectedOrder({ ...selectedOrder, status: statusUpdateNewStatus });
+        fetchStatusHistory(statusUpdateOrderId);
       }
     } catch (error: any) {
       console.error('Error updating order status:', error);
       toast.error(error.message || 'Failed to update status');
     }
+  };
+
+  const handleQuickStatusUpdate = (orderId: string, newStatus: string) => {
+    openStatusUpdateDialog(orderId, newStatus);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -320,7 +341,7 @@ export default function AdminOrders() {
                               {statusOptions.map((option) => (
                                 <DropdownMenuItem
                                   key={option.value}
-                                  onClick={() => handleUpdateStatus(order.id, option.value)}
+                                  onClick={() => handleQuickStatusUpdate(order.id, option.value)}
                                   disabled={order.status === option.value}
                                 >
                                   Mark as {option.label}
@@ -356,7 +377,7 @@ export default function AdminOrders() {
                   <p className="text-sm text-muted-foreground">Status</p>
                   <Select
                     value={selectedOrder.status}
-                    onValueChange={(value) => handleUpdateStatus(selectedOrder.id, value)}
+                    onValueChange={(value) => openStatusUpdateDialog(selectedOrder.id, value)}
                   >
                     <SelectTrigger className="w-[150px] mt-1">
                       <SelectValue />
@@ -489,6 +510,12 @@ export default function AdminOrders() {
                               {history.changed_by_name}
                             </span>
                           </div>
+                          {history.notes && (
+                            <div className="mt-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded flex items-start gap-2">
+                              <FileText className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                              <span>{history.notes}</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -497,6 +524,46 @@ export default function AdminOrders() {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Dialog with Notes */}
+      <Dialog open={isStatusUpdateOpen} onOpenChange={setIsStatusUpdateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Update Order Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">New Status</Label>
+              <div className="mt-1">
+                <Badge variant="outline" className={`capitalize ${getStatusColor(statusUpdateNewStatus)}`}>
+                  {statusUpdateNewStatus}
+                </Badge>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status-notes">Notes (optional)</Label>
+              <Textarea
+                id="status-notes"
+                placeholder="Add context for this status change..."
+                value={statusUpdateNotes}
+                onChange={(e) => setStatusUpdateNotes(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                This note will be visible in the order's status history.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsStatusUpdateOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateStatus}>
+                Update Status
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </AdminLayout>

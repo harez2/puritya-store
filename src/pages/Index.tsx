@@ -12,9 +12,9 @@ import categoryAccessories from '@/assets/category-accessories.jpg';
 import categoryTops from '@/assets/category-tops.jpg';
 
 const features = [
-  { icon: Truck, title: 'Free Shipping', desc: 'On orders over ₦50,000' },
-  { icon: RefreshCw, title: 'Easy Returns', desc: '30-day return policy' },
-  { icon: Shield, title: 'Secure Payment', desc: 'Your data is protected' },
+  { icon: Truck, title: 'Free Delivery', desc: 'On orders over ৳5,000' },
+  { icon: RefreshCw, title: 'Easy Returns', desc: '7-day return policy' },
+  { icon: Shield, title: 'Secure Payment', desc: 'bKash, Nagad & Cards accepted' },
 ];
 
 const categories = [

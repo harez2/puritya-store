@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
 import ProductReviews from '@/components/products/ProductReviews';
+import QuickCheckoutModal from '@/components/checkout/QuickCheckoutModal';
 import { supabase, Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -28,6 +29,7 @@ export default function ProductDetail() {
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
+  const [showQuickCheckout, setShowQuickCheckout] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -74,12 +76,9 @@ export default function ProductDetail() {
     setAddingToCart(false);
   };
 
-  const handleBuyNow = async () => {
+  const handleBuyNow = () => {
     if (!product) return;
-    setBuyingNow(true);
-    await addToCart(product.id, quantity, selectedSize || undefined, selectedColor || undefined);
-    setBuyingNow(false);
-    navigate('/checkout');
+    setShowQuickCheckout(true);
   };
 
   if (loading) {
@@ -265,13 +264,23 @@ export default function ProductDetail() {
               <Button
                 size="lg"
                 className="w-full"
-                disabled={!product.in_stock || buyingNow}
+                disabled={!product.in_stock}
                 onClick={handleBuyNow}
               >
                 <Zap className="h-5 w-5 mr-2" />
-                {buyingNow ? 'Processing...' : 'Buy Now'}
+                Buy Now
               </Button>
             </div>
+
+            {/* Quick Checkout Modal */}
+            <QuickCheckoutModal
+              open={showQuickCheckout}
+              onOpenChange={setShowQuickCheckout}
+              product={product}
+              quantity={quantity}
+              size={selectedSize || undefined}
+              color={selectedColor || undefined}
+            />
 
             {/* Shipping Info */}
             <div className="mt-8 p-4 bg-secondary rounded-lg text-sm">

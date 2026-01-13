@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,16 @@ interface OrderItem {
   color: string | null;
 }
 
+interface StatusHistory {
+  id: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  changed_at: string;
+  notes: string | null;
+  changed_by_name?: string;
+}
+
 const statusOptions = [
   { value: 'pending', label: 'Pending' },
   { value: 'processing', label: 'Processing' },
@@ -62,11 +73,13 @@ const statusOptions = [
 ];
 
 export default function AdminOrders() {
+  const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [statusHistory, setStatusHistory] = useState<StatusHistory[]>([]);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -105,25 +118,76 @@ export default function AdminOrders() {
     }
   }
 
+  async function fetchStatusHistory(orderId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('order_status_history')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('changed_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Fetch profile names for changed_by users
+      const historyWithNames: StatusHistory[] = [];
+      for (const item of data || []) {
+        let changedByName = 'System';
+        if (item.changed_by) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', item.changed_by)
+            .maybeSingle();
+          changedByName = profile?.full_name || 'Admin';
+        }
+        historyWithNames.push({ ...item, changed_by_name: changedByName });
+      }
+      
+      setStatusHistory(historyWithNames);
+    } catch (error) {
+      console.error('Error fetching status history:', error);
+    }
+  }
+
   const handleViewDetails = async (order: Order) => {
     setSelectedOrder(order);
-    await fetchOrderItems(order.id);
+    await Promise.all([fetchOrderItems(order.id), fetchStatusHistory(order.id)]);
     setIsDetailsOpen(true);
   };
 
   const handleUpdateStatus = async (orderId: string, newStatus: string) => {
+    const order = orders.find(o => o.id === orderId);
+    const oldStatus = order?.status;
+    
     try {
-      const { error } = await supabase
+      // Update order status
+      const { error: updateError } = await supabase
         .from('orders')
         .update({ status: newStatus })
         .eq('id', orderId);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Record status change in history
+      const { error: historyError } = await supabase
+        .from('order_status_history')
+        .insert({
+          order_id: orderId,
+          old_status: oldStatus,
+          new_status: newStatus,
+          changed_by: user?.id,
+        });
+
+      if (historyError) {
+        console.error('Error recording status history:', historyError);
+      }
+
       toast.success('Order status updated');
       fetchOrders();
       
       if (selectedOrder?.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
+        fetchStatusHistory(orderId);
       }
     } catch (error: any) {
       console.error('Error updating order status:', error);
@@ -378,6 +442,59 @@ export default function AdminOrders() {
                   <p className="text-sm bg-muted/50 p-3 rounded-lg">{selectedOrder.notes}</p>
                 </div>
               )}
+
+              {/* Status History Timeline */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Status History
+                </h3>
+                {statusHistory.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No status changes recorded yet.</p>
+                ) : (
+                  <div className="relative pl-6 space-y-4">
+                    {/* Timeline line */}
+                    <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border" />
+                    
+                    {statusHistory.map((history, index) => (
+                      <div key={history.id} className="relative">
+                        {/* Timeline dot */}
+                        <div className={`absolute -left-4 w-3 h-3 rounded-full border-2 ${
+                          index === 0 ? 'bg-primary border-primary' : 'bg-background border-muted-foreground'
+                        }`} />
+                        
+                        <div className="bg-muted/50 p-3 rounded-lg">
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <div className="flex items-center gap-2">
+                              {history.old_status ? (
+                                <>
+                                  <Badge variant="outline" className={`capitalize text-xs ${getStatusColor(history.old_status)}`}>
+                                    {history.old_status}
+                                  </Badge>
+                                  <span className="text-muted-foreground">→</span>
+                                </>
+                              ) : null}
+                              <Badge variant="outline" className={`capitalize text-xs ${getStatusColor(history.new_status)}`}>
+                                {history.new_status}
+                              </Badge>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(history.changed_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {history.changed_by_name}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>

@@ -2,30 +2,31 @@ import { Link } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
-import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { useSiteSettings, MenuItem } from '@/contexts/SiteSettingsContext';
 
-const footerLinks = {
-  shop: [
-    { name: 'New Arrivals', href: '/shop?filter=new' },
-    { name: 'Dresses', href: '/shop?category=dresses' },
-    { name: 'Tops & Blouses', href: '/shop?category=tops' },
-    { name: 'Accessories', href: '/shop?category=accessories' },
-    { name: 'Sale', href: '/shop?filter=sale' },
-  ],
-  help: [
-    { name: 'Contact Us', href: '/contact' },
-    { name: 'Shipping Info', href: '/shipping' },
-    { name: 'Returns & Exchanges', href: '/returns' },
-    { name: 'Size Guide', href: '/size-guide' },
-    { name: 'FAQs', href: '/faqs' },
-  ],
-  about: [
-    { name: 'Our Story', href: '/about' },
-    { name: 'Sustainability', href: '/sustainability' },
-    { name: 'Privacy Policy', href: '/privacy' },
-    { name: 'Terms of Service', href: '/terms' },
-  ],
-};
+function FooterLink({ item }: { item: MenuItem }) {
+  if (item.type === 'external') {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+      >
+        {item.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to={item.url}
+      className="text-muted-foreground hover:text-foreground transition-colors text-sm"
+    >
+      {item.label}
+    </Link>
+  );
+}
 
 export default function Footer() {
   const { settings } = useSiteSettings();
@@ -96,55 +97,46 @@ export default function Footer() {
           </div>
 
           {/* Shop Links */}
-          <div>
-            <h4 className="font-display text-lg mb-4">Shop</h4>
-            <ul className="space-y-3">
-              {footerLinks.shop.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {settings.footer_shop_menu.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">Shop</h4>
+              <ul className="space-y-3">
+                {settings.footer_shop_menu.map((item) => (
+                  <li key={item.id}>
+                    <FooterLink item={item} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Help Links */}
-          <div>
-            <h4 className="font-display text-lg mb-4">Help</h4>
-            <ul className="space-y-3">
-              {footerLinks.help.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {settings.footer_help_menu.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">Help</h4>
+              <ul className="space-y-3">
+                {settings.footer_help_menu.map((item) => (
+                  <li key={item.id}>
+                    <FooterLink item={item} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* About Links */}
-          <div>
-            <h4 className="font-display text-lg mb-4">About</h4>
-            <ul className="space-y-3">
-              {footerLinks.about.map((link) => (
-                <li key={link.name}>
-                  <Link
-                    to={link.href}
-                    className="text-muted-foreground hover:text-foreground transition-colors text-sm"
-                  >
-                    {link.name}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {settings.footer_about_menu.length > 0 && (
+            <div>
+              <h4 className="font-display text-lg mb-4">About</h4>
+              <ul className="space-y-3">
+                {settings.footer_about_menu.map((item) => (
+                  <li key={item.id}>
+                    <FooterLink item={item} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="border-t border-border mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">

@@ -8,16 +8,62 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
-import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { useSiteSettings, MenuItem } from '@/contexts/SiteSettingsContext';
 import CartDrawer from '@/components/cart/CartDrawer';
 
-const navLinks = [
-  { name: 'New Arrivals', href: '/shop?filter=new' },
-  { name: 'Shop All', href: '/shop' },
-  { name: 'Dresses', href: '/shop?category=dresses' },
-  { name: 'Tops', href: '/shop?category=tops' },
-  { name: 'Accessories', href: '/shop?category=accessories' },
-];
+function NavItem({ item, onClick }: { item: MenuItem; onClick?: () => void }) {
+  if (item.type === 'external') {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm font-body font-medium text-muted-foreground hover:text-foreground transition-colors relative group"
+        onClick={onClick}
+      >
+        {item.label}
+        <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to={item.url}
+      className="text-sm font-body font-medium text-muted-foreground hover:text-foreground transition-colors relative group"
+      onClick={onClick}
+    >
+      {item.label}
+      <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+    </Link>
+  );
+}
+
+function MobileNavItem({ item, onClick }: { item: MenuItem; onClick?: () => void }) {
+  if (item.type === 'external') {
+    return (
+      <a
+        href={item.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-lg font-display hover:text-primary transition-colors"
+        onClick={onClick}
+      >
+        {item.label}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      to={item.url}
+      className="text-lg font-display hover:text-primary transition-colors"
+      onClick={onClick}
+    >
+      {item.label}
+    </Link>
+  );
+}
 
 export default function Header() {
   const navigate = useNavigate();
@@ -60,15 +106,12 @@ export default function Header() {
               </SheetTrigger>
               <SheetContent side="left" className="w-[300px] pt-12">
                 <nav className="flex flex-col gap-4">
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.name}
-                      to={link.href}
-                      className="text-lg font-display hover:text-primary transition-colors"
+                  {settings.header_menu.map((item) => (
+                    <MobileNavItem
+                      key={item.id}
+                      item={item}
                       onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      {link.name}
-                    </Link>
+                    />
                   ))}
                 </nav>
               </SheetContent>
@@ -91,15 +134,8 @@ export default function Header() {
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  to={link.href}
-                  className="text-sm font-body font-medium text-muted-foreground hover:text-foreground transition-colors relative group"
-                >
-                  {link.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
-                </Link>
+              {settings.header_menu.map((item) => (
+                <NavItem key={item.id} item={item} />
               ))}
             </nav>
 

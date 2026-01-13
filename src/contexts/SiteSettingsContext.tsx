@@ -87,6 +87,7 @@ export interface SiteSettings {
   // Facebook Pixel & Conversion API
   facebook_pixel_id: string;
   facebook_capi_enabled: boolean;
+  facebook_access_token: string;
 }
 
 export interface CustomThemePreset {
@@ -173,6 +174,7 @@ const defaultSettings: SiteSettings = {
   custom_presets: [],
   facebook_pixel_id: '',
   facebook_capi_enabled: false,
+  facebook_access_token: '',
 };
 
 interface SiteSettingsContextType {

@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Upload, X, Image as ImageIcon, Loader2, GripVertical } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -11,6 +11,8 @@ interface ProductImageUploadProps {
 
 export function ProductImageUpload({ images, onImagesChange }: ProductImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadImage = async (file: File) => {
@@ -44,13 +46,11 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         
-        // Validate file type
         if (!file.type.startsWith('image/')) {
           toast.error(`${file.name} is not an image file`);
           continue;
         }
 
-        // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
           toast.error(`${file.name} is too large. Max size is 5MB`);
           continue;
@@ -78,7 +78,6 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
   const removeImage = async (index: number) => {
     const imageUrl = images[index];
     
-    // Extract the file path from the URL
     try {
       const url = new URL(imageUrl);
       const pathMatch = url.pathname.match(/\/product-images\/(.+)$/);
@@ -95,6 +94,45 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
 
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', index.toString());
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    const newImages = [...images];
+    const [draggedImage] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedImage);
+    
+    onImagesChange(newImages);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   return (
@@ -128,20 +166,38 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
           )}
         </Button>
         <span className="text-sm text-muted-foreground">
-          Max 5MB per image
+          Max 5MB per image • Drag to reorder
         </span>
       </div>
 
       {images.length > 0 ? (
         <div className="grid grid-cols-4 gap-4">
           {images.map((url, index) => (
-            <div key={index} className="relative group">
+            <div
+              key={url}
+              draggable
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`relative group cursor-grab active:cursor-grabbing transition-all duration-200 ${
+                draggedIndex === index ? 'opacity-50 scale-95' : ''
+              } ${
+                dragOverIndex === index && draggedIndex !== index
+                  ? 'ring-2 ring-primary ring-offset-2'
+                  : ''
+              }`}
+            >
               <div className="aspect-square rounded-lg overflow-hidden bg-muted">
                 <img
                   src={url}
                   alt={`Product image ${index + 1}`}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                 />
+              </div>
+              <div className="absolute top-2 left-2 p-1 bg-background/80 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                <GripVertical className="h-4 w-4 text-muted-foreground" />
               </div>
               <button
                 type="button"

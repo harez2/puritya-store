@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -260,6 +260,161 @@ export default function AdminOrders() {
     }).format(amount);
   };
 
+  const escapeCSV = (value: string | null | undefined): string => {
+    if (value === null || value === undefined) return '';
+    const str = String(value);
+    if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+      return `"${str.replace(/"/g, '""')}"`;
+    }
+    return str;
+  };
+
+  const handleExportCSV = async () => {
+    try {
+      toast.info('Preparing export...');
+      
+      // Fetch all order items for filtered orders
+      const orderIds = filteredOrders.map(o => o.id);
+      const { data: allOrderItems, error: itemsError } = await supabase
+        .from('order_items')
+        .select('*')
+        .in('order_id', orderIds);
+      
+      if (itemsError) throw itemsError;
+
+      // Fetch customer profiles
+      const userIds = [...new Set(filteredOrders.map(o => o.user_id))];
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, full_name, phone')
+        .in('user_id', userIds);
+      
+      if (profilesError) throw profilesError;
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
+      const itemsMap = new Map<string, typeof allOrderItems>();
+      allOrderItems?.forEach(item => {
+        if (!itemsMap.has(item.order_id)) {
+          itemsMap.set(item.order_id, []);
+        }
+        itemsMap.get(item.order_id)!.push(item);
+      });
+
+      // CSV Headers
+      const headers = [
+        'Order Number',
+        'Order Date',
+        'Status',
+        'Payment Status',
+        'Payment Method',
+        'Customer Name',
+        'Customer Phone',
+        'Shipping Name',
+        'Shipping Phone',
+        'Shipping Address',
+        'City',
+        'State',
+        'Postal Code',
+        'Country',
+        'Item Name',
+        'Item Size',
+        'Item Color',
+        'Item Quantity',
+        'Item Price',
+        'Subtotal',
+        'Shipping Fee',
+        'Total',
+        'Notes'
+      ];
+
+      const rows: string[][] = [];
+      
+      for (const order of filteredOrders) {
+        const profile = profileMap.get(order.user_id);
+        const items = itemsMap.get(order.id) || [];
+        const shippingAddr = order.shipping_address || {};
+        
+        if (items.length === 0) {
+          // Order with no items
+          rows.push([
+            order.order_number,
+            format(new Date(order.created_at), 'yyyy-MM-dd HH:mm:ss'),
+            order.status,
+            order.payment_status || 'pending',
+            order.payment_method || '',
+            profile?.full_name || '',
+            profile?.phone || '',
+            shippingAddr.full_name || '',
+            shippingAddr.phone || '',
+            [shippingAddr.address_line1, shippingAddr.address_line2].filter(Boolean).join(', '),
+            shippingAddr.city || '',
+            shippingAddr.state || '',
+            shippingAddr.postal_code || '',
+            shippingAddr.country || '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            String(order.subtotal),
+            String(order.shipping_fee),
+            String(order.total),
+            order.notes || ''
+          ]);
+        } else {
+          // One row per item
+          items.forEach((item, index) => {
+            rows.push([
+              index === 0 ? order.order_number : '',
+              index === 0 ? format(new Date(order.created_at), 'yyyy-MM-dd HH:mm:ss') : '',
+              index === 0 ? order.status : '',
+              index === 0 ? (order.payment_status || 'pending') : '',
+              index === 0 ? (order.payment_method || '') : '',
+              index === 0 ? (profile?.full_name || '') : '',
+              index === 0 ? (profile?.phone || '') : '',
+              index === 0 ? (shippingAddr.full_name || '') : '',
+              index === 0 ? (shippingAddr.phone || '') : '',
+              index === 0 ? [shippingAddr.address_line1, shippingAddr.address_line2].filter(Boolean).join(', ') : '',
+              index === 0 ? (shippingAddr.city || '') : '',
+              index === 0 ? (shippingAddr.state || '') : '',
+              index === 0 ? (shippingAddr.postal_code || '') : '',
+              index === 0 ? (shippingAddr.country || '') : '',
+              item.product_name,
+              item.size || '',
+              item.color || '',
+              String(item.quantity),
+              String(item.price),
+              index === 0 ? String(order.subtotal) : '',
+              index === 0 ? String(order.shipping_fee) : '',
+              index === 0 ? String(order.total) : '',
+              index === 0 ? (order.notes || '') : ''
+            ]);
+          });
+        }
+      }
+
+      const csvContent = [
+        headers.map(escapeCSV).join(','),
+        ...rows.map(row => row.map(escapeCSV).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `orders-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast.success(`Exported ${filteredOrders.length} orders`);
+    } catch (error: any) {
+      console.error('Error exporting orders:', error);
+      toast.error('Failed to export orders');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'delivered':
@@ -311,6 +466,10 @@ export default function AdminOrders() {
                     ))}
                   </SelectContent>
                 </Select>
+                <Button onClick={handleExportCSV} variant="outline" disabled={filteredOrders.length === 0}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Export CSV
+                </Button>
               </div>
               
               {/* Date Range Filters */}

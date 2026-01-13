@@ -5,6 +5,7 @@ import { Heart, Minus, Plus, ShoppingBag, ChevronLeft, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
+import ProductCard from '@/components/products/ProductCard';
 import { supabase, Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -16,6 +17,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
@@ -36,6 +38,17 @@ export default function ProductDetail() {
         setProduct(data);
         if (data?.sizes?.length) setSelectedSize(data.sizes[0]);
         if (data?.colors?.length) setSelectedColor(data.colors[0]);
+        
+        // Fetch related products from same category
+        if (data?.category_id) {
+          const { data: related } = await supabase
+            .from('products')
+            .select('*, category:categories(*)')
+            .eq('category_id', data.category_id)
+            .neq('id', data.id)
+            .limit(4);
+          setRelatedProducts(related || []);
+        }
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -259,6 +272,17 @@ export default function ProductDetail() {
             </div>
           </motion.div>
         </div>
+        {/* Related Products */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16">
+            <h2 className="font-display text-2xl mb-8">You May Also Like</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct, index) => (
+                <ProductCard key={relatedProduct.id} product={relatedProduct} index={index} />
+              ))}
+            </div>
+          </section>
+        )}
       </div>
     </Layout>
   );

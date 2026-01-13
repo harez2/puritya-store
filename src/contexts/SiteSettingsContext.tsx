@@ -25,9 +25,18 @@ export interface ShippingOption {
   name: string;
   price: number;
   enabled: boolean;
-  freeShippingThreshold?: number; // Free shipping if order >= this amount
-  discountThreshold?: number; // Apply discount if order >= this amount
-  discountAmount?: number; // Fixed discount amount on shipping
+  freeShippingThreshold?: number;
+  discountThreshold?: number;
+  discountAmount?: number;
+}
+
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  type: 'cod' | 'bkash' | 'nagad' | 'card' | 'other';
+  enabled: boolean;
+  instructions?: string;
+  accountNumber?: string;
 }
 
 export interface SiteSettings {
@@ -101,6 +110,9 @@ export interface SiteSettings {
 
   // Shipping Options
   shipping_options: ShippingOption[];
+
+  // Payment Methods
+  payment_methods: PaymentMethod[];
 }
 
 export interface CustomThemePreset {
@@ -191,6 +203,11 @@ const defaultSettings: SiteSettings = {
   shipping_options: [
     { id: '1', name: 'Inside Dhaka', price: 60, enabled: true },
     { id: '2', name: 'Outside Dhaka', price: 120, enabled: true },
+  ],
+  payment_methods: [
+    { id: 'cod', name: 'Cash on Delivery', type: 'cod', enabled: true },
+    { id: 'bkash', name: 'bKash', type: 'bkash', enabled: true, accountNumber: '' },
+    { id: 'nagad', name: 'Nagad', type: 'nagad', enabled: true, accountNumber: '' },
   ],
 };
 

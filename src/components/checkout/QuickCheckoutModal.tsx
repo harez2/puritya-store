@@ -77,6 +77,10 @@ export default function QuickCheckoutModal({
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
   const [selectedShipping, setSelectedShipping] = useState(shippingOptions[0]?.id || '');
 
+  // Get enabled payment methods from settings
+  const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
+  const selectedPaymentMethod = enabledPaymentMethods.find(m => m.type === paymentMethod);
+
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
     phone: '',
@@ -386,19 +390,20 @@ export default function QuickCheckoutModal({
                     onValueChange={setPaymentMethod}
                     className="flex flex-wrap gap-4"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="cod" id="quick_cod" />
-                      <Label htmlFor="quick_cod" className="cursor-pointer">Cash on Delivery</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="bkash" id="quick_bkash" />
-                      <Label htmlFor="quick_bkash" className="cursor-pointer">bKash</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="nagad" id="quick_nagad" />
-                      <Label htmlFor="quick_nagad" className="cursor-pointer">Nagad</Label>
-                    </div>
+                    {enabledPaymentMethods.map((method) => (
+                      <div key={method.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={method.type} id={`quick_payment_${method.id}`} />
+                        <Label htmlFor={`quick_payment_${method.id}`} className="cursor-pointer">
+                          {method.name}
+                        </Label>
+                      </div>
+                    ))}
                   </RadioGroup>
+                  {selectedPaymentMethod?.instructions && (
+                    <p className="text-xs text-muted-foreground mt-2 p-2 bg-muted rounded">
+                      {selectedPaymentMethod.instructions}
+                    </p>
+                  )}
                 </div>
 
                 <div>

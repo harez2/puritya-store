@@ -130,6 +130,34 @@ export default function AdminCustomization() {
   const [localSettings, setLocalSettings] = useState<SiteSettings>(settings);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [hasFacebookToken, setHasFacebookToken] = useState(false);
+
+  // Check if Facebook CAPI token is configured
+  useEffect(() => {
+    // The token is stored as a secret, so we can't check it directly from the client
+    // We'll check if CAPI is enabled and the user has saved settings with it enabled
+    // For now, we'll assume the token is configured if the user has enabled CAPI previously
+    // A more robust solution would be to add an edge function to verify the token exists
+    const checkToken = async () => {
+      try {
+        // Make a test call to check if the token is configured
+        // This is a lightweight way to verify without exposing the token
+        const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-capi`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ check_token: true }),
+        });
+        // If we get a 400 (missing params) instead of 500 (no token), token exists
+        setHasFacebookToken(response.status !== 500);
+      } catch {
+        setHasFacebookToken(false);
+      }
+    };
+    checkToken();
+  }, []);
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -992,7 +1020,7 @@ export default function AdminCustomization() {
               capiEnabled={localSettings.facebook_capi_enabled || false}
               onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
               onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
-              hasAccessToken={false}
+              hasAccessToken={hasFacebookToken}
             />
           </TabsContent>
         </Tabs>

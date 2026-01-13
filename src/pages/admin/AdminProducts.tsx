@@ -40,6 +40,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
+import { ProductBulkActions } from '@/components/admin/ProductBulkActions';
 
 interface Product {
   id: string;
@@ -247,15 +248,22 @@ export default function AdminProducts() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <h1 className="text-3xl font-bold">Products</h1>
             <p className="text-muted-foreground">Manage your product catalog</p>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Product
-          </Button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <ProductBulkActions
+              products={products}
+              categories={categories}
+              onImportComplete={fetchProducts}
+            />
+            <Button onClick={() => handleOpenDialog()}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
         </div>
 
         <Card>

@@ -26,6 +26,8 @@ interface Product {
   featured: boolean | null;
   new_arrival: boolean | null;
   category_id: string | null;
+  stock_quantity: number;
+  low_stock_threshold: number;
 }
 
 interface Category {
@@ -79,6 +81,8 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
         'images',
         'sizes',
         'colors',
+        'stock_quantity',
+        'low_stock_threshold',
         'in_stock',
         'featured',
         'new_arrival'
@@ -94,6 +98,8 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
         escapeCSV(product.images?.join('|') || ''),
         escapeCSV(product.sizes?.join('|') || ''),
         escapeCSV(product.colors?.join('|') || ''),
+        product.stock_quantity ?? 0,
+        product.low_stock_threshold ?? 5,
         product.in_stock ? 'true' : 'false',
         product.featured ? 'true' : 'false',
         product.new_arrival ? 'true' : 'false'
@@ -241,6 +247,9 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
           const colors = getValue(row, 'colors');
           const compareAtPrice = getValue(row, 'compare_at_price');
 
+          const stockQuantityStr = getValue(row, 'stock_quantity');
+          const lowStockThresholdStr = getValue(row, 'low_stock_threshold');
+
           const productData = {
             name,
             slug: getValue(row, 'slug') || generateSlug(name),
@@ -251,6 +260,8 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
             images: images ? images.split('|').map(s => s.trim()).filter(Boolean) : [],
             sizes: sizes ? sizes.split('|').map(s => s.trim()).filter(Boolean) : [],
             colors: colors ? colors.split('|').map(s => s.trim()).filter(Boolean) : [],
+            stock_quantity: stockQuantityStr ? parseInt(stockQuantityStr, 10) : 0,
+            low_stock_threshold: lowStockThresholdStr ? parseInt(lowStockThresholdStr, 10) : 5,
             in_stock: getValue(row, 'in_stock').toLowerCase() !== 'false',
             featured: getValue(row, 'featured').toLowerCase() === 'true',
             new_arrival: getValue(row, 'new_arrival').toLowerCase() === 'true',
@@ -304,6 +315,8 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
       'images',
       'sizes',
       'colors',
+      'stock_quantity',
+      'low_stock_threshold',
       'in_stock',
       'featured',
       'new_arrival'
@@ -319,6 +332,8 @@ export function ProductBulkActions({ products, categories, onImportComplete }: P
       'https://example.com/image1.jpg|https://example.com/image2.jpg',
       'S|M|L|XL',
       'Red|Blue|Green',
+      '50',
+      '5',
       'true',
       'false',
       'true'

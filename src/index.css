@@ -216,3 +216,42 @@
     text-wrap: balance;
   }
 }
+
+/* Print styles for invoice */
+@media print {
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide everything by default */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Show only invoice content */
+  .print-invoice,
+  .print-invoice * {
+    visibility: visible;
+  }
+
+  .print-invoice {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+  }
+
+  /* Hide print button and non-essential elements */
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Ensure proper page layout */
+  @page {
+    margin: 1cm;
+    size: A4;
+  }
+}

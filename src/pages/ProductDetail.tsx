@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, ShoppingBag, ChevronLeft } from 'lucide-react';
+import { Heart, Minus, Plus, ShoppingBag, ChevronLeft, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
@@ -12,6 +12,7 @@ import { formatPrice, cn } from '@/lib/utils';
 
 export default function ProductDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
@@ -20,6 +21,8 @@ export default function ProductDetail() {
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   useEffect(() => {
     async function fetchProduct() {
@@ -41,6 +44,21 @@ export default function ProductDetail() {
     }
     fetchProduct();
   }, [slug]);
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    setAddingToCart(true);
+    await addToCart(product.id, quantity, selectedSize || undefined, selectedColor || undefined);
+    setAddingToCart(false);
+  };
+
+  const handleBuyNow = async () => {
+    if (!product) return;
+    setBuyingNow(true);
+    await addToCart(product.id, quantity, selectedSize || undefined, selectedColor || undefined);
+    setBuyingNow(false);
+    navigate('/checkout');
+  };
 
   if (loading) {
     return (
@@ -161,6 +179,29 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Color Selection */}
+            {product.colors && product.colors.length > 0 && (
+              <div className="mb-6">
+                <label className="block font-medium mb-3">Color: {selectedColor}</label>
+                <div className="flex flex-wrap gap-2">
+                  {product.colors.map(color => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={cn(
+                        "px-4 py-2 border rounded-md transition-colors",
+                        selectedColor === color
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border hover:border-primary"
+                      )}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Quantity */}
             <div className="mb-8">
               <label className="block font-medium mb-3">Quantity</label>
@@ -178,24 +219,43 @@ export default function ProductDetail() {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-3">
+                <Button
+                  size="lg"
+                  className="flex-1"
+                  variant="outline"
+                  disabled={!product.in_stock || addingToCart}
+                  onClick={handleAddToCart}
+                >
+                  <ShoppingBag className="h-5 w-5 mr-2" />
+                  {addingToCart ? 'Adding...' : product.in_stock ? 'Add to Cart' : 'Sold Out'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => toggleWishlist(product.id)}
+                  className={isWishlisted ? "text-primary" : ""}
+                >
+                  <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
+                </Button>
+              </div>
               <Button
                 size="lg"
-                className="flex-1"
-                disabled={!product.in_stock}
-                onClick={() => addToCart(product.id, quantity, selectedSize || undefined, selectedColor || undefined)}
+                className="w-full"
+                disabled={!product.in_stock || buyingNow}
+                onClick={handleBuyNow}
               >
-                <ShoppingBag className="h-5 w-5 mr-2" />
-                {product.in_stock ? 'Add to Cart' : 'Sold Out'}
+                <Zap className="h-5 w-5 mr-2" />
+                {buyingNow ? 'Processing...' : 'Buy Now'}
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => toggleWishlist(product.id)}
-                className={isWishlisted ? "text-primary" : ""}
-              >
-                <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
-              </Button>
+            </div>
+
+            {/* Shipping Info */}
+            <div className="mt-8 p-4 bg-secondary rounded-lg text-sm">
+              <p className="text-muted-foreground">
+                🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available
+              </p>
             </div>
           </motion.div>
         </div>

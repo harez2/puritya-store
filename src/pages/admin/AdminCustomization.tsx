@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
 import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
+import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
 
 interface HSLColor {
   h: number;
@@ -197,7 +198,7 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-2">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -225,6 +226,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="footer" className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4" />
               <span className="hidden sm:inline">Footer</span>
+            </TabsTrigger>
+            <TabsTrigger value="custom-css" className="flex items-center gap-2">
+              <Code className="h-4 w-4" />
+              <span className="hidden sm:inline">CSS</span>
             </TabsTrigger>
           </TabsList>
 
@@ -777,6 +782,22 @@ export default function AdminCustomization() {
                   items={localSettings.footer_about_menu}
                   onChange={(items) => handleChange('footer_about_menu', items)}
                   maxItems={6}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Custom CSS Tab */}
+          <TabsContent value="custom-css" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom CSS</CardTitle>
+                <CardDescription>Add advanced styling overrides for your store</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomCssEditor
+                  value={localSettings.custom_css || ''}
+                  onChange={(value) => handleChange('custom_css', value)}
                 />
               </CardContent>
             </Card>

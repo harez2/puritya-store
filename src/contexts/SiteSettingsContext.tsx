@@ -71,6 +71,9 @@ export interface SiteSettings {
   footer_shop_menu: MenuItem[];
   footer_help_menu: MenuItem[];
   footer_about_menu: MenuItem[];
+
+  // Custom CSS
+  custom_css: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -132,6 +135,7 @@ const defaultSettings: SiteSettings = {
     { id: '3', label: 'Privacy Policy', url: '/privacy', type: 'internal' },
     { id: '4', label: 'Terms of Service', url: '/terms', type: 'internal' },
   ],
+  custom_css: '',
 };
 
 interface SiteSettingsContextType {
@@ -198,6 +202,9 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     
     // Load Google Fonts dynamically
     loadGoogleFonts(headingFont, bodyFont);
+
+    // Apply custom CSS
+    applyCustomCss(currentSettings.custom_css || '');
   };
 
   const loadGoogleFonts = (headingFont: string, bodyFont: string) => {
@@ -224,6 +231,19 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       link.href = fontUrl;
       document.head.appendChild(link);
     }
+  };
+
+  const applyCustomCss = (css: string) => {
+    const styleId = 'custom-site-styles';
+    let styleElement = document.getElementById(styleId) as HTMLStyleElement | null;
+    
+    if (!styleElement) {
+      styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      document.head.appendChild(styleElement);
+    }
+    
+    styleElement.textContent = css;
   };
 
   useEffect(() => {

@@ -331,7 +331,7 @@ export default function AdminCustomization() {
           <TabsContent value="typography" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Typography</CardTitle>
+                <CardTitle>Font Selection</CardTitle>
                 <CardDescription>Choose fonts for your store from Google Fonts</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -356,26 +356,86 @@ export default function AdminCustomization() {
 
             <Card>
               <CardHeader>
+                <CardTitle>Font Sizes</CardTitle>
+                <CardDescription>Adjust the size of headings and body text</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-8">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Heading Size Scale</Label>
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {((localSettings.heading_size_scale || 1) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                  <Slider
+                    value={[(localSettings.heading_size_scale || 1) * 100]}
+                    min={80}
+                    max={140}
+                    step={5}
+                    onValueChange={([val]) => handleChange('heading_size_scale', val / 100)}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Smaller (80%)</span>
+                    <span>Default (100%)</span>
+                    <span>Larger (140%)</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Body Text Size</Label>
+                    <span className="text-sm text-muted-foreground font-mono">
+                      {localSettings.body_font_size || 16}px
+                    </span>
+                  </div>
+                  <Slider
+                    value={[localSettings.body_font_size || 16]}
+                    min={14}
+                    max={20}
+                    step={1}
+                    onValueChange={([val]) => handleChange('body_font_size', val)}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Small (14px)</span>
+                    <span>Default (16px)</span>
+                    <span>Large (20px)</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Font Preview</CardTitle>
-                <CardDescription>See how your fonts look together</CardDescription>
+                <CardDescription>See how your fonts and sizes look together</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border p-6 space-y-4 bg-background">
                   <h2
-                    className="text-3xl font-medium"
-                    style={{ fontFamily: `"${localSettings.heading_font}", serif` }}
+                    className="font-medium"
+                    style={{ 
+                      fontFamily: `"${localSettings.heading_font}", serif`,
+                      fontSize: `calc(2rem * ${localSettings.heading_size_scale || 1})`
+                    }}
                   >
                     {localSettings.store_name || 'Your Store Name'}
                   </h2>
                   <h3
-                    className="text-xl"
-                    style={{ fontFamily: `"${localSettings.heading_font}", serif` }}
+                    style={{ 
+                      fontFamily: `"${localSettings.heading_font}", serif`,
+                      fontSize: `calc(1.5rem * ${localSettings.heading_size_scale || 1})`
+                    }}
                   >
                     Elegant Heading Style
                   </h3>
                   <p
-                    className="text-base leading-relaxed"
-                    style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                    className="leading-relaxed"
+                    style={{ 
+                      fontFamily: `"${localSettings.body_font}", sans-serif`,
+                      fontSize: `${localSettings.body_font_size || 16}px`
+                    }}
                   >
                     This is how your body text will appear throughout your store. 
                     It should be easy to read and complement your heading font nicely. 
@@ -384,13 +444,19 @@ export default function AdminCustomization() {
                   <div className="flex gap-4 pt-2">
                     <button
                       className="px-4 py-2 rounded-md bg-primary text-primary-foreground"
-                      style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                      style={{ 
+                        fontFamily: `"${localSettings.body_font}", sans-serif`,
+                        fontSize: `${localSettings.body_font_size || 16}px`
+                      }}
                     >
                       Shop Now
                     </button>
                     <button
                       className="px-4 py-2 rounded-md border border-primary text-primary"
-                      style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                      style={{ 
+                        fontFamily: `"${localSettings.body_font}", sans-serif`,
+                        fontSize: `${localSettings.body_font_size || 16}px`
+                      }}
                     >
                       Learn More
                     </button>

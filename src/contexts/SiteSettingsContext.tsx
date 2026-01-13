@@ -30,6 +30,8 @@ export interface SiteSettings {
   // Typography
   heading_font: string;
   body_font: string;
+  heading_size_scale: number; // 0.8 to 1.4 multiplier
+  body_font_size: number; // 14 to 20px
 
   // Theme Colors
   primary_color: HSLColor;
@@ -83,6 +85,8 @@ const defaultSettings: SiteSettings = {
   favicon_url: '',
   heading_font: 'Cormorant Garamond',
   body_font: 'Outfit',
+  heading_size_scale: 1,
+  body_font_size: 16,
   primary_color: { h: 12, s: 45, l: 55 },
   secondary_color: { h: 35, s: 35, l: 92 },
   accent_color: { h: 350, s: 35, l: 90 },
@@ -199,6 +203,13 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     // Update CSS custom properties for fonts
     root.style.setProperty('--font-heading', `"${headingFont}", serif`);
     root.style.setProperty('--font-body', `"${bodyFont}", sans-serif`);
+
+    // Apply font sizes
+    const headingScale = currentSettings.heading_size_scale || 1;
+    const bodySize = currentSettings.body_font_size || 16;
+    
+    root.style.setProperty('--heading-scale', String(headingScale));
+    root.style.setProperty('--body-font-size', `${bodySize}px`);
     
     // Load Google Fonts dynamically
     loadGoogleFonts(headingFont, bodyFont);

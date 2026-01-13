@@ -76,6 +76,26 @@ export interface SiteSettings {
 
   // Custom CSS
   custom_css: string;
+
+  // Custom Theme Presets
+  custom_presets: CustomThemePreset[];
+}
+
+export interface CustomThemePreset {
+  id: string;
+  name: string;
+  description: string;
+  colors: {
+    primary: HSLColor;
+    secondary: HSLColor;
+    accent: HSLColor;
+    background: HSLColor;
+  };
+  fonts: {
+    heading: string;
+    body: string;
+  };
+  createdAt: string;
 }
 
 const defaultSettings: SiteSettings = {
@@ -140,6 +160,7 @@ const defaultSettings: SiteSettings = {
     { id: '4', label: 'Terms of Service', url: '/terms', type: 'internal' },
   ],
   custom_css: '',
+  custom_presets: [],
 };
 
 interface SiteSettingsContextType {

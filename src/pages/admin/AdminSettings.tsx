@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Store, Bell, Shield } from 'lucide-react';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
+import PaymentMethodsEditor from '@/components/admin/PaymentMethodsEditor';
 
 export default function AdminSettings() {
   return (
@@ -54,6 +55,9 @@ export default function AdminSettings() {
 
           {/* Shipping Options */}
           <ShippingOptionsEditor />
+
+          {/* Payment Methods */}
+          <PaymentMethodsEditor />
 
           {/* Notification Settings */}
           <Card>

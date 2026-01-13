@@ -25,6 +25,9 @@ export interface ShippingOption {
   name: string;
   price: number;
   enabled: boolean;
+  freeShippingThreshold?: number; // Free shipping if order >= this amount
+  discountThreshold?: number; // Apply discount if order >= this amount
+  discountAmount?: number; // Fixed discount amount on shipping
 }
 
 export interface SiteSettings {

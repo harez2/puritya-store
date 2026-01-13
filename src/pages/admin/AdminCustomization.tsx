@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2 } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,7 @@ import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
 import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
 import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
+import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
 
 interface HSLColor {
   h: number;
@@ -255,7 +256,7 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 md:grid-cols-9 gap-2">
+          <TabsList className="grid w-full grid-cols-5 md:grid-cols-10 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -291,6 +292,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="scripts" className="flex items-center gap-2">
               <FileCode2 className="h-4 w-4" />
               <span className="hidden sm:inline">Scripts</span>
+            </TabsTrigger>
+            <TabsTrigger value="facebook" className="flex items-center gap-2">
+              <Facebook className="h-4 w-4" />
+              <span className="hidden sm:inline">Facebook</span>
             </TabsTrigger>
           </TabsList>
 
@@ -978,6 +983,17 @@ export default function AdminCustomization() {
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Facebook Pixel Tab */}
+          <TabsContent value="facebook" className="space-y-6">
+            <FacebookPixelSetup
+              pixelId={localSettings.facebook_pixel_id || ''}
+              capiEnabled={localSettings.facebook_capi_enabled || false}
+              onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
+              onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
+              hasAccessToken={false}
+            />
           </TabsContent>
         </Tabs>
       </div>

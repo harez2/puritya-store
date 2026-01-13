@@ -214,7 +214,7 @@ export default function Checkout() {
             </div>
 
             {/* Invoice Card */}
-            <div className="bg-card border border-border rounded-lg overflow-hidden print:border-2">
+            <div className="print-invoice bg-card border border-border rounded-lg overflow-hidden print:border-2">
               {/* Invoice Header */}
               <div className="bg-primary/5 px-6 py-4 border-b border-border flex justify-between items-start">
                 <div>

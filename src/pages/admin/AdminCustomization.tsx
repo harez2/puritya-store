@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -125,11 +126,18 @@ function ColorPicker({
 }
 
 export default function AdminCustomization() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { settings, loading, updateSettings } = useSiteSettings();
   const { toast } = useToast();
   const [localSettings, setLocalSettings] = useState<SiteSettings>(settings);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  
+  const activeTab = searchParams.get('tab') || 'branding';
+  
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -255,7 +263,7 @@ export default function AdminCustomization() {
           </div>
         </div>
 
-        <Tabs defaultValue="branding" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 md:grid-cols-10 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />

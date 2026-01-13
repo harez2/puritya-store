@@ -77,6 +77,10 @@ export interface SiteSettings {
   // Custom CSS
   custom_css: string;
 
+  // Custom Scripts
+  custom_head_scripts: string;
+  custom_body_scripts: string;
+
   // Custom Theme Presets
   custom_presets: CustomThemePreset[];
 }
@@ -160,6 +164,8 @@ const defaultSettings: SiteSettings = {
     { id: '4', label: 'Terms of Service', url: '/terms', type: 'internal' },
   ],
   custom_css: '',
+  custom_head_scripts: '',
+  custom_body_scripts: '',
   custom_presets: [],
 };
 
@@ -237,6 +243,9 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
 
     // Apply custom CSS
     applyCustomCss(currentSettings.custom_css || '');
+
+    // Apply custom scripts
+    applyCustomScripts(currentSettings.custom_head_scripts || '', currentSettings.custom_body_scripts || '');
   };
 
   const loadGoogleFonts = (headingFont: string, bodyFont: string) => {
@@ -276,6 +285,66 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     }
     
     styleElement.textContent = css;
+  };
+
+  const applyCustomScripts = (headScripts: string, bodyScripts: string) => {
+    // Apply head scripts
+    const headScriptId = 'custom-head-scripts';
+    let headScriptContainer = document.getElementById(headScriptId);
+    
+    if (headScriptContainer) {
+      headScriptContainer.remove();
+    }
+    
+    if (headScripts.trim()) {
+      headScriptContainer = document.createElement('div');
+      headScriptContainer.id = headScriptId;
+      headScriptContainer.innerHTML = headScripts;
+      
+      // Execute scripts in head
+      const scripts = headScriptContainer.querySelectorAll('script');
+      scripts.forEach((oldScript) => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach((attr) => {
+          newScript.setAttribute(attr.name, attr.value);
+        });
+        newScript.textContent = oldScript.textContent;
+        document.head.appendChild(newScript);
+      });
+      
+      // Append non-script elements to head
+      Array.from(headScriptContainer.children).forEach((child) => {
+        if (child.tagName !== 'SCRIPT') {
+          document.head.appendChild(child.cloneNode(true));
+        }
+      });
+    }
+
+    // Apply body scripts
+    const bodyScriptId = 'custom-body-scripts';
+    let bodyScriptContainer = document.getElementById(bodyScriptId);
+    
+    if (bodyScriptContainer) {
+      bodyScriptContainer.remove();
+    }
+    
+    if (bodyScripts.trim()) {
+      bodyScriptContainer = document.createElement('div');
+      bodyScriptContainer.id = bodyScriptId;
+      bodyScriptContainer.style.display = 'none';
+      bodyScriptContainer.innerHTML = bodyScripts;
+      
+      // Execute scripts in body
+      const scripts = bodyScriptContainer.querySelectorAll('script');
+      scripts.forEach((oldScript) => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach((attr) => {
+          newScript.setAttribute(attr.name, attr.value);
+        });
+        newScript.textContent = oldScript.textContent;
+        document.body.appendChild(newScript);
+      });
+    }
   };
 
   useEffect(() => {

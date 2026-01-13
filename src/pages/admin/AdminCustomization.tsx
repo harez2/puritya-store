@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
 import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
 import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
+import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
 
 interface HSLColor {
@@ -254,7 +255,7 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 md:grid-cols-8 gap-2">
+          <TabsList className="grid w-full grid-cols-5 md:grid-cols-9 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -286,6 +287,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="custom-css" className="flex items-center gap-2">
               <Code className="h-4 w-4" />
               <span className="hidden sm:inline">CSS</span>
+            </TabsTrigger>
+            <TabsTrigger value="scripts" className="flex items-center gap-2">
+              <FileCode2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Scripts</span>
             </TabsTrigger>
           </TabsList>
 
@@ -952,6 +957,24 @@ export default function AdminCustomization() {
                 <CustomCssEditor
                   value={localSettings.custom_css || ''}
                   onChange={(value) => handleChange('custom_css', value)}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Custom Scripts Tab */}
+          <TabsContent value="scripts" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Custom Scripts</CardTitle>
+                <CardDescription>Add tracking codes, analytics, chat widgets, and other third-party scripts</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <CustomScriptsEditor
+                  headScripts={localSettings.custom_head_scripts || ''}
+                  bodyScripts={localSettings.custom_body_scripts || ''}
+                  onHeadScriptsChange={(value) => handleChange('custom_head_scripts', value)}
+                  onBodyScriptsChange={(value) => handleChange('custom_body_scripts', value)}
                 />
               </CardContent>
             </Card>

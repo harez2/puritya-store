@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { useSiteSettings, SiteSettings, MenuItem } from '@/contexts/SiteSettings
 import { useToast } from '@/hooks/use-toast';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
+import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
 
 interface HSLColor {
   h: number;
@@ -196,10 +197,14 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-2">
+          <TabsList className="grid w-full grid-cols-4 md:grid-cols-7 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
+            </TabsTrigger>
+            <TabsTrigger value="typography" className="flex items-center gap-2">
+              <ALargeSmall className="h-4 w-4" />
+              <span className="hidden sm:inline">Fonts</span>
             </TabsTrigger>
             <TabsTrigger value="theme" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
@@ -222,6 +227,173 @@ export default function AdminCustomization() {
               <span className="hidden sm:inline">Footer</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Branding Tab */}
+          <TabsContent value="branding" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Store Identity</CardTitle>
+                <CardDescription>Configure your store name and logo</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="store_name">Store Name</Label>
+                    <Input
+                      id="store_name"
+                      value={localSettings.store_name}
+                      onChange={(e) => handleChange('store_name', e.target.value)}
+                      placeholder="Your store name"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="store_tagline">Store Tagline</Label>
+                    <Input
+                      id="store_tagline"
+                      value={localSettings.store_tagline}
+                      onChange={(e) => handleChange('store_tagline', e.target.value)}
+                      placeholder="A catchy tagline"
+                    />
+                  </div>
+                </div>
+                <div className="grid gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Logo</Label>
+                    <SingleImageUpload
+                      image={localSettings.logo_url || null}
+                      onImageChange={(url) => handleChange('logo_url', url || '')}
+                      folder="branding"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Recommended: PNG or SVG with transparent background
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Favicon</Label>
+                    <SingleImageUpload
+                      image={localSettings.favicon_url || null}
+                      onImageChange={(url) => handleChange('favicon_url', url || '')}
+                      folder="branding"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Recommended: 32x32 or 64x64 PNG
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Media Links</CardTitle>
+                <CardDescription>Connect your social media accounts</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="social_instagram">Instagram URL</Label>
+                    <Input
+                      id="social_instagram"
+                      value={localSettings.social_instagram}
+                      onChange={(e) => handleChange('social_instagram', e.target.value)}
+                      placeholder="https://instagram.com/yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_facebook">Facebook URL</Label>
+                    <Input
+                      id="social_facebook"
+                      value={localSettings.social_facebook}
+                      onChange={(e) => handleChange('social_facebook', e.target.value)}
+                      placeholder="https://facebook.com/yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_twitter">Twitter URL</Label>
+                    <Input
+                      id="social_twitter"
+                      value={localSettings.social_twitter}
+                      onChange={(e) => handleChange('social_twitter', e.target.value)}
+                      placeholder="https://twitter.com/yourstore"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Typography Tab */}
+          <TabsContent value="typography" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Typography</CardTitle>
+                <CardDescription>Choose fonts for your store from Google Fonts</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 md:grid-cols-2">
+                  <FontSelector
+                    label="Heading Font"
+                    description="Used for titles, headings, and display text"
+                    value={localSettings.heading_font}
+                    onChange={(value) => handleChange('heading_font', value)}
+                    category="headings"
+                  />
+                  <FontSelector
+                    label="Body Font"
+                    description="Used for paragraphs and general text"
+                    value={localSettings.body_font}
+                    onChange={(value) => handleChange('body_font', value)}
+                    category="body"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Font Preview</CardTitle>
+                <CardDescription>See how your fonts look together</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-lg border p-6 space-y-4 bg-background">
+                  <h2
+                    className="text-3xl font-medium"
+                    style={{ fontFamily: `"${localSettings.heading_font}", serif` }}
+                  >
+                    {localSettings.store_name || 'Your Store Name'}
+                  </h2>
+                  <h3
+                    className="text-xl"
+                    style={{ fontFamily: `"${localSettings.heading_font}", serif` }}
+                  >
+                    Elegant Heading Style
+                  </h3>
+                  <p
+                    className="text-base leading-relaxed"
+                    style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                  >
+                    This is how your body text will appear throughout your store. 
+                    It should be easy to read and complement your heading font nicely. 
+                    Good typography creates a pleasant reading experience for your customers.
+                  </p>
+                  <div className="flex gap-4 pt-2">
+                    <button
+                      className="px-4 py-2 rounded-md bg-primary text-primary-foreground"
+                      style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                    >
+                      Shop Now
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-md border border-primary text-primary"
+                      style={{ fontFamily: `"${localSettings.body_font}", sans-serif` }}
+                    >
+                      Learn More
+                    </button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Branding Tab */}
           <TabsContent value="branding" className="space-y-6">

@@ -27,6 +27,10 @@ export interface SiteSettings {
   logo_url: string;
   favicon_url: string;
 
+  // Typography
+  heading_font: string;
+  body_font: string;
+
   // Theme Colors
   primary_color: HSLColor;
   secondary_color: HSLColor;
@@ -74,6 +78,8 @@ const defaultSettings: SiteSettings = {
   store_tagline: 'Curated feminine fashion imported from around the world',
   logo_url: '',
   favicon_url: '',
+  heading_font: 'Cormorant Garamond',
+  body_font: 'Outfit',
   primary_color: { h: 12, s: 45, l: 55 },
   secondary_color: { h: 35, s: 35, l: 92 },
   accent_color: { h: 350, s: 35, l: 90 },
@@ -181,6 +187,43 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     
     // Also update ring to match primary
     root.style.setProperty('--ring', `${currentSettings.primary_color.h} ${currentSettings.primary_color.s}% ${currentSettings.primary_color.l}%`);
+
+    // Apply fonts
+    const headingFont = currentSettings.heading_font || 'Cormorant Garamond';
+    const bodyFont = currentSettings.body_font || 'Outfit';
+    
+    // Update CSS custom properties for fonts
+    root.style.setProperty('--font-heading', `"${headingFont}", serif`);
+    root.style.setProperty('--font-body', `"${bodyFont}", sans-serif`);
+    
+    // Load Google Fonts dynamically
+    loadGoogleFonts(headingFont, bodyFont);
+  };
+
+  const loadGoogleFonts = (headingFont: string, bodyFont: string) => {
+    const fonts = new Set([headingFont, bodyFont]);
+    const fontParams = Array.from(fonts)
+      .map((font) => {
+        const formatted = font.replace(/ /g, '+');
+        if (['Cormorant Garamond', 'Playfair Display', 'Lora', 'Merriweather', 'Crimson Text', 'EB Garamond', 'Libre Baskerville', 'Source Serif Pro', 'DM Serif Display', 'Fraunces', 'Abril Fatface', 'Bodoni Moda', 'Yeseva One'].includes(font)) {
+          return `family=${formatted}:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500`;
+        }
+        return `family=${formatted}:wght@300;400;500;600;700`;
+      })
+      .join('&');
+    
+    const fontUrl = `https://fonts.googleapis.com/css2?${fontParams}&display=swap`;
+    
+    // Check if font link already exists
+    const existingLink = document.querySelector(`link[href^="https://fonts.googleapis.com/css2?family="]`);
+    if (existingLink) {
+      existingLink.setAttribute('href', fontUrl);
+    } else {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = fontUrl;
+      document.head.appendChild(link);
+    }
   };
 
   useEffect(() => {

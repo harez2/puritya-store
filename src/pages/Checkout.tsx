@@ -17,11 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 type ShippingForm = {
   full_name: string;
   phone: string;
-  address_line1: string;
-  address_line2: string;
-  city: string;
-  state: string;
-  postal_code: string;
+  address: string;
   notes: string;
 };
 
@@ -31,6 +27,7 @@ export default function Checkout() {
   const { toast } = useToast();
   const navigate = useNavigate();
   
+  const [shippingLocation, setShippingLocation] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -39,15 +36,12 @@ export default function Checkout() {
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
     phone: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    postal_code: '',
+    address: '',
     notes: '',
   });
 
-  const shippingFee = subtotal > 5000 ? 0 : 100;
+  // Shipping fees based on location
+  const shippingFee = shippingLocation === 'inside_dhaka' ? 60 : 120;
   const total = subtotal + shippingFee;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -55,7 +49,7 @@ export default function Checkout() {
   };
 
   const validateForm = () => {
-    if (!form.full_name || !form.phone || !form.address_line1 || !form.city || !form.state) {
+    if (!form.full_name.trim() || !form.phone.trim() || !form.address.trim()) {
       toast({
         title: "Missing Information",
         description: "Please fill in all required fields.",
@@ -85,13 +79,13 @@ export default function Checkout() {
     
     try {
       const shippingAddress = {
-        full_name: form.full_name,
-        phone: form.phone,
-        address_line1: form.address_line1,
-        address_line2: form.address_line2 || null,
-        city: form.city,
-        state: form.state,
-        postal_code: form.postal_code || '',
+        full_name: form.full_name.trim(),
+        phone: form.phone.trim(),
+        address_line1: form.address.trim(),
+        address_line2: null,
+        city: shippingLocation === 'inside_dhaka' ? 'Dhaka' : 'Outside Dhaka',
+        state: shippingLocation === 'inside_dhaka' ? 'Dhaka Division' : 'Other',
+        postal_code: '',
         country: 'Bangladesh',
       };
 
@@ -111,8 +105,8 @@ export default function Checkout() {
             total,
             shipping_address: shippingAddress,
             payment_method: paymentMethod,
-            payment_status: paymentMethod === 'cod' ? 'pending' : 'pending',
-            notes: form.notes || null,
+            payment_status: 'pending',
+            notes: form.notes.trim() || null,
           })
           .select()
           .single();
@@ -139,7 +133,7 @@ export default function Checkout() {
 
         setOrderNumber(order.order_number);
       } else {
-        // Guest checkout: just show confirmation (no DB save for guests)
+        // Guest checkout: just show confirmation
         setOrderNumber(orderNum);
       }
 
@@ -221,8 +215,8 @@ export default function Checkout() {
               {/* Shipping Information */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="font-display text-xl mb-6">Shipping Information</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2">
+                <div className="space-y-4">
+                  <div>
                     <Label htmlFor="full_name">Full Name *</Label>
                     <Input
                       id="full_name"
@@ -230,9 +224,10 @@ export default function Checkout() {
                       value={form.full_name}
                       onChange={handleInputChange}
                       placeholder="Enter your full name"
+                      maxLength={100}
                     />
                   </div>
-                  <div className="md:col-span-2">
+                  <div>
                     <Label htmlFor="phone">Phone Number *</Label>
                     <Input
                       id="phone"
@@ -240,80 +235,68 @@ export default function Checkout() {
                       value={form.phone}
                       onChange={handleInputChange}
                       placeholder="01XXXXXXXXX"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address_line1">Address *</Label>
-                    <Input
-                      id="address_line1"
-                      name="address_line1"
-                      value={form.address_line1}
-                      onChange={handleInputChange}
-                      placeholder="House/Road/Area"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address_line2">Address Line 2</Label>
-                    <Input
-                      id="address_line2"
-                      name="address_line2"
-                      value={form.address_line2}
-                      onChange={handleInputChange}
-                      placeholder="Apartment, suite, etc. (optional)"
+                      maxLength={15}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="city">City *</Label>
-                    <Input
-                      id="city"
-                      name="city"
-                      value={form.city}
+                    <Label htmlFor="address">Delivery Address *</Label>
+                    <Textarea
+                      id="address"
+                      name="address"
+                      value={form.address}
                       onChange={handleInputChange}
-                      placeholder="e.g. Dhaka"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="state">Division/District *</Label>
-                    <Input
-                      id="state"
-                      name="state"
-                      value={form.state}
-                      onChange={handleInputChange}
-                      placeholder="e.g. Dhaka Division"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <Label htmlFor="postal_code">Postal Code</Label>
-                    <Input
-                      id="postal_code"
-                      name="postal_code"
-                      value={form.postal_code}
-                      onChange={handleInputChange}
-                      placeholder="e.g. 1205"
+                      placeholder="House, Road, Area, Thana, District"
+                      rows={3}
+                      maxLength={500}
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Shipping Location */}
+              <div className="bg-card border border-border rounded-lg p-6">
+                <h2 className="font-display text-xl mb-6">Shipping Location</h2>
+                <RadioGroup value={shippingLocation} onValueChange={(val) => setShippingLocation(val as 'inside_dhaka' | 'outside_dhaka')}>
+                  <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${shippingLocation === 'inside_dhaka' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="inside_dhaka" id="inside_dhaka" />
+                      <Label htmlFor="inside_dhaka" className="cursor-pointer">
+                        <span className="font-medium">Inside Dhaka</span>
+                      </Label>
+                    </div>
+                    <span className="font-semibold">৳60</span>
+                  </div>
+                  <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${shippingLocation === 'outside_dhaka' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
+                    <div className="flex items-center space-x-3">
+                      <RadioGroupItem value="outside_dhaka" id="outside_dhaka" />
+                      <Label htmlFor="outside_dhaka" className="cursor-pointer">
+                        <span className="font-medium">Outside Dhaka</span>
+                      </Label>
+                    </div>
+                    <span className="font-semibold">৳120</span>
+                  </div>
+                </RadioGroup>
               </div>
 
               {/* Payment Method */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="font-display text-xl mb-6">Payment Method</h2>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
+                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
                     <RadioGroupItem value="cod" id="cod" />
                     <Label htmlFor="cod" className="flex-1 cursor-pointer">
                       <span className="font-medium">Cash on Delivery</span>
                       <p className="text-sm text-muted-foreground">Pay when you receive your order</p>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg cursor-pointer hover:border-primary transition-colors mt-3">
+                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${paymentMethod === 'bkash' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
                     <RadioGroupItem value="bkash" id="bkash" />
                     <Label htmlFor="bkash" className="flex-1 cursor-pointer">
                       <span className="font-medium">bKash</span>
                       <p className="text-sm text-muted-foreground">Pay via bKash mobile banking</p>
                     </Label>
                   </div>
-                  <div className="flex items-center space-x-3 p-4 border border-border rounded-lg cursor-pointer hover:border-primary transition-colors mt-3">
+                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${paymentMethod === 'nagad' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
                     <RadioGroupItem value="nagad" id="nagad" />
                     <Label htmlFor="nagad" className="flex-1 cursor-pointer">
                       <span className="font-medium">Nagad</span>
@@ -332,6 +315,7 @@ export default function Checkout() {
                   onChange={handleInputChange}
                   placeholder="Any special instructions for your order..."
                   rows={3}
+                  maxLength={500}
                 />
               </div>
             </div>
@@ -369,12 +353,9 @@ export default function Checkout() {
                     <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Delivery</span>
-                    <span>{shippingFee === 0 ? 'Free' : formatPrice(shippingFee)}</span>
+                    <span>Delivery ({shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                    <span>৳{shippingFee}</span>
                   </div>
-                  {shippingFee === 0 && (
-                    <p className="text-xs text-green-600">🎉 You qualify for free delivery!</p>
-                  )}
                   <div className="border-t border-border pt-3 flex justify-between font-semibold text-lg">
                     <span>Total</span>
                     <span>{formatPrice(total)}</span>

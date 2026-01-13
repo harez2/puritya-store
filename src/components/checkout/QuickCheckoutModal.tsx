@@ -69,10 +69,13 @@ export default function QuickCheckoutModal({
   const { toast } = useToast();
 
   const [step, setStep] = useState<'form' | 'success'>('form');
-  const [shippingLocation, setShippingLocation] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+
+  // Get enabled shipping options from settings
+  const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
+  const [selectedShipping, setSelectedShipping] = useState(shippingOptions[0]?.id || '');
 
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
@@ -83,7 +86,8 @@ export default function QuickCheckoutModal({
 
   const price = Number(product.price);
   const subtotal = price * quantity;
-  const shippingFee = shippingLocation === 'inside_dhaka' ? 60 : 120;
+  const selectedShippingOption = shippingOptions.find(opt => opt.id === selectedShipping);
+  const shippingFee = selectedShippingOption?.price || 0;
   const total = subtotal + shippingFee;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -124,8 +128,8 @@ export default function QuickCheckoutModal({
         phone: form.phone.trim(),
         address_line1: form.address.trim(),
         address_line2: null,
-        city: shippingLocation === 'inside_dhaka' ? 'Dhaka' : 'Outside Dhaka',
-        state: shippingLocation === 'inside_dhaka' ? 'Dhaka Division' : 'Other',
+        city: selectedShippingOption?.name || 'Unknown',
+        state: selectedShippingOption?.name || 'Unknown',
         postal_code: '',
         country: 'Bangladesh',
       };
@@ -147,7 +151,7 @@ export default function QuickCheckoutModal({
           full_name: form.full_name.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
-          location: shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
+          location: selectedShippingOption?.name || 'Standard',
         },
         paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad',
         orderDate: new Date().toLocaleString('en-BD', {
@@ -246,6 +250,7 @@ export default function QuickCheckoutModal({
       setStep('form');
       setForm({ full_name: '', phone: '', address: '', notes: '' });
       setOrderDetails(null);
+      setSelectedShipping(shippingOptions[0]?.id || '');
     }, 300);
   };
 
@@ -334,18 +339,18 @@ export default function QuickCheckoutModal({
                 <div>
                   <Label className="mb-3 block">Delivery Location</Label>
                   <RadioGroup
-                    value={shippingLocation}
-                    onValueChange={(v) => setShippingLocation(v as 'inside_dhaka' | 'outside_dhaka')}
-                    className="flex gap-4"
+                    value={selectedShipping}
+                    onValueChange={setSelectedShipping}
+                    className="flex flex-wrap gap-4"
                   >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="inside_dhaka" id="quick_inside" />
-                      <Label htmlFor="quick_inside" className="cursor-pointer">Inside Dhaka (৳60)</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="outside_dhaka" id="quick_outside" />
-                      <Label htmlFor="quick_outside" className="cursor-pointer">Outside Dhaka (৳120)</Label>
-                    </div>
+                    {shippingOptions.map((option) => (
+                      <div key={option.id} className="flex items-center space-x-2">
+                        <RadioGroupItem value={option.id} id={`quick_shipping_${option.id}`} />
+                        <Label htmlFor={`quick_shipping_${option.id}`} className="cursor-pointer">
+                          {option.name} (৳{option.price})
+                        </Label>
+                      </div>
+                    ))}
                   </RadioGroup>
                 </div>
 

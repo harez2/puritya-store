@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Store, Bell, Shield } from 'lucide-react';
+import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 
 export default function AdminSettings() {
   return (
@@ -50,6 +51,9 @@ export default function AdminSettings() {
               <Button>Save Changes</Button>
             </CardContent>
           </Card>
+
+          {/* Shipping Options */}
+          <ShippingOptionsEditor />
 
           {/* Notification Settings */}
           <Card>

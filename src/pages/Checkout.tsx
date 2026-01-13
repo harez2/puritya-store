@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Check, Printer } from 'lucide-react';
@@ -10,9 +10,11 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Layout from '@/components/layout/Layout';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 
 type ShippingForm = {
   full_name: string;
@@ -24,6 +26,7 @@ type ShippingForm = {
 export default function Checkout() {
   const { user } = useAuth();
   const { items, subtotal, clearCart, isGuestCart } = useCart();
+  const { settings } = useSiteSettings();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -57,6 +60,30 @@ export default function Checkout() {
   // Shipping fees based on location
   const shippingFee = shippingLocation === 'inside_dhaka' ? 60 : 120;
   const total = subtotal + shippingFee;
+
+  // Track InitiateCheckout when page loads with items
+  useEffect(() => {
+    if (items.length > 0 && settings.facebook_pixel_id) {
+      trackFacebookEvent(
+        settings.facebook_pixel_id,
+        settings.facebook_capi_enabled,
+        settings.facebook_access_token || '',
+        FacebookEvents.InitiateCheckout,
+        {
+          content_ids: items.map(item => item.product_id),
+          content_type: 'product',
+          contents: items.map(item => ({
+            id: item.product_id,
+            quantity: item.quantity,
+            item_price: Number(item.product?.price) || 0,
+          })),
+          value: subtotal,
+          currency: 'BDT',
+          num_items: items.reduce((sum, item) => sum + item.quantity, 0),
+        }
+      );
+    }
+  }, []); // Only track once on mount
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -174,6 +201,35 @@ export default function Checkout() {
       setOrderDetails(savedOrderDetails);
       await clearCart();
       setOrderComplete(true);
+
+      // Track Purchase event
+      if (settings.facebook_pixel_id) {
+        trackFacebookEvent(
+          settings.facebook_pixel_id,
+          settings.facebook_capi_enabled,
+          settings.facebook_access_token || '',
+          FacebookEvents.Purchase,
+          {
+            content_ids: items.map(item => item.product_id),
+            content_type: 'product',
+            contents: items.map(item => ({
+              id: item.product_id,
+              quantity: item.quantity,
+              item_price: Number(item.product?.price) || 0,
+            })),
+            value: total,
+            currency: 'BDT',
+            num_items: items.reduce((sum, item) => sum + item.quantity, 0),
+          },
+          {
+            email: user?.email,
+            phone: form.phone.trim(),
+            firstName: form.full_name.split(' ')[0],
+            lastName: form.full_name.split(' ').slice(1).join(' '),
+            externalId: user?.id,
+          }
+        );
+      }
 
     } catch (error) {
       console.error('Error placing order:', error);

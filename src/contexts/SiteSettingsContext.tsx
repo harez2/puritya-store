@@ -20,6 +20,13 @@ export interface MenuItem {
   type: 'internal' | 'external';
 }
 
+export interface ShippingOption {
+  id: string;
+  name: string;
+  price: number;
+  enabled: boolean;
+}
+
 export interface SiteSettings {
   // Branding
   store_name: string;
@@ -88,6 +95,9 @@ export interface SiteSettings {
   facebook_pixel_id: string;
   facebook_capi_enabled: boolean;
   facebook_access_token: string;
+
+  // Shipping Options
+  shipping_options: ShippingOption[];
 }
 
 export interface CustomThemePreset {
@@ -175,6 +185,10 @@ const defaultSettings: SiteSettings = {
   facebook_pixel_id: '',
   facebook_capi_enabled: false,
   facebook_access_token: '',
+  shipping_options: [
+    { id: '1', name: 'Inside Dhaka', price: 60, enabled: true },
+    { id: '2', name: 'Outside Dhaka', price: 120, enabled: true },
+  ],
 };
 
 interface SiteSettingsContextType {

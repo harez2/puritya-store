@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Search, MoreHorizontal } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +39,7 @@ import {
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 
 interface Product {
   id: string;
@@ -68,7 +69,7 @@ const initialProductForm = {
   description: '',
   price: 0,
   compare_at_price: 0,
-  images: '',
+  images: [] as string[],
   sizes: '',
   colors: '',
   in_stock: true,
@@ -147,7 +148,7 @@ export default function AdminProducts() {
         description: product.description || '',
         price: product.price,
         compare_at_price: product.compare_at_price || 0,
-        images: product.images?.join(', ') || '',
+        images: product.images || [],
         sizes: product.sizes?.join(', ') || '',
         colors: product.colors?.join(', ') || '',
         in_stock: product.in_stock ?? true,
@@ -186,7 +187,7 @@ export default function AdminProducts() {
         description: formData.description || null,
         price: formData.price,
         compare_at_price: formData.compare_at_price || null,
-        images: formData.images ? formData.images.split(',').map(s => s.trim()).filter(Boolean) : [],
+        images: formData.images,
         sizes: formData.sizes ? formData.sizes.split(',').map(s => s.trim()).filter(Boolean) : [],
         colors: formData.colors ? formData.colors.split(',').map(s => s.trim()).filter(Boolean) : [],
         in_stock: formData.in_stock,
@@ -447,12 +448,10 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="images">Image URLs (comma-separated)</Label>
-              <Input
-                id="images"
-                value={formData.images}
-                onChange={(e) => setFormData({ ...formData, images: e.target.value })}
-                placeholder="https://example.com/image1.jpg, https://example.com/image2.jpg"
+              <Label>Product Images</Label>
+              <ProductImageUpload
+                images={formData.images}
+                onImagesChange={(images) => setFormData({ ...formData, images })}
               />
             </div>
 

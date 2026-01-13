@@ -29,9 +29,9 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <CartProvider>
-        <WishlistProvider>
-          <SiteSettingsProvider>
+      <SiteSettingsProvider>
+        <CartProvider>
+          <WishlistProvider>
             <TooltipProvider>
               <Toaster />
               <Sonner />
@@ -58,9 +58,9 @@ const App = () => (
                 </FacebookPixelProvider>
               </BrowserRouter>
             </TooltipProvider>
-          </SiteSettingsProvider>
-        </WishlistProvider>
-      </CartProvider>
+          </WishlistProvider>
+        </CartProvider>
+      </SiteSettingsProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

@@ -87,7 +87,31 @@ export default function QuickCheckoutModal({
   const price = Number(product.price);
   const subtotal = price * quantity;
   const selectedShippingOption = shippingOptions.find(opt => opt.id === selectedShipping);
-  const shippingFee = selectedShippingOption?.price || 0;
+  
+  // Calculate shipping fee with conditions
+  const calculateShippingFee = () => {
+    if (!selectedShippingOption) return 0;
+    
+    const basePrice = selectedShippingOption.price;
+    
+    // Check free shipping threshold first
+    if (selectedShippingOption.freeShippingThreshold && subtotal >= selectedShippingOption.freeShippingThreshold) {
+      return 0;
+    }
+    
+    // Check discount threshold
+    if (selectedShippingOption.discountThreshold && 
+        selectedShippingOption.discountAmount && 
+        subtotal >= selectedShippingOption.discountThreshold) {
+      return Math.max(0, basePrice - selectedShippingOption.discountAmount);
+    }
+    
+    return basePrice;
+  };
+  
+  const shippingFee = calculateShippingFee();
+  const originalShippingFee = selectedShippingOption?.price || 0;
+  const hasShippingDiscount = shippingFee < originalShippingFee;
   const total = subtotal + shippingFee;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -396,10 +420,27 @@ export default function QuickCheckoutModal({
                   <span className="text-muted-foreground">Subtotal</span>
                   <span>{formatPrice(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
+                <div className="flex justify-between text-sm items-center">
                   <span className="text-muted-foreground">Delivery</span>
-                  <span>{formatPrice(shippingFee)}</span>
+                  <div className="flex items-center gap-2">
+                    {hasShippingDiscount && (
+                      <span className="text-muted-foreground line-through text-xs">
+                        {formatPrice(originalShippingFee)}
+                      </span>
+                    )}
+                    <span className={shippingFee === 0 ? 'text-green-600 font-medium' : ''}>
+                      {shippingFee === 0 ? 'FREE' : formatPrice(shippingFee)}
+                    </span>
+                  </div>
                 </div>
+                {hasShippingDiscount && (
+                  <p className="text-xs text-green-600">
+                    {shippingFee === 0 
+                      ? `🎉 Free shipping on orders over ৳${selectedShippingOption?.freeShippingThreshold}!`
+                      : `💰 You saved ৳${originalShippingFee - shippingFee} on shipping!`
+                    }
+                  </p>
+                )}
                 <div className="flex justify-between font-semibold text-lg pt-2 border-t">
                   <span>Total</span>
                   <span className="text-primary">{formatPrice(total)}</span>

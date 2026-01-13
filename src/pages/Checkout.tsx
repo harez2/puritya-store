@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Check, Printer, Download } from 'lucide-react';
+import { ShoppingBag, Check, Printer, Download, Loader2 } from 'lucide-react';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -187,8 +189,54 @@ export default function Checkout() {
     }
   };
 
+  const invoiceRef = useRef<HTMLDivElement>(null);
+  const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
+
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!invoiceRef.current) return;
+    
+    setIsDownloadingPDF(true);
+    
+    try {
+      // Temporarily show print-only elements for PDF capture
+      const printOnlyElements = invoiceRef.current.querySelectorAll('.hidden.print\\:block');
+      const printHiddenElements = invoiceRef.current.querySelectorAll('.print\\:hidden');
+      
+      printOnlyElements.forEach(el => el.classList.remove('hidden'));
+      printHiddenElements.forEach(el => (el as HTMLElement).style.display = 'none');
+      
+      const canvas = await html2canvas(invoiceRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+      });
+      
+      // Restore hidden elements
+      printOnlyElements.forEach(el => el.classList.add('hidden'));
+      printHiddenElements.forEach(el => (el as HTMLElement).style.display = '');
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+      });
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Puritya-Invoice-${orderNumber}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+    } finally {
+      setIsDownloadingPDF(false);
+    }
   };
 
   if (orderComplete && orderDetails) {
@@ -214,7 +262,7 @@ export default function Checkout() {
             </div>
 
             {/* Invoice Card */}
-            <div className="print-invoice bg-card border border-border rounded-lg overflow-hidden print:border-2">
+            <div ref={invoiceRef} className="print-invoice bg-card border border-border rounded-lg overflow-hidden print:border-2">
               {/* Company Branding - Print Only */}
               <div className="hidden print:block px-6 py-6 border-b border-border text-center">
                 <h1 className="font-display text-3xl font-bold tracking-tight">Puritya</h1>
@@ -237,6 +285,14 @@ export default function Checkout() {
                   <Button variant="outline" size="sm" onClick={handlePrint}>
                     <Printer className="h-4 w-4 mr-1" />
                     Print
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} disabled={isDownloadingPDF}>
+                    {isDownloadingPDF ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-1" />
+                    )}
+                    PDF
                   </Button>
                 </div>
               </div>

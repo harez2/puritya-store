@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,9 +9,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { useSiteSettings, SiteSettings } from '@/contexts/SiteSettingsContext';
+import { useSiteSettings, SiteSettings, MenuItem } from '@/contexts/SiteSettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
+import { MenuEditor } from '@/components/admin/MenuEditor';
 
 interface HSLColor {
   h: number;
@@ -195,7 +196,7 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs defaultValue="branding" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 gap-2">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -203,6 +204,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="theme" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               <span className="hidden sm:inline">Theme</span>
+            </TabsTrigger>
+            <TabsTrigger value="menus" className="flex items-center gap-2">
+              <Menu className="h-4 w-4" />
+              <span className="hidden sm:inline">Menus</span>
             </TabsTrigger>
             <TabsTrigger value="hero" className="flex items-center gap-2">
               <Image className="h-4 w-4" />
@@ -542,6 +547,65 @@ export default function AdminCustomization() {
                     placeholder="Your slogan or location info"
                   />
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Menus Tab */}
+          <TabsContent value="menus" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Header Navigation</CardTitle>
+                <CardDescription>Customize the main navigation menu. Drag items to reorder.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.header_menu}
+                  onChange={(items) => handleChange('header_menu', items)}
+                  maxItems={8}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - Shop Links</CardTitle>
+                <CardDescription>Links displayed under "Shop" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_shop_menu}
+                  onChange={(items) => handleChange('footer_shop_menu', items)}
+                  maxItems={6}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - Help Links</CardTitle>
+                <CardDescription>Links displayed under "Help" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_help_menu}
+                  onChange={(items) => handleChange('footer_help_menu', items)}
+                  maxItems={6}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - About Links</CardTitle>
+                <CardDescription>Links displayed under "About" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_about_menu}
+                  onChange={(items) => handleChange('footer_about_menu', items)}
+                  maxItems={6}
+                />
               </CardContent>
             </Card>
           </TabsContent>

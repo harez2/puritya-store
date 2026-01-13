@@ -237,11 +237,13 @@ export type Database = {
           id: string
           images: string[] | null
           in_stock: boolean | null
+          low_stock_threshold: number
           name: string
           new_arrival: boolean | null
           price: number
           sizes: string[] | null
           slug: string
+          stock_quantity: number
           updated_at: string
         }
         Insert: {
@@ -254,11 +256,13 @@ export type Database = {
           id?: string
           images?: string[] | null
           in_stock?: boolean | null
+          low_stock_threshold?: number
           name: string
           new_arrival?: boolean | null
           price: number
           sizes?: string[] | null
           slug: string
+          stock_quantity?: number
           updated_at?: string
         }
         Update: {
@@ -271,11 +275,13 @@ export type Database = {
           id?: string
           images?: string[] | null
           in_stock?: boolean | null
+          low_stock_threshold?: number
           name?: string
           new_arrival?: boolean | null
           price?: number
           sizes?: string[] | null
           slug?: string
+          stock_quantity?: number
           updated_at?: string
         }
         Relationships: [

@@ -56,6 +56,8 @@ interface Product {
   featured: boolean | null;
   new_arrival: boolean | null;
   category_id: string | null;
+  stock_quantity: number;
+  low_stock_threshold: number;
   created_at: string;
 }
 
@@ -77,6 +79,8 @@ const initialProductForm = {
   featured: false,
   new_arrival: false,
   category_id: '',
+  stock_quantity: 0,
+  low_stock_threshold: 5,
 };
 
 export default function AdminProducts() {
@@ -156,6 +160,8 @@ export default function AdminProducts() {
         featured: product.featured ?? false,
         new_arrival: product.new_arrival ?? false,
         category_id: product.category_id || '',
+        stock_quantity: product.stock_quantity ?? 0,
+        low_stock_threshold: product.low_stock_threshold ?? 5,
       });
     } else {
       setEditingProduct(null);
@@ -195,6 +201,8 @@ export default function AdminProducts() {
         featured: formData.featured,
         new_arrival: formData.new_arrival,
         category_id: formData.category_id || null,
+        stock_quantity: formData.stock_quantity,
+        low_stock_threshold: formData.low_stock_threshold,
       };
 
       if (editingProduct) {
@@ -294,6 +302,7 @@ export default function AdminProducts() {
                     <tr className="border-b">
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stock</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Price</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
                     </tr>
@@ -328,6 +337,20 @@ export default function AdminProducts() {
                           }`}>
                             {product.in_stock ? 'In Stock' : 'Out of Stock'}
                           </span>
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className={`font-medium ${
+                              product.stock_quantity <= product.low_stock_threshold
+                                ? 'text-destructive'
+                                : ''
+                            }`}>
+                              {product.stock_quantity}
+                            </span>
+                            {product.stock_quantity <= product.low_stock_threshold && product.stock_quantity > 0 && (
+                              <span className="text-xs text-destructive">Low Stock</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <div>
@@ -480,6 +503,29 @@ export default function AdminProducts() {
                   value={formData.colors}
                   onChange={(e) => setFormData({ ...formData, colors: e.target.value })}
                   placeholder="Red, Blue, Green"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="stock_quantity">Stock Quantity</Label>
+                <Input
+                  id="stock_quantity"
+                  type="number"
+                  value={formData.stock_quantity}
+                  onChange={(e) => setFormData({ ...formData, stock_quantity: Number(e.target.value) })}
+                  min={0}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="low_stock_threshold">Low Stock Threshold</Label>
+                <Input
+                  id="low_stock_threshold"
+                  type="number"
+                  value={formData.low_stock_threshold}
+                  onChange={(e) => setFormData({ ...formData, low_stock_threshold: Number(e.target.value) })}
+                  min={0}
                 />
               </div>
             </div>

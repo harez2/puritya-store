@@ -9,6 +9,7 @@ import ProductCard from '@/components/products/ProductCard';
 import { supabase, Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { formatPrice, cn } from '@/lib/utils';
 
 export default function ProductDetail() {
@@ -16,6 +17,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
+  const { recentlyViewed, addProduct: addToRecentlyViewed, refresh: refreshRecentlyViewed } = useRecentlyViewed();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,12 @@ export default function ProductDetail() {
         if (data?.sizes?.length) setSelectedSize(data.sizes[0]);
         if (data?.colors?.length) setSelectedColor(data.colors[0]);
         
+        // Add to recently viewed
+        if (data?.id) {
+          addToRecentlyViewed(data.id);
+          refreshRecentlyViewed();
+        }
+        
         // Fetch related products from same category
         if (data?.category_id) {
           const { data: related } = await supabase
@@ -56,7 +64,7 @@ export default function ProductDetail() {
       }
     }
     fetchProduct();
-  }, [slug]);
+  }, [slug, addToRecentlyViewed, refreshRecentlyViewed]);
 
   const handleAddToCart = async () => {
     if (!product) return;
@@ -280,6 +288,21 @@ export default function ProductDetail() {
               {relatedProducts.map((relatedProduct, index) => (
                 <ProductCard key={relatedProduct.id} product={relatedProduct} index={index} />
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* Recently Viewed Products */}
+        {recentlyViewed.filter(p => p.id !== product?.id).length > 0 && (
+          <section className="mt-16">
+            <h2 className="font-display text-2xl mb-8">Recently Viewed</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {recentlyViewed
+                .filter(p => p.id !== product?.id)
+                .slice(0, 4)
+                .map((viewedProduct, index) => (
+                  <ProductCard key={viewedProduct.id} product={viewedProduct} index={index} />
+                ))}
             </div>
           </section>
         )}

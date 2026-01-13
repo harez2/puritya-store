@@ -18,7 +18,8 @@ import {
   Code,
   FileCode2,
   Facebook,
-  ChevronDown
+  ChevronDown,
+  Star
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -53,6 +54,7 @@ const mainNavItems = [
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
+  { title: 'Reviews', url: '/admin/reviews', icon: Star },
 ];
 
 const customizationSubItems = [

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
+import ProductReviews from '@/components/products/ProductReviews';
 import { supabase, Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
@@ -280,6 +281,9 @@ export default function ProductDetail() {
             </div>
           </motion.div>
         </div>
+        {/* Product Reviews */}
+        <ProductReviews productId={product.id} />
+
         {/* Related Products */}
         {relatedProducts.length > 0 && (
           <section className="mt-16">

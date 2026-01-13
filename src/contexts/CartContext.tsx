@@ -2,6 +2,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useAuth } from './AuthContext';
 import { supabase, CartItem, Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteSettings } from './SiteSettingsContext';
+import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 
 export type CartItemWithProduct = {
   id: string;
@@ -35,8 +37,29 @@ const GUEST_CART_KEY = 'puritya_guest_cart';
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings } = useSiteSettings();
   const [items, setItems] = useState<CartItemWithProduct[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Facebook tracking helper
+  const trackAddToCart = (product: Product, quantity: number) => {
+    if (settings.facebook_pixel_id) {
+      trackFacebookEvent(
+        settings.facebook_pixel_id,
+        settings.facebook_capi_enabled,
+        settings.facebook_access_token || '',
+        FacebookEvents.AddToCart,
+        {
+          content_ids: [product.id],
+          content_name: product.name,
+          content_type: 'product',
+          value: Number(product.price) * quantity,
+          currency: 'BDT',
+          num_items: quantity,
+        }
+      );
+    }
+  };
 
   // Load guest cart from localStorage
   const loadGuestCart = async () => {
@@ -170,6 +193,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         setItems(currentItems);
         saveGuestCart(currentItems);
 
+        // Track AddToCart event
+        if (product) {
+          trackAddToCart(product as Product, quantity);
+        }
+
         toast({
           title: "Added to cart",
           description: "Item has been added to your cart.",
@@ -189,6 +217,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (existingItem) {
         await updateQuantity(existingItem.id, existingItem.quantity + quantity);
       } else {
+        // Fetch product details for tracking
+        const { data: product } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single();
+
         const { error } = await supabase.from('cart_items').insert({
           user_id: user.id,
           product_id: productId,
@@ -199,6 +234,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error;
         await fetchCart();
+
+        // Track AddToCart event
+        if (product) {
+          trackAddToCart(product as Product, quantity);
+        }
       }
 
       toast({

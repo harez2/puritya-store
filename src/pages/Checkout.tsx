@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { ShoppingBag, Check } from 'lucide-react';
+import { ShoppingBag, Check, Printer, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +32,20 @@ export default function Checkout() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
+  const [orderDetails, setOrderDetails] = useState<{
+    items: typeof items;
+    subtotal: number;
+    shippingFee: number;
+    total: number;
+    shippingAddress: {
+      full_name: string;
+      phone: string;
+      address: string;
+      location: string;
+    };
+    paymentMethod: string;
+    orderDate: string;
+  } | null>(null);
   
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
@@ -92,6 +106,26 @@ export default function Checkout() {
       // Generate order number
       const orderNum = 'PUR-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
 
+      // Store order details for confirmation page before clearing cart
+      const savedOrderDetails = {
+        items: [...items],
+        subtotal,
+        shippingFee,
+        total,
+        shippingAddress: {
+          full_name: form.full_name.trim(),
+          phone: form.phone.trim(),
+          address: form.address.trim(),
+          location: shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
+        },
+        paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad',
+        orderDate: new Date().toLocaleString('en-BD', { 
+          dateStyle: 'long', 
+          timeStyle: 'short',
+          timeZone: 'Asia/Dhaka'
+        }),
+      };
+
       if (user) {
         // Logged-in user: save to database
         const { data: order, error: orderError } = await supabase
@@ -137,6 +171,7 @@ export default function Checkout() {
         setOrderNumber(orderNum);
       }
 
+      setOrderDetails(savedOrderDetails);
       await clearCart();
       setOrderComplete(true);
 
@@ -152,35 +187,146 @@ export default function Checkout() {
     }
   };
 
-  if (orderComplete) {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  if (orderComplete && orderDetails) {
     return (
       <Layout>
-        <div className="container mx-auto px-4 py-20 text-center">
+        <div className="container mx-auto px-4 py-12 max-w-3xl">
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="print:shadow-none"
           >
-            <Check className="h-10 w-10 text-green-600" />
-          </motion.div>
-          <h1 className="font-display text-3xl mb-4">Order Confirmed!</h1>
-          <p className="text-muted-foreground mb-2">Thank you for shopping with Puritya</p>
-          <p className="text-lg font-medium mb-8">Order Number: {orderNumber}</p>
-          {!user && (
-            <p className="text-sm text-muted-foreground mb-6">
-              Create an account to track your orders and enjoy faster checkout next time.
-            </p>
-          )}
-          <div className="flex gap-4 justify-center">
-            <Button asChild>
-              <Link to="/shop">Continue Shopping</Link>
-            </Button>
+            {/* Success Header */}
+            <div className="text-center mb-8 print:mb-4">
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
+              >
+                <Check className="h-8 w-8 text-green-600" />
+              </motion.div>
+              <h1 className="font-display text-3xl mb-2">Order Confirmed!</h1>
+              <p className="text-muted-foreground">Thank you for shopping with Puritya</p>
+            </div>
+
+            {/* Invoice Card */}
+            <div className="bg-card border border-border rounded-lg overflow-hidden print:border-2">
+              {/* Invoice Header */}
+              <div className="bg-primary/5 px-6 py-4 border-b border-border flex justify-between items-start">
+                <div>
+                  <h2 className="font-display text-xl font-semibold">Order Invoice</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Order #: {orderNumber}</p>
+                  <p className="text-sm text-muted-foreground">Date: {orderDetails.orderDate}</p>
+                </div>
+                <div className="print:hidden flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handlePrint}>
+                    <Printer className="h-4 w-4 mr-1" />
+                    Print
+                  </Button>
+                </div>
+              </div>
+
+              {/* Customer & Shipping Info */}
+              <div className="grid md:grid-cols-2 gap-6 p-6 border-b border-border">
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">Shipping To</h3>
+                  <p className="font-medium">{orderDetails.shippingAddress.full_name}</p>
+                  <p className="text-sm text-muted-foreground">{orderDetails.shippingAddress.phone}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{orderDetails.shippingAddress.address}</p>
+                  <p className="text-sm text-muted-foreground">{orderDetails.shippingAddress.location}</p>
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-2">Payment Method</h3>
+                  <p className="font-medium">{orderDetails.paymentMethod}</p>
+                  <p className="text-sm text-muted-foreground mt-1">Status: Pending</p>
+                </div>
+              </div>
+
+              {/* Order Items Table */}
+              <div className="p-6 border-b border-border">
+                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide mb-4">Order Items</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-2 font-medium">Product</th>
+                        <th className="text-center py-2 font-medium">Qty</th>
+                        <th className="text-right py-2 font-medium">Price</th>
+                        <th className="text-right py-2 font-medium">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {orderDetails.items.map((item, index) => (
+                        <tr key={index} className="border-b border-border/50">
+                          <td className="py-3">
+                            <div className="flex gap-3 items-center">
+                              <div className="w-12 h-12 bg-secondary rounded overflow-hidden flex-shrink-0 print:hidden">
+                                {item.product?.images?.[0] && (
+                                  <img src={item.product.images[0]} alt="" className="w-full h-full object-cover" />
+                                )}
+                              </div>
+                              <div>
+                                <p className="font-medium">{item.product?.name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {item.size && `Size: ${item.size}`} {item.color && `• ${item.color}`}
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 text-center">{item.quantity}</td>
+                          <td className="py-3 text-right">{formatPrice(Number(item.product?.price))}</td>
+                          <td className="py-3 text-right font-medium">{formatPrice(Number(item.product?.price) * item.quantity)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div className="p-6">
+                <div className="flex justify-end">
+                  <div className="w-full max-w-xs space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span>{formatPrice(orderDetails.subtotal)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Delivery ({orderDetails.shippingAddress.location})</span>
+                      <span>{formatPrice(orderDetails.shippingFee)}</span>
+                    </div>
+                    <div className="border-t border-border pt-2 flex justify-between font-semibold text-lg">
+                      <span>Total</span>
+                      <span className="text-primary">{formatPrice(orderDetails.total)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Guest CTA */}
             {!user && (
-              <Button variant="outline" asChild>
-                <Link to="/auth">Create Account</Link>
-              </Button>
+              <p className="text-sm text-muted-foreground text-center mt-6 print:hidden">
+                Create an account to track your orders and enjoy faster checkout next time.
+              </p>
             )}
-          </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-4 justify-center mt-8 print:hidden">
+              <Button asChild>
+                <Link to="/shop">Continue Shopping</Link>
+              </Button>
+              {!user && (
+                <Button variant="outline" asChild>
+                  <Link to="/auth">Create Account</Link>
+                </Button>
+              )}
+            </div>
+          </motion.div>
         </div>
       </Layout>
     );

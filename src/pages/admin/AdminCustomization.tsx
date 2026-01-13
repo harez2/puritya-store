@@ -15,6 +15,7 @@ import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
 import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
 import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
+import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
 
 interface HSLColor {
   h: number;
@@ -163,6 +164,32 @@ export default function AdminCustomization() {
   const handleReset = () => {
     setLocalSettings(settings);
     setHasChanges(false);
+  };
+
+  const handleApplyPreset = (preset: ThemePreset) => {
+    setLocalSettings((prev) => ({
+      ...prev,
+      primary_color: preset.colors.primary,
+      secondary_color: preset.colors.secondary,
+      accent_color: preset.colors.accent,
+      background_color: preset.colors.background,
+      heading_font: preset.fonts.heading,
+      body_font: preset.fonts.body,
+    }));
+    toast({
+      title: 'Preset applied',
+      description: `"${preset.name}" theme applied. Save to keep changes.`,
+    });
+  };
+
+  const getCurrentPresetId = (): string | undefined => {
+    return THEME_PRESETS.find((preset) => 
+      preset.colors.primary.h === localSettings.primary_color.h &&
+      preset.colors.primary.s === localSettings.primary_color.s &&
+      preset.colors.primary.l === localSettings.primary_color.l &&
+      preset.fonts.heading === localSettings.heading_font &&
+      preset.fonts.body === localSettings.body_font
+    )?.id;
   };
 
   if (loading) {
@@ -564,8 +591,21 @@ export default function AdminCustomization() {
           <TabsContent value="theme" className="space-y-6">
             <Card>
               <CardHeader>
+                <CardTitle>Theme Presets</CardTitle>
+                <CardDescription>Quick-start with a professionally designed color and font combination</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ThemePresets
+                  currentPreset={getCurrentPresetId()}
+                  onApply={handleApplyPreset}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
                 <CardTitle>Color Scheme</CardTitle>
-                <CardDescription>Customize your store's color palette</CardDescription>
+                <CardDescription>Fine-tune your store's color palette</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-8 md:grid-cols-2">
                 <ColorPicker
@@ -598,7 +638,7 @@ export default function AdminCustomization() {
               </CardHeader>
               <CardContent>
                 <div className="rounded-lg border p-6 space-y-4" style={{ backgroundColor: `hsl(${localSettings.background_color.h}, ${localSettings.background_color.s}%, ${localSettings.background_color.l}%)` }}>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <div
                       className="px-4 py-2 rounded-md text-white font-medium"
                       style={{ backgroundColor: `hsl(${localSettings.primary_color.h}, ${localSettings.primary_color.s}%, ${localSettings.primary_color.l}%)` }}
@@ -618,8 +658,14 @@ export default function AdminCustomization() {
                       Accent
                     </div>
                   </div>
-                  <p className="text-sm" style={{ color: `hsl(${localSettings.primary_color.h}, ${localSettings.primary_color.s}%, ${localSettings.primary_color.l}%)` }}>
-                    This is how text in your primary color will look.
+                  <p 
+                    className="text-sm font-medium"
+                    style={{ 
+                      color: `hsl(${localSettings.primary_color.h}, ${localSettings.primary_color.s}%, ${localSettings.primary_color.l}%)`,
+                      fontFamily: `"${localSettings.heading_font}", serif`
+                    }}
+                  >
+                    {localSettings.store_name} — {localSettings.heading_font} + {localSettings.body_font}
                   </p>
                 </div>
               </CardContent>

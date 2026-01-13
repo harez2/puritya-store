@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Info } from 'lucide-react';
+import { useState } from 'react';
+import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Key, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,19 +11,23 @@ import { Button } from '@/components/ui/button';
 interface FacebookPixelSetupProps {
   pixelId: string;
   capiEnabled: boolean;
+  accessToken: string;
   onPixelIdChange: (value: string) => void;
   onCapiEnabledChange: (value: boolean) => void;
-  hasAccessToken: boolean;
+  onAccessTokenChange: (value: string) => void;
 }
 
 export function FacebookPixelSetup({
   pixelId,
   capiEnabled,
+  accessToken,
   onPixelIdChange,
   onCapiEnabledChange,
-  hasAccessToken,
+  onAccessTokenChange,
 }: FacebookPixelSetupProps) {
+  const [showToken, setShowToken] = useState(false);
   const isPixelConfigured = pixelId.trim().length > 0;
+  const hasAccessToken = accessToken.trim().length > 0;
   const isCapiReady = isPixelConfigured && hasAccessToken;
 
   return (
@@ -145,13 +149,58 @@ export function FacebookPixelSetup({
             />
           </div>
 
+          {capiEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="access-token">
+                <div className="flex items-center gap-2">
+                  <Key className="h-4 w-4" />
+                  Access Token
+                </div>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="access-token"
+                  type={showToken ? 'text' : 'password'}
+                  value={accessToken}
+                  onChange={(e) => onAccessTokenChange(e.target.value.trim())}
+                  placeholder="Enter your Conversions API Access Token"
+                  className="font-mono pr-10"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowToken(!showToken)}
+                >
+                  {showToken ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Generate your access token in{' '}
+                <a
+                  href="https://business.facebook.com/events_manager"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Facebook Events Manager → Settings → Conversions API
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </p>
+            </div>
+          )}
+
           {capiEnabled && !hasAccessToken && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Access Token Required</AlertTitle>
               <AlertDescription>
-                To use the Conversions API, you need to add your Facebook Access Token. 
-                Generate one in Facebook Events Manager under Settings → Conversions API → Generate Access Token.
+                Enter your Conversions API access token above to enable server-side event tracking.
               </AlertDescription>
             </Alert>
           )}
@@ -159,7 +208,7 @@ export function FacebookPixelSetup({
           {capiEnabled && hasAccessToken && (
             <Alert>
               <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Conversions API Active</AlertTitle>
+              <AlertTitle>Conversions API Ready</AlertTitle>
               <AlertDescription>
                 Server-side events will be sent alongside browser events for improved tracking accuracy 
                 and iOS 14+ compatibility. Events are deduplicated using event IDs.

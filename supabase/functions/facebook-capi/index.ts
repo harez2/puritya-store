@@ -42,17 +42,18 @@ serve(async (req) => {
   }
 
   try {
-    const accessToken = Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
+    const { pixel_id, event_data, access_token } = await req.json();
+
+    // Use provided access token or fall back to secret
+    const accessToken = access_token || Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
     
     if (!accessToken) {
-      console.error("FACEBOOK_CAPI_ACCESS_TOKEN not configured");
+      console.error("Facebook access token not provided");
       return new Response(
-        JSON.stringify({ error: "Facebook CAPI not configured" }),
-        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ error: "Facebook access token not configured" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const { pixel_id, event_data } = await req.json();
 
     if (!pixel_id || !event_data) {
       return new Response(

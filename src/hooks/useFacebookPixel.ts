@@ -20,15 +20,16 @@ export function useFacebookPixel() {
       window.fbq('track', 'PageView');
       
       // Also send server event if CAPI enabled
-      if (settings.facebook_capi_enabled) {
+      if (settings.facebook_capi_enabled && settings.facebook_access_token) {
         trackFacebookEvent(
           settings.facebook_pixel_id,
           settings.facebook_capi_enabled,
+          settings.facebook_access_token,
           FacebookEvents.PageView
         );
       }
     }
-  }, [location.pathname, settings.facebook_pixel_id, settings.facebook_capi_enabled]);
+  }, [location.pathname, settings.facebook_pixel_id, settings.facebook_capi_enabled, settings.facebook_access_token]);
 }
 
 // Hook to get tracking function with current settings
@@ -50,6 +51,7 @@ export function useFacebookTracking() {
       trackFacebookEvent(
         settings.facebook_pixel_id,
         settings.facebook_capi_enabled,
+        settings.facebook_access_token || '',
         eventName,
         customData,
         userData

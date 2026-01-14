@@ -19,7 +19,8 @@ import {
   FileCode2,
   Facebook,
   ChevronDown,
-  Star
+  Star,
+  UserCog
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,7 @@ const mainNavItems = [
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
+  { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];
 
 const customizationSubItems = [

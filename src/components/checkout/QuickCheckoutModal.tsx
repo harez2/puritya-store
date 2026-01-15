@@ -259,11 +259,12 @@ export default function QuickCheckoutModal({
         title: "Order Placed!",
         description: `Order ${savedOrderDetails.orderNumber} confirmed.`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing order:', error);
+      const errorMessage = error?.message || error?.details || "There was an error placing your order. Please try again.";
       toast({
         title: "Order Failed",
-        description: "There was an error placing your order. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

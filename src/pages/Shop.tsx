@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Filter, X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import Layout from '@/components/layout/Layout';
+import PageBreadcrumb, { type BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import ProductCard from '@/components/products/ProductCard';
 import { supabase, Product, Category } from '@/lib/supabase';
 
@@ -65,9 +66,24 @@ export default function Shop() {
     }
   });
 
+  const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
+    const items: BreadcrumbItemType[] = [{ label: 'Shop', href: '/shop' }];
+    if (categoryFilter) {
+      const category = categories.find(c => c.slug === categoryFilter);
+      if (category) items.push({ label: category.name });
+    } else if (filter === 'new') {
+      items.push({ label: 'New Arrivals' });
+    } else if (searchQuery) {
+      items.push({ label: `Search: "${searchQuery}"` });
+    }
+    return items;
+  }, [categoryFilter, categories, filter, searchQuery]);
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
+        <PageBreadcrumb items={breadcrumbItems} className="mb-6" />
+        
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

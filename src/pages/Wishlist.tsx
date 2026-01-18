@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
+import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import ProductCard from '@/components/products/ProductCard';
 import { useWishlist } from '@/contexts/WishlistContext';
 
@@ -11,7 +12,8 @@ export default function Wishlist() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
+        <PageBreadcrumb items={[{ label: 'Wishlist' }]} className="mb-6" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-display text-4xl mb-8">My Wishlist</h1>
 

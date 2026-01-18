@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import Layout from '@/components/layout/Layout';
+import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import { useCart } from '@/contexts/CartContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
@@ -415,7 +416,8 @@ export default function Checkout() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
+        <PageBreadcrumb items={[{ label: 'Cart', href: '/shop' }, { label: 'Checkout' }]} className="mb-6" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-display text-4xl mb-2">Checkout</h1>
           {isGuestCart && (

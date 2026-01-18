@@ -32,6 +32,17 @@ export default function ProductDetail() {
   const [buyingNow, setBuyingNow] = useState(false);
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
 
+  // Must call useMemo before any early returns to follow Rules of Hooks
+  const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
+    if (!product) return [{ label: 'Shop', href: '/shop' }];
+    const items: BreadcrumbItemType[] = [{ label: 'Shop', href: '/shop' }];
+    if (product.category) {
+      items.push({ label: product.category.name, href: `/shop?category=${product.category.slug}` });
+    }
+    items.push({ label: product.name });
+    return items;
+  }, [product]);
+
   useEffect(() => {
     async function fetchProduct() {
       if (!slug) return;
@@ -115,14 +126,6 @@ export default function ProductDetail() {
     ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
     : 0;
 
-  const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
-    const items: BreadcrumbItemType[] = [{ label: 'Shop', href: '/shop' }];
-    if (product.category) {
-      items.push({ label: product.category.name, href: `/shop?category=${product.category.slug}` });
-    }
-    items.push({ label: product.name });
-    return items;
-  }, [product]);
 
   return (
     <Layout>

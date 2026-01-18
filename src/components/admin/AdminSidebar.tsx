@@ -20,7 +20,8 @@ import {
   Facebook,
   ChevronDown,
   Star,
-  UserCog
+  UserCog,
+  FileText
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -55,6 +56,7 @@ const mainNavItems = [
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
+  { title: 'Blog', url: '/admin/blogs', icon: FileText },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];

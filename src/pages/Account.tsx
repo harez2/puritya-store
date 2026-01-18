@@ -5,6 +5,7 @@ import { User, Package, Heart, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import Layout from '@/components/layout/Layout';
+import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function Account() {
@@ -28,7 +29,8 @@ export default function Account() {
 
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-12">
+      <div className="container mx-auto px-4 py-8">
+        <PageBreadcrumb items={[{ label: 'My Account' }]} className="mb-6" />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
           <h1 className="font-display text-4xl mb-8">My Account</h1>
           

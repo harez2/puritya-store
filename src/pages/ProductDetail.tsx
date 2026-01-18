@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, ShoppingBag, ChevronLeft, Zap } from 'lucide-react';
+import { Heart, Minus, Plus, ShoppingBag, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
+import PageBreadcrumb, { type BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import ProductCard from '@/components/products/ProductCard';
 import ProductReviews from '@/components/products/ProductReviews';
 import QuickCheckoutModal from '@/components/checkout/QuickCheckoutModal';
@@ -114,12 +115,19 @@ export default function ProductDetail() {
     ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
     : 0;
 
+  const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
+    const items: BreadcrumbItemType[] = [{ label: 'Shop', href: '/shop' }];
+    if (product.category) {
+      items.push({ label: product.category.name, href: `/shop?category=${product.category.slug}` });
+    }
+    items.push({ label: product.name });
+    return items;
+  }, [product]);
+
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <Link to="/shop" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-8">
-          <ChevronLeft className="h-4 w-4 mr-1" /> Back to Shop
-        </Link>
+        <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
 
         <div className="grid md:grid-cols-2 gap-12">
           {/* Images */}

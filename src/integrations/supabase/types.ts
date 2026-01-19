@@ -59,9 +59,34 @@ export type Database = {
         }
         Relationships: []
       }
+      blog_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          slug: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+        }
+        Relationships: []
+      }
       blogs: {
         Row: {
           author_id: string
+          category_id: string | null
           content: string
           created_at: string
           excerpt: string | null
@@ -75,6 +100,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          category_id?: string | null
           content: string
           created_at?: string
           excerpt?: string | null
@@ -88,6 +114,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          category_id?: string | null
           content?: string
           created_at?: string
           excerpt?: string | null
@@ -99,7 +126,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "blogs_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "blog_categories"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cart_items: {
         Row: {

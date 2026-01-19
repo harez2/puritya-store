@@ -56,7 +56,8 @@ const mainNavItems = [
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
-  { title: 'Blog', url: '/admin/blogs', icon: FileText },
+  { title: 'Blog Posts', url: '/admin/blogs', icon: FileText },
+  { title: 'Blog Categories', url: '/admin/blog-categories', icon: Tags },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];

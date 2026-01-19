@@ -27,6 +27,7 @@ import AdminCustomization from "./pages/admin/AdminCustomization";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminRoles from "./pages/admin/AdminRoles";
 import AdminBlogs from "./pages/admin/AdminBlogs";
+import AdminBlogCategories from "./pages/admin/AdminBlogCategories";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 
@@ -63,6 +64,7 @@ const App = () => (
                       <Route path="/admin/reviews" element={<AdminReviews />} />
                       <Route path="/admin/roles" element={<AdminRoles />} />
                       <Route path="/admin/blogs" element={<AdminBlogs />} />
+                      <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
                       <Route path="/admin/customization" element={<AdminCustomization />} />
                       <Route path="/admin/settings" element={<AdminSettings />} />
                       <Route path="*" element={<NotFound />} />

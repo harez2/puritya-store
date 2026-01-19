@@ -9,6 +9,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
   Table,
   TableBody,
   TableCell,
@@ -40,6 +47,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 
+type BlogCategory = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 type Blog = {
   id: string;
   title: string;
@@ -52,6 +65,8 @@ type Blog = {
   published_at: string | null;
   created_at: string;
   updated_at: string;
+  category_id: string | null;
+  blog_categories: BlogCategory | null;
 };
 
 const generateSlug = (title: string) => {
@@ -64,8 +79,10 @@ const generateSlug = (title: string) => {
 export default function AdminBlogs() {
   const { user } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
@@ -78,27 +95,39 @@ export default function AdminBlogs() {
     content: '',
     featured_image: '',
     published: false,
+    category_id: '',
   });
 
   useEffect(() => {
-    fetchBlogs();
+    fetchData();
   }, []);
 
-  async function fetchBlogs() {
-    const { data, error } = await supabase
-      .from('blogs')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async function fetchData() {
+    const [blogsRes, categoriesRes] = await Promise.all([
+      supabase
+        .from('blogs')
+        .select('*, blog_categories(id, name, slug)')
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('blog_categories')
+        .select('id, name, slug')
+        .order('name', { ascending: true }),
+    ]);
 
-    if (!error && data) {
-      setBlogs(data);
+    if (!blogsRes.error && blogsRes.data) {
+      setBlogs(blogsRes.data);
+    }
+    if (!categoriesRes.error && categoriesRes.data) {
+      setCategories(categoriesRes.data);
     }
     setLoading(false);
   }
 
-  const filteredBlogs = blogs.filter(blog =>
-    blog.title.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredBlogs = blogs.filter(blog => {
+    const matchesSearch = blog.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || blog.category_id === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
 
   const handleTitleChange = (title: string) => {
     setFormData(prev => ({
@@ -117,6 +146,7 @@ export default function AdminBlogs() {
       content: '',
       featured_image: '',
       published: false,
+      category_id: '',
     });
     setIsDialogOpen(true);
   };
@@ -130,6 +160,7 @@ export default function AdminBlogs() {
       content: blog.content,
       featured_image: blog.featured_image || '',
       published: blog.published,
+      category_id: blog.category_id || '',
     });
     setIsDialogOpen(true);
   };
@@ -157,6 +188,7 @@ export default function AdminBlogs() {
         published: formData.published,
         published_at: formData.published ? new Date().toISOString() : null,
         author_id: user?.id,
+        category_id: formData.category_id || null,
       };
 
       if (selectedBlog) {
@@ -177,7 +209,7 @@ export default function AdminBlogs() {
       }
 
       setIsDialogOpen(false);
-      fetchBlogs();
+      fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to save blog post');
     } finally {
@@ -197,7 +229,7 @@ export default function AdminBlogs() {
       if (error) throw error;
       toast.success('Blog post deleted');
       setIsDeleteDialogOpen(false);
-      fetchBlogs();
+      fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete blog post');
     }
@@ -215,7 +247,7 @@ export default function AdminBlogs() {
 
       if (error) throw error;
       toast.success(blog.published ? 'Blog unpublished' : 'Blog published');
-      fetchBlogs();
+      fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update blog');
     }
@@ -245,6 +277,17 @@ export default function AdminBlogs() {
               className="pl-9"
             />
           </div>
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="border rounded-lg">
@@ -252,6 +295,7 @@ export default function AdminBlogs() {
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
+                <TableHead>Category</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Published</TableHead>
                 <TableHead>Created</TableHead>
@@ -261,13 +305,13 @@ export default function AdminBlogs() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8">
+                  <TableCell colSpan={6} className="text-center py-8">
                     Loading...
                   </TableCell>
                 </TableRow>
               ) : filteredBlogs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                     No blog posts found
                   </TableCell>
                 </TableRow>
@@ -288,6 +332,13 @@ export default function AdminBlogs() {
                           <div className="text-sm text-muted-foreground">/{blog.slug}</div>
                         </div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {blog.blog_categories ? (
+                        <Badge variant="outline">{blog.blog_categories.name}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={blog.published ? 'default' : 'secondary'}>
@@ -391,6 +442,23 @@ export default function AdminBlogs() {
                 onImageChange={(url) => setFormData(prev => ({ ...prev, featured_image: url || '' }))}
                 folder="blogs"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Select
+                value={formData.category_id}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">

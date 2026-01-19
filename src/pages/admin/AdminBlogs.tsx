@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import {
   Table,
   TableBody,
@@ -393,17 +394,12 @@ export default function AdminBlogs() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="content">Content *</Label>
-              <Textarea
-                id="content"
-                value={formData.content}
-                onChange={(e) => setFormData(prev => ({ ...prev, content: e.target.value }))}
-                placeholder="Write your blog content here... (HTML supported)"
-                rows={12}
+              <Label>Content *</Label>
+              <RichTextEditor
+                content={formData.content}
+                onChange={(content) => setFormData(prev => ({ ...prev, content }))}
+                placeholder="Write your blog content here..."
               />
-              <p className="text-sm text-muted-foreground">
-                HTML is supported for formatting (headings, paragraphs, lists, etc.)
-              </p>
             </div>
 
             <div className="flex items-center gap-2">

@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
 import { Calendar, ArrowLeft } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
@@ -7,6 +8,8 @@ import PageBreadcrumb, { BreadcrumbItemType } from '@/components/layout/PageBrea
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+
+const SITE_URL = 'https://puritya-store.lovable.app';
 
 type Blog = {
   id: string;
@@ -90,8 +93,37 @@ export default function BlogDetail() {
     );
   }
 
+  // Strip HTML tags for meta description
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
+  const metaDescription = blog.excerpt || stripHtml(blog.content).substring(0, 160);
+  const canonicalUrl = `${SITE_URL}/blog/${blog.slug}`;
+
   return (
     <Layout>
+      <Helmet>
+        <title>{blog.title} | Puritya Store Blog</title>
+        <meta name="description" content={metaDescription} />
+        <link rel="canonical" href={canonicalUrl} />
+        
+        {/* Open Graph */}
+        <meta property="og:type" content="article" />
+        <meta property="og:title" content={blog.title} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:url" content={canonicalUrl} />
+        {blog.featured_image && <meta property="og:image" content={blog.featured_image} />}
+        <meta property="article:published_time" content={blog.published_at || blog.created_at} />
+        
+        {/* Twitter Card */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={blog.title} />
+        <meta name="twitter:description" content={metaDescription} />
+        {blog.featured_image && <meta name="twitter:image" content={blog.featured_image} />}
+      </Helmet>
+
       <article className="container mx-auto px-4 py-8 max-w-4xl">
         <PageBreadcrumb items={breadcrumbItems} />
 

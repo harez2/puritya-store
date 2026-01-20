@@ -20,11 +20,23 @@ type Blog = {
   featured_image: string | null;
   published_at: string | null;
   created_at: string;
+  category_id: string | null;
+};
+
+type RelatedPost = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  featured_image: string | null;
+  published_at: string | null;
+  created_at: string;
 };
 
 export default function BlogDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<Blog | null>(null);
+  const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Must call useMemo before any early returns
@@ -49,6 +61,35 @@ export default function BlogDetail() {
 
       if (!error && data) {
         setBlog(data);
+        
+        // Fetch related posts from same category
+        if (data.category_id) {
+          const { data: related } = await supabase
+            .from('blogs')
+            .select('id, title, slug, excerpt, featured_image, published_at, created_at')
+            .eq('published', true)
+            .eq('category_id', data.category_id)
+            .neq('id', data.id)
+            .order('published_at', { ascending: false })
+            .limit(3);
+          
+          if (related) {
+            setRelatedPosts(related);
+          }
+        } else {
+          // If no category, show latest posts excluding current
+          const { data: latest } = await supabase
+            .from('blogs')
+            .select('id, title, slug, excerpt, featured_image, published_at, created_at')
+            .eq('published', true)
+            .neq('id', data.id)
+            .order('published_at', { ascending: false })
+            .limit(3);
+          
+          if (latest) {
+            setRelatedPosts(latest);
+          }
+        }
       }
       setLoading(false);
     }
@@ -193,6 +234,48 @@ export default function BlogDetail() {
             </Link>
           </Button>
         </div>
+
+        {/* Related Posts Section */}
+        {relatedPosts.length > 0 && (
+          <section className="mt-16 pt-8 border-t border-border">
+            <h2 className="text-2xl font-display font-bold mb-8">Related Posts</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {relatedPosts.map((post) => (
+                <Link
+                  key={post.id}
+                  to={`/blog/${post.slug}`}
+                  className="group block"
+                >
+                  <article className="h-full">
+                    {post.featured_image && (
+                      <div className="aspect-[16/9] overflow-hidden rounded-lg mb-4">
+                        <img
+                          src={post.featured_image}
+                          alt={post.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                      <Calendar className="h-3 w-3" />
+                      <time dateTime={post.published_at || post.created_at}>
+                        {format(new Date(post.published_at || post.created_at), 'MMM d, yyyy')}
+                      </time>
+                    </div>
+                    <h3 className="font-display font-semibold text-lg group-hover:text-primary transition-colors line-clamp-2">
+                      {post.title}
+                    </h3>
+                    {post.excerpt && (
+                      <p className="text-muted-foreground text-sm mt-2 line-clamp-2">
+                        {post.excerpt}
+                      </p>
+                    )}
+                  </article>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </article>
     </Layout>
   );

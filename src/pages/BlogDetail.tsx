@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Calendar, ArrowLeft } from 'lucide-react';
+import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import PageBreadcrumb, { BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import { supabase } from '@/lib/supabase';
@@ -213,11 +213,45 @@ export default function BlogDetail() {
           <h1 className="text-3xl md:text-4xl lg:text-5xl font-display font-bold mb-4">
             {blog.title}
           </h1>
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Calendar className="h-4 w-4" />
-            <time dateTime={blog.published_at || blog.created_at}>
-              {format(new Date(blog.published_at || blog.created_at), 'MMMM d, yyyy')}
-            </time>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-4 w-4" />
+              <time dateTime={blog.published_at || blog.created_at}>
+                {format(new Date(blog.published_at || blog.created_at), 'MMMM d, yyyy')}
+              </time>
+            </div>
+            
+            {/* Social Share Buttons */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground mr-1">Share:</span>
+              <a
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(blog.title)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                aria-label="Share on Twitter"
+              >
+                <Twitter className="h-4 w-4" />
+              </a>
+              <a
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                aria-label="Share on Facebook"
+              >
+                <Facebook className="h-4 w-4" />
+              </a>
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonicalUrl)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                aria-label="Share on LinkedIn"
+              >
+                <Linkedin className="h-4 w-4" />
+              </a>
+            </div>
           </div>
         </header>
 

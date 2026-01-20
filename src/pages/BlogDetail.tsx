@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin } from 'lucide-react';
+import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin, Clock } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import PageBreadcrumb, { BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import { supabase } from '@/lib/supabase';
@@ -134,12 +134,21 @@ export default function BlogDetail() {
     );
   }
 
-  // Strip HTML tags for meta description
+  // Strip HTML tags for meta description and reading time calculation
   const stripHtml = (html: string) => {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     return doc.body.textContent || '';
   };
 
+  // Calculate reading time (average 200 words per minute)
+  const calculateReadingTime = (content: string): number => {
+    const plainText = stripHtml(content);
+    const wordCount = plainText.trim().split(/\s+/).length;
+    const readingTime = Math.ceil(wordCount / 200);
+    return Math.max(1, readingTime); // Minimum 1 minute
+  };
+
+  const readingTime = calculateReadingTime(blog.content);
   const metaDescription = blog.excerpt || stripHtml(blog.content).substring(0, 160);
   const canonicalUrl = `${SITE_URL}/blog/${blog.slug}`;
   const publishedDate = blog.published_at || blog.created_at;
@@ -214,11 +223,17 @@ export default function BlogDetail() {
             {blog.title}
           </h1>
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <time dateTime={blog.published_at || blog.created_at}>
-                {format(new Date(blog.published_at || blog.created_at), 'MMMM d, yyyy')}
-              </time>
+            <div className="flex items-center gap-4 text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <time dateTime={blog.published_at || blog.created_at}>
+                  {format(new Date(blog.published_at || blog.created_at), 'MMMM d, yyyy')}
+                </time>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4" />
+                <span>{readingTime} min read</span>
+              </div>
             </div>
             
             {/* Social Share Buttons */}

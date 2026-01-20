@@ -101,6 +101,32 @@ export default function BlogDetail() {
 
   const metaDescription = blog.excerpt || stripHtml(blog.content).substring(0, 160);
   const canonicalUrl = `${SITE_URL}/blog/${blog.slug}`;
+  const publishedDate = blog.published_at || blog.created_at;
+
+  // JSON-LD structured data for Article schema
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: blog.title,
+    description: metaDescription,
+    image: blog.featured_image || undefined,
+    datePublished: publishedDate,
+    dateModified: publishedDate,
+    url: canonicalUrl,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': canonicalUrl,
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Puritya Store',
+      url: SITE_URL,
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'Puritya Store',
+    },
+  };
 
   return (
     <Layout>
@@ -115,13 +141,18 @@ export default function BlogDetail() {
         <meta property="og:description" content={metaDescription} />
         <meta property="og:url" content={canonicalUrl} />
         {blog.featured_image && <meta property="og:image" content={blog.featured_image} />}
-        <meta property="article:published_time" content={blog.published_at || blog.created_at} />
+        <meta property="article:published_time" content={publishedDate} />
         
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={blog.title} />
         <meta name="twitter:description" content={metaDescription} />
         {blog.featured_image && <meta name="twitter:image" content={blog.featured_image} />}
+
+        {/* JSON-LD Structured Data */}
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
       </Helmet>
 
       <article className="container mx-auto px-4 py-8 max-w-4xl">

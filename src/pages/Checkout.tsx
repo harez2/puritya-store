@@ -16,6 +16,7 @@ import { supabase } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
+import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 
 type ShippingForm = {
   full_name: string;
@@ -154,6 +155,9 @@ export default function Checkout() {
         }),
       };
 
+      // Get UTM params
+      const utmParams = getUtmParams();
+
       if (user) {
         // Logged-in user: save to database
         const { data: order, error: orderError } = await supabase
@@ -170,6 +174,9 @@ export default function Checkout() {
             payment_status: 'pending',
             notes: form.notes.trim() || null,
             order_source: 'cart',
+            utm_source: utmParams.utm_source,
+            utm_medium: utmParams.utm_medium,
+            utm_campaign: utmParams.utm_campaign,
           })
           .select()
           .single();
@@ -202,6 +209,7 @@ export default function Checkout() {
 
       setOrderDetails(savedOrderDetails);
       await clearCart();
+      clearUtmParams(); // Clear UTM after order is placed
       setOrderComplete(true);
 
       // Track Purchase event

@@ -1,14 +1,16 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
+import { captureUtmParams } from "@/hooks/useUtmTracking";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
@@ -33,6 +35,17 @@ import BlogDetail from "./pages/BlogDetail";
 
 const queryClient = new QueryClient();
 
+// Component to capture UTM params on route changes
+function UtmCapture() {
+  const location = useLocation();
+  
+  useEffect(() => {
+    captureUtmParams();
+  }, [location.search]);
+  
+  return null;
+}
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -43,6 +56,7 @@ const App = () => (
               <Toaster />
               <Sonner />
               <BrowserRouter>
+                <UtmCapture />
                 <DataLayerProvider>
                   <FacebookPixelProvider>
                     <Routes>

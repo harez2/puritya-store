@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, Eye, Zap, ShoppingBag } from 'lucide-react';
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, Eye, Globe, Zap, ShoppingBag } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +13,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -39,6 +44,9 @@ interface RecentOrder {
   shipping_address: ShippingAddress | null;
   subtotal: number;
   shipping_fee: number;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
 }
 
 interface LowStockProduct {
@@ -67,7 +75,7 @@ export default function AdminDashboard() {
         // Fetch orders for revenue and count
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
-          .select('id, order_number, total, status, created_at, order_source, shipping_address, subtotal, shipping_fee')
+          .select('id, order_number, total, status, created_at, order_source, shipping_address, subtotal, shipping_fee, utm_source, utm_medium, utm_campaign')
           .order('created_at', { ascending: false });
 
         if (ordersError) throw ordersError;
@@ -148,8 +156,31 @@ export default function AdminDashboard() {
     }
   };
 
-  const getSourceBadge = (source: string | null) => {
-    switch (source) {
+  const getSourceBadge = (order: RecentOrder) => {
+    const { utm_source, utm_medium, utm_campaign, order_source } = order;
+    
+    // If UTM source exists, show it
+    if (utm_source) {
+      const displaySource = utm_source.charAt(0).toUpperCase() + utm_source.slice(1).toLowerCase();
+      const fullUtm = [utm_source, utm_medium, utm_campaign].filter(Boolean).join(' / ');
+      
+      return (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Badge variant="outline" className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 gap-1 cursor-help">
+              <Globe className="h-3 w-3" />
+              {displaySource}
+            </Badge>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">{fullUtm}</p>
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+    
+    // Fallback to order source
+    switch (order_source) {
       case 'quick_buy':
         return (
           <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 gap-1">
@@ -162,7 +193,7 @@ export default function AdminDashboard() {
         return (
           <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 gap-1">
             <ShoppingBag className="h-3 w-3" />
-            Cart
+            Direct
           </Badge>
         );
     }
@@ -293,7 +324,7 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="py-3 px-2">
-                          {getSourceBadge(order.order_source)}
+                          {getSourceBadge(order)}
                         </td>
                         <td className="py-3 px-2 text-muted-foreground">
                           <div className="flex flex-col">
@@ -320,7 +351,7 @@ export default function AdminDashboard() {
                               <div className="space-y-3">
                                 <div className="flex items-center justify-between">
                                   <h4 className="font-semibold">{order.order_number}</h4>
-                                  {getSourceBadge(order.order_source)}
+                                  {getSourceBadge(order)}
                                 </div>
                                 <div className="space-y-1 text-sm">
                                   <div className="flex justify-between">

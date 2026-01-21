@@ -169,6 +169,7 @@ export default function Checkout() {
             payment_method: paymentMethod,
             payment_status: 'pending',
             notes: form.notes.trim() || null,
+            order_source: 'cart',
           })
           .select()
           .single();

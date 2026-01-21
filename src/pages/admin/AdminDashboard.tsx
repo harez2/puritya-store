@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { DollarSign, ShoppingCart, Package, Users, AlertTriangle } from 'lucide-react';
+import { DollarSign, ShoppingCart, Package, Users, AlertTriangle, Eye, Zap, ShoppingBag } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { StatCard } from '@/components/admin/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,6 +7,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface DashboardStats {
   totalRevenue: number;
@@ -16,12 +22,23 @@ interface DashboardStats {
   lowStockCount: number;
 }
 
+interface ShippingAddress {
+  full_name?: string;
+  phone?: string;
+  address_line1?: string;
+  city?: string;
+}
+
 interface RecentOrder {
   id: string;
   order_number: string;
   total: number;
   status: string;
   created_at: string;
+  order_source: string | null;
+  shipping_address: ShippingAddress | null;
+  subtotal: number;
+  shipping_fee: number;
 }
 
 interface LowStockProduct {
@@ -50,7 +67,7 @@ export default function AdminDashboard() {
         // Fetch orders for revenue and count
         const { data: orders, error: ordersError } = await supabase
           .from('orders')
-          .select('id, order_number, total, status, created_at')
+          .select('id, order_number, total, status, created_at, order_source, shipping_address, subtotal, shipping_fee')
           .order('created_at', { ascending: false });
 
         if (ordersError) throw ordersError;
@@ -94,7 +111,7 @@ export default function AdminDashboard() {
           lowStockCount: lowStockFiltered.length,
         });
 
-        setRecentOrders(orders?.slice(0, 5) || []);
+        setRecentOrders((orders as RecentOrder[])?.slice(0, 8) || []);
         setLowStockProducts(lowStockFiltered);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -128,6 +145,26 @@ export default function AdminDashboard() {
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getSourceBadge = (source: string | null) => {
+    switch (source) {
+      case 'quick_buy':
+        return (
+          <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300 gap-1">
+            <Zap className="h-3 w-3" />
+            Quick
+          </Badge>
+        );
+      case 'cart':
+      default:
+        return (
+          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 gap-1">
+            <ShoppingBag className="h-3 w-3" />
+            Cart
+          </Badge>
+        );
     }
   };
 
@@ -233,17 +270,36 @@ export default function AdminDashboard() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Source</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Quick View</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentOrders.map((order) => (
                       <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
+                        <td className="py-3 px-2">
+                          <div className="flex flex-col">
+                            <span className="font-medium truncate max-w-[120px]">
+                              {order.shipping_address?.full_name || 'N/A'}
+                            </span>
+                            {order.shipping_address?.phone && (
+                              <span className="text-xs text-muted-foreground">{order.shipping_address.phone}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-2">
+                          {getSourceBadge(order.order_source)}
+                        </td>
                         <td className="py-3 px-2 text-muted-foreground">
-                          {format(new Date(order.created_at), 'MMM d, yyyy')}
+                          <div className="flex flex-col">
+                            <span>{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
+                            <span className="text-xs">{format(new Date(order.created_at), 'h:mm a')}</span>
+                          </div>
                         </td>
                         <td className="py-3 px-2">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
@@ -252,6 +308,58 @@ export default function AdminDashboard() {
                         </td>
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72" align="end">
+                              <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                  <h4 className="font-semibold">{order.order_number}</h4>
+                                  {getSourceBadge(order.order_source)}
+                                </div>
+                                <div className="space-y-1 text-sm">
+                                  <div className="flex justify-between">
+                                    <span className="text-muted-foreground">Customer:</span>
+                                    <span className="font-medium">{order.shipping_address?.full_name || 'N/A'}</span>
+                                  </div>
+                                  {order.shipping_address?.phone && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Phone:</span>
+                                      <span>{order.shipping_address.phone}</span>
+                                    </div>
+                                  )}
+                                  {order.shipping_address?.city && (
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Location:</span>
+                                      <span>{order.shipping_address.city}</span>
+                                    </div>
+                                  )}
+                                  <div className="border-t pt-2 mt-2">
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Subtotal:</span>
+                                      <span>{formatCurrency(order.subtotal)}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                      <span className="text-muted-foreground">Shipping:</span>
+                                      <span>{formatCurrency(order.shipping_fee)}</span>
+                                    </div>
+                                    <div className="flex justify-between font-semibold">
+                                      <span>Total:</span>
+                                      <span>{formatCurrency(order.total)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                                <Button size="sm" className="w-full" asChild>
+                                  <Link to="/admin/orders">View Full Details</Link>
+                                </Button>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </td>
                       </tr>
                     ))}

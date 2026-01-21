@@ -198,6 +198,7 @@ export default function QuickCheckoutModal({
             status: 'pending',
             subtotal,
             shipping_fee: shippingFee,
+            order_source: 'quick_buy',
             total,
             shipping_address: shippingAddress,
             payment_method: paymentMethod,

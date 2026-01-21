@@ -18,6 +18,7 @@ import { supabase, Product } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
+import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 
 interface QuickCheckoutProps {
   open: boolean;
@@ -189,6 +190,9 @@ export default function QuickCheckoutModal({
         }),
       };
 
+      // Get UTM params
+      const utmParams = getUtmParams();
+
       if (user) {
         const { data: order, error: orderError } = await supabase
           .from('orders')
@@ -204,6 +208,9 @@ export default function QuickCheckoutModal({
             payment_method: paymentMethod,
             payment_status: 'pending',
             notes: form.notes.trim() || null,
+            utm_source: utmParams.utm_source,
+            utm_medium: utmParams.utm_medium,
+            utm_campaign: utmParams.utm_campaign,
           })
           .select()
           .single();
@@ -229,6 +236,7 @@ export default function QuickCheckoutModal({
       }
 
       setOrderDetails(savedOrderDetails);
+      clearUtmParams(); // Clear UTM after order is placed
       setStep('success');
 
       // Track Purchase event

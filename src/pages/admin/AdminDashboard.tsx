@@ -5,6 +5,7 @@ import { StatCard } from '@/components/admin/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
+import { OrderAnalytics } from '@/components/admin/OrderAnalytics';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -467,6 +468,9 @@ export default function AdminDashboard() {
             )}
           </CardContent>
         </Card>
+
+        {/* Order Analytics */}
+        <OrderAnalytics />
       </div>
     </AdminLayout>
   );

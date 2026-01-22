@@ -18,6 +18,22 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { toast } from 'sonner';
+
+const statusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'processing', label: 'Processing' },
+  { value: 'shipped', label: 'Shipped' },
+  { value: 'delivered', label: 'Delivered' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
 
 interface DashboardStats {
   totalRevenue: number;
@@ -143,16 +159,51 @@ export default function AdminDashboard() {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'delivered':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800 border-green-200';
       case 'processing':
       case 'shipped':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'pending':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const handleStatusChange = async (orderId: string, newStatus: string, oldStatus: string) => {
+    try {
+      // Update order status
+      const { error: orderError } = await supabase
+        .from('orders')
+        .update({ status: newStatus })
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Add status history record
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase
+        .from('order_status_history')
+        .insert({
+          order_id: orderId,
+          old_status: oldStatus,
+          new_status: newStatus,
+          changed_by: user?.id,
+        });
+
+      // Update local state
+      setRecentOrders(prev => 
+        prev.map(order => 
+          order.id === orderId ? { ...order, status: newStatus } : order
+        )
+      );
+
+      toast.success(`Order status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      toast.error('Failed to update order status');
     }
   };
 
@@ -333,9 +384,25 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="py-3 px-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </span>
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) => handleStatusChange(order.id, value, order.status)}
+                          >
+                            <SelectTrigger className={`h-8 w-[120px] text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map((status) => (
+                                <SelectItem 
+                                  key={status.value} 
+                                  value={status.value}
+                                  className="capitalize"
+                                >
+                                  {status.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}

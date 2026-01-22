@@ -564,9 +564,25 @@ export default function AdminOrders() {
                           {format(new Date(order.created_at), 'MMM d, yyyy')}
                         </td>
                         <td className="py-3 px-2">
-                          <Badge variant="outline" className={`capitalize ${getStatusColor(order.status)}`}>
-                            {order.status}
-                          </Badge>
+                          <Select
+                            value={order.status}
+                            onValueChange={(value) => handleQuickStatusUpdate(order.id, value)}
+                          >
+                            <SelectTrigger className={`h-8 w-[120px] text-xs font-medium capitalize ${getStatusColor(order.status)}`}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {statusOptions.map((status) => (
+                                <SelectItem 
+                                  key={status.value} 
+                                  value={status.value}
+                                  className="capitalize"
+                                >
+                                  {status.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </td>
                         <td className="py-3 px-2">
                           <Badge variant="outline" className={`capitalize ${

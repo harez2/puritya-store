@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Popover,
   PopoverContent,
@@ -97,6 +98,10 @@ export default function AdminOrders() {
   const [statusUpdateNotes, setStatusUpdateNotes] = useState('');
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
+  const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
+  const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
+  const [bulkNotes, setBulkNotes] = useState('');
 
   useEffect(() => {
     fetchOrders();
@@ -223,6 +228,76 @@ export default function AdminOrders() {
 
   const handleQuickStatusUpdate = (orderId: string, newStatus: string) => {
     openStatusUpdateDialog(orderId, newStatus);
+  };
+
+  const toggleOrderSelection = (orderId: string) => {
+    setSelectedOrderIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(orderId)) {
+        newSet.delete(orderId);
+      } else {
+        newSet.add(orderId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedOrderIds.size === filteredOrders.length) {
+      setSelectedOrderIds(new Set());
+    } else {
+      setSelectedOrderIds(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
+
+  const openBulkUpdateDialog = (newStatus: string) => {
+    setBulkNewStatus(newStatus);
+    setBulkNotes('');
+    setIsBulkUpdateOpen(true);
+  };
+
+  const handleBulkStatusUpdate = async () => {
+    if (!bulkNewStatus || selectedOrderIds.size === 0) return;
+    
+    try {
+      const orderIdsArray = Array.from(selectedOrderIds);
+      
+      // Update all selected orders
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: bulkNewStatus })
+        .in('id', orderIdsArray);
+
+      if (updateError) throw updateError;
+
+      // Record status changes in history for each order
+      const historyRecords = orderIdsArray.map(orderId => {
+        const order = orders.find(o => o.id === orderId);
+        return {
+          order_id: orderId,
+          old_status: order?.status || null,
+          new_status: bulkNewStatus,
+          changed_by: user?.id,
+          notes: bulkNotes.trim() || null,
+        };
+      });
+
+      const { error: historyError } = await supabase
+        .from('order_status_history')
+        .insert(historyRecords);
+
+      if (historyError) {
+        console.error('Error recording status history:', historyError);
+      }
+
+      toast.success(`Updated ${selectedOrderIds.size} orders to ${bulkNewStatus}`);
+      setIsBulkUpdateOpen(false);
+      setSelectedOrderIds(new Set());
+      fetchOrders();
+    } catch (error: any) {
+      console.error('Error bulk updating orders:', error);
+      toast.error(error.message || 'Failed to update orders');
+    }
   };
 
   const filteredOrders = orders.filter(order => {
@@ -544,10 +619,52 @@ export default function AdminOrders() {
                 {searchQuery || statusFilter !== 'all' ? 'No orders found' : 'No orders yet'}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="space-y-4">
+                {/* Bulk Action Bar */}
+                {selectedOrderIds.size > 0 && (
+                  <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <CheckSquare className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-sm">
+                        {selectedOrderIds.size} order{selectedOrderIds.size > 1 ? 's' : ''} selected
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="text-sm text-muted-foreground">Update to:</span>
+                      <Select onValueChange={openBulkUpdateDialog}>
+                        <SelectTrigger className="w-[140px] h-8">
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statusOptions.map((status) => (
+                            <SelectItem key={status.value} value={status.value}>
+                              {status.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => setSelectedOrderIds(new Set())}
+                      >
+                        Clear selection
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
+                      <th className="py-3 px-2 w-10">
+                        <Checkbox 
+                          checked={filteredOrders.length > 0 && selectedOrderIds.size === filteredOrders.length}
+                          onCheckedChange={toggleSelectAll}
+                          aria-label="Select all orders"
+                        />
+                      </th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
@@ -558,7 +675,14 @@ export default function AdminOrders() {
                   </thead>
                   <tbody>
                     {filteredOrders.map((order) => (
-                      <tr key={order.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <tr key={order.id} className={`border-b last:border-0 hover:bg-muted/50 ${selectedOrderIds.has(order.id) ? 'bg-primary/5' : ''}`}>
+                        <td className="py-3 px-2">
+                          <Checkbox 
+                            checked={selectedOrderIds.has(order.id)}
+                            onCheckedChange={() => toggleOrderSelection(order.id)}
+                            aria-label={`Select order ${order.order_number}`}
+                          />
+                        </td>
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
                         <td className="py-3 px-2 text-muted-foreground">
                           {format(new Date(order.created_at), 'MMM d, yyyy')}
@@ -624,6 +748,7 @@ export default function AdminOrders() {
                     ))}
                   </tbody>
                 </table>
+              </div>
               </div>
             )}
           </CardContent>
@@ -831,6 +956,48 @@ export default function AdminOrders() {
               </Button>
               <Button onClick={handleUpdateStatus}>
                 Update Status
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Status Update Dialog */}
+      <Dialog open={isBulkUpdateOpen} onOpenChange={setIsBulkUpdateOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Bulk Update Order Status</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-sm text-muted-foreground">
+                Updating {selectedOrderIds.size} order{selectedOrderIds.size > 1 ? 's' : ''} to:
+              </Label>
+              <div className="mt-1">
+                <Badge variant="outline" className={`capitalize ${getStatusColor(bulkNewStatus)}`}>
+                  {bulkNewStatus}
+                </Badge>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="bulk-notes">Notes (optional)</Label>
+              <Textarea
+                id="bulk-notes"
+                placeholder="Add context for this bulk status change..."
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)}
+                rows={3}
+              />
+              <p className="text-xs text-muted-foreground">
+                This note will be added to all selected orders' status history.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setIsBulkUpdateOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleBulkStatusUpdate}>
+                Update {selectedOrderIds.size} Order{selectedOrderIds.size > 1 ? 's' : ''}
               </Button>
             </div>
           </div>

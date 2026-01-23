@@ -16,9 +16,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths } from 'date-fns';
-import { CalendarIcon, TrendingUp, Package, Layers, X, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
+import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import {
   BarChart,
   Bar,
@@ -102,6 +104,7 @@ export function OrderAnalytics() {
   const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [showComparison, setShowComparison] = useState(true);
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -187,7 +190,40 @@ export function OrderAnalytics() {
     return orderItems.filter(item => orderIds.has(item.order_id));
   }, [filteredOrders, orderItems]);
 
-  // Calculate stats
+  // Calculate previous period date range for comparison
+  const previousPeriodDates = useMemo(() => {
+    if (!startDate || !endDate) return { start: undefined, end: undefined };
+    
+    const periodLength = differenceInDays(endDate, startDate) + 1;
+    const prevEnd = subDays(startDate, 1);
+    const prevStart = subDays(prevEnd, periodLength - 1);
+    
+    return { start: prevStart, end: prevEnd };
+  }, [startDate, endDate]);
+
+  // Filter orders for previous period
+  const previousPeriodOrders = useMemo(() => {
+    if (!previousPeriodDates.start || !previousPeriodDates.end) return [];
+    
+    return orders.filter(order => {
+      const orderDate = new Date(order.created_at);
+      const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+      const matchesDate = isWithinInterval(orderDate, {
+        start: startOfDay(previousPeriodDates.start!),
+        end: endOfDay(previousPeriodDates.end!),
+      });
+      
+      return matchesStatus && matchesDate;
+    });
+  }, [orders, previousPeriodDates, statusFilter]);
+
+  // Filter order items for previous period
+  const previousPeriodOrderItems = useMemo(() => {
+    const orderIds = new Set(previousPeriodOrders.map(o => o.id));
+    return orderItems.filter(item => orderIds.has(item.order_id));
+  }, [previousPeriodOrders, orderItems]);
+
+  // Calculate stats for current period
   const stats = useMemo(() => {
     const totalRevenue = filteredOrders.reduce((sum, o) => sum + Number(o.total), 0);
     const totalOrders = filteredOrders.length;
@@ -196,6 +232,58 @@ export function OrderAnalytics() {
     
     return { totalRevenue, totalOrders, avgOrderValue, totalItems };
   }, [filteredOrders, filteredOrderItems]);
+
+  // Calculate stats for previous period
+  const previousStats = useMemo(() => {
+    const totalRevenue = previousPeriodOrders.reduce((sum, o) => sum + Number(o.total), 0);
+    const totalOrders = previousPeriodOrders.length;
+    const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const totalItems = previousPeriodOrderItems.reduce((sum, i) => sum + i.quantity, 0);
+    
+    return { totalRevenue, totalOrders, avgOrderValue, totalItems };
+  }, [previousPeriodOrders, previousPeriodOrderItems]);
+
+  // Calculate percentage changes
+  const percentageChanges = useMemo(() => {
+    const calculateChange = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
+    return {
+      revenue: calculateChange(stats.totalRevenue, previousStats.totalRevenue),
+      orders: calculateChange(stats.totalOrders, previousStats.totalOrders),
+      avgOrder: calculateChange(stats.avgOrderValue, previousStats.avgOrderValue),
+      items: calculateChange(stats.totalItems, previousStats.totalItems),
+    };
+  }, [stats, previousStats]);
+
+  // Helper to render change indicator
+  const ChangeIndicator = ({ value, prefix = '' }: { value: number; prefix?: string }) => {
+    if (!showComparison) return null;
+    
+    const isPositive = value > 0;
+    const isNeutral = value === 0;
+    
+    return (
+      <div className={cn(
+        "flex items-center gap-1 text-xs font-medium mt-1",
+        isPositive && "text-green-600 dark:text-green-400",
+        !isPositive && !isNeutral && "text-red-600 dark:text-red-400",
+        isNeutral && "text-muted-foreground"
+      )}>
+        {isPositive ? (
+          <ArrowUp className="h-3 w-3" />
+        ) : isNeutral ? (
+          <Minus className="h-3 w-3" />
+        ) : (
+          <ArrowDown className="h-3 w-3" />
+        )}
+        <span>{prefix}{Math.abs(value).toFixed(1)}%</span>
+        <span className="text-muted-foreground font-normal">vs prev period</span>
+      </div>
+    );
+  };
 
   // Top products
   const topProducts = useMemo(() => {
@@ -409,7 +497,27 @@ export function OrderAnalytics() {
                 <X className="h-4 w-4 mr-1" /> Clear
               </Button>
             )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              <Switch
+                id="comparison-toggle"
+                checked={showComparison}
+                onCheckedChange={setShowComparison}
+              />
+              <Label htmlFor="comparison-toggle" className="text-sm cursor-pointer">
+                Compare with previous period
+              </Label>
+            </div>
           </div>
+
+          {showComparison && previousPeriodDates.start && previousPeriodDates.end && (
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Comparing: </span>
+              {format(startDate!, 'MMM d')} - {format(endDate!, 'MMM d, yyyy')}
+              <span className="mx-2">vs</span>
+              {format(previousPeriodDates.start, 'MMM d')} - {format(previousPeriodDates.end, 'MMM d, yyyy')}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -418,12 +526,20 @@ export function OrderAnalytics() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <TrendingUp className="h-5 w-5 text-primary" />
+              <div className={cn(
+                "p-2 rounded-lg",
+                percentageChanges.revenue >= 0 ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"
+              )}>
+                {percentageChanges.revenue >= 0 ? (
+                  <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+                ) : (
+                  <TrendingDown className="h-5 w-5 text-red-600 dark:text-red-400" />
+                )}
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Revenue</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
+                <ChangeIndicator value={percentageChanges.revenue} />
               </div>
             </div>
           </CardContent>
@@ -434,9 +550,10 @@ export function OrderAnalytics() {
               <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
                 <Package className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Orders</p>
                 <p className="text-2xl font-bold">{stats.totalOrders}</p>
+                <ChangeIndicator value={percentageChanges.orders} />
               </div>
             </div>
           </CardContent>
@@ -447,9 +564,10 @@ export function OrderAnalytics() {
               <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <BarChart3 className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Avg Order</p>
                 <p className="text-2xl font-bold">{formatCurrency(stats.avgOrderValue)}</p>
+                <ChangeIndicator value={percentageChanges.avgOrder} />
               </div>
             </div>
           </CardContent>
@@ -460,9 +578,10 @@ export function OrderAnalytics() {
               <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
                 <Layers className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm text-muted-foreground">Items Sold</p>
                 <p className="text-2xl font-bold">{stats.totalItems}</p>
+                <ChangeIndicator value={percentageChanges.items} />
               </div>
             </div>
           </CardContent>

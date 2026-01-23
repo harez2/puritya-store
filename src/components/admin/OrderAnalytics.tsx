@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
-import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -42,6 +42,23 @@ interface OrderWithItems {
   subtotal: number;
   status: string;
   created_at: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+}
+
+interface UtmSourceData {
+  source: string;
+  orders: number;
+  revenue: number;
+  avgOrderValue: number;
+}
+
+interface UtmCampaignData {
+  campaign: string;
+  source: string;
+  orders: number;
+  revenue: number;
 }
 
 interface OrderItem {
@@ -144,7 +161,7 @@ export function OrderAnalytics() {
   async function fetchAnalyticsData() {
     try {
       const [ordersRes, itemsRes, productsRes, categoriesRes] = await Promise.all([
-        supabase.from('orders').select('id, order_number, total, subtotal, status, created_at').order('created_at', { ascending: false }),
+        supabase.from('orders').select('id, order_number, total, subtotal, status, created_at, utm_source, utm_medium, utm_campaign').order('created_at', { ascending: false }),
         supabase.from('order_items').select('id, order_id, product_id, product_name, quantity, price'),
         supabase.from('products').select('id, name, category_id, images'),
         supabase.from('categories').select('id, name'),
@@ -392,6 +409,92 @@ export function OrderAnalytics() {
       color: COLORS[index % COLORS.length],
     }));
   }, [topCategories]);
+
+  // UTM Source analytics
+  const utmSourceData = useMemo(() => {
+    const sourceMap = new Map<string, { orders: number; revenue: number }>();
+    
+    filteredOrders.forEach(order => {
+      const source = order.utm_source || 'Direct / Organic';
+      const existing = sourceMap.get(source);
+      
+      if (existing) {
+        existing.orders += 1;
+        existing.revenue += Number(order.total);
+      } else {
+        sourceMap.set(source, { orders: 1, revenue: Number(order.total) });
+      }
+    });
+    
+    return Array.from(sourceMap.entries())
+      .map(([source, data]) => ({
+        source,
+        orders: data.orders,
+        revenue: data.revenue,
+        avgOrderValue: data.orders > 0 ? data.revenue / data.orders : 0,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 8);
+  }, [filteredOrders]);
+
+  // UTM Campaign analytics
+  const utmCampaignData = useMemo(() => {
+    const campaignMap = new Map<string, { source: string; orders: number; revenue: number }>();
+    
+    filteredOrders.forEach(order => {
+      if (order.utm_campaign) {
+        const existing = campaignMap.get(order.utm_campaign);
+        
+        if (existing) {
+          existing.orders += 1;
+          existing.revenue += Number(order.total);
+        } else {
+          campaignMap.set(order.utm_campaign, {
+            source: order.utm_source || 'Unknown',
+            orders: 1,
+            revenue: Number(order.total),
+          });
+        }
+      }
+    });
+    
+    return Array.from(campaignMap.entries())
+      .map(([campaign, data]) => ({
+        campaign,
+        source: data.source,
+        orders: data.orders,
+        revenue: data.revenue,
+      }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
+  }, [filteredOrders]);
+
+  // UTM source for pie chart
+  const utmSourceChartData = useMemo(() => {
+    return utmSourceData.slice(0, 5).map((data, index) => ({
+      name: data.source,
+      value: data.revenue,
+      color: COLORS[index % COLORS.length],
+    }));
+  }, [utmSourceData]);
+
+  // Helper to get source icon
+  const getSourceIcon = (source: string) => {
+    const lowerSource = source.toLowerCase();
+    if (lowerSource.includes('facebook') || lowerSource.includes('fb')) {
+      return <Facebook className="h-4 w-4 text-blue-600" />;
+    }
+    if (lowerSource.includes('google')) {
+      return <Search className="h-4 w-4 text-red-500" />;
+    }
+    if (lowerSource.includes('email') || lowerSource.includes('newsletter')) {
+      return <Mail className="h-4 w-4 text-green-600" />;
+    }
+    if (lowerSource === 'Direct / Organic') {
+      return <Globe className="h-4 w-4 text-muted-foreground" />;
+    }
+    return <Megaphone className="h-4 w-4 text-purple-600" />;
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-BD', {
@@ -801,6 +904,137 @@ export function OrderAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+      {/* UTM Source Analytics */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Revenue by UTM Source Pie Chart */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Megaphone className="h-5 w-5" />
+              Revenue by Traffic Source
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {utmSourceChartData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+                No UTM data for selected period
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={utmSourceChartData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    paddingAngle={2}
+                    dataKey="value"
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    labelLine={false}
+                  >
+                    {utmSourceChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: number) => [formatCurrency(value), 'Revenue']}
+                    contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* UTM Source Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Globe className="h-5 w-5" />
+              Traffic Sources Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {utmSourceData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">No UTM data available</div>
+            ) : (
+              <div className="space-y-3">
+                {utmSourceData.map((data, index) => (
+                  <div key={data.source} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <span className="font-bold text-lg text-muted-foreground w-6">#{index + 1}</span>
+                    <div 
+                      className="h-10 w-10 rounded flex items-center justify-center bg-background border"
+                    >
+                      {getSourceIcon(data.source)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{data.source}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {data.orders} orders • AOV: {formatCurrency(data.avgOrderValue)}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">{formatCurrency(data.revenue)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Campaign Performance */}
+      {utmCampaignData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Megaphone className="h-5 w-5" />
+              Campaign Performance
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="pb-3 font-medium text-muted-foreground">Campaign</th>
+                    <th className="pb-3 font-medium text-muted-foreground">Source</th>
+                    <th className="pb-3 font-medium text-muted-foreground text-right">Orders</th>
+                    <th className="pb-3 font-medium text-muted-foreground text-right">Revenue</th>
+                    <th className="pb-3 font-medium text-muted-foreground text-right">AOV</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {utmCampaignData.map((campaign) => (
+                    <tr key={campaign.campaign} className="border-b last:border-0">
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
+                          <Megaphone className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{campaign.campaign}</span>
+                        </div>
+                      </td>
+                      <td className="py-3">
+                        <div className="flex items-center gap-2">
+                          {getSourceIcon(campaign.source)}
+                          <span className="text-muted-foreground">{campaign.source}</span>
+                        </div>
+                      </td>
+                      <td className="py-3 text-right">{campaign.orders}</td>
+                      <td className="py-3 text-right font-semibold">{formatCurrency(campaign.revenue)}</td>
+                      <td className="py-3 text-right text-muted-foreground">
+                        {formatCurrency(campaign.orders > 0 ? campaign.revenue / campaign.orders : 0)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

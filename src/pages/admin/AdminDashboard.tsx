@@ -337,6 +337,9 @@ export default function AdminDashboard() {
           </Card>
         )}
 
+        {/* Order Analytics */}
+        <OrderAnalytics />
+
         {/* Recent Orders */}
         <Card>
           <CardHeader>
@@ -468,9 +471,6 @@ export default function AdminDashboard() {
             )}
           </CardContent>
         </Card>
-
-        {/* Order Analytics */}
-        <OrderAnalytics />
       </div>
     </AdminLayout>
   );

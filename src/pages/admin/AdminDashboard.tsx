@@ -259,32 +259,6 @@ export default function AdminDashboard() {
           <p className="text-muted-foreground">Welcome back! Here's what's happening with your store.</p>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Revenue"
-            value={formatCurrency(stats.totalRevenue)}
-            icon={<DollarSign className="h-6 w-6" />}
-            trend={{ value: 12.5, isPositive: true }}
-          />
-          <StatCard
-            title="Total Orders"
-            value={stats.totalOrders}
-            icon={<ShoppingCart className="h-6 w-6" />}
-            trend={{ value: 8.2, isPositive: true }}
-          />
-          <StatCard
-            title="Total Products"
-            value={stats.totalProducts}
-            icon={<Package className="h-6 w-6" />}
-          />
-          <StatCard
-            title="Total Customers"
-            value={stats.totalCustomers}
-            icon={<Users className="h-6 w-6" />}
-            trend={{ value: 5.1, isPositive: true }}
-          />
-        </div>
 
         {/* Low Stock Alert */}
         {lowStockProducts.length > 0 && (

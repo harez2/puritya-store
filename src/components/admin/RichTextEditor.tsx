@@ -30,9 +30,10 @@ interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   placeholder?: string;
+  compact?: boolean;
 }
 
-export function RichTextEditor({ content, onChange, placeholder = 'Write your content here...' }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, placeholder = 'Write your content here...', compact = false }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -58,7 +59,9 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your co
     content,
     editorProps: {
       attributes: {
-        class: 'prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
+        class: compact 
+          ? 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[120px] p-3'
+          : 'prose prose-sm sm:prose lg:prose-lg dark:prose-invert max-w-none focus:outline-none min-h-[300px] p-4',
       },
     },
     onUpdate: ({ editor }) => {
@@ -106,33 +109,38 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your co
     <div className="border rounded-lg overflow-hidden bg-background">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-1 p-2 border-b bg-muted/50">
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('heading', { level: 1 })}
-          onPressedChange={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          aria-label="Heading 1"
-        >
-          <Heading1 className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('heading', { level: 2 })}
-          onPressedChange={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          aria-label="Heading 2"
-        >
-          <Heading2 className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('heading', { level: 3 })}
-          onPressedChange={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          aria-label="Heading 3"
-        >
-          <Heading3 className="h-4 w-4" />
-        </Toggle>
+        {/* Headings - only in full mode */}
+        {!compact && (
+          <>
+            <Toggle
+              size="sm"
+              pressed={editor.isActive('heading', { level: 1 })}
+              onPressedChange={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+              aria-label="Heading 1"
+            >
+              <Heading1 className="h-4 w-4" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              pressed={editor.isActive('heading', { level: 2 })}
+              onPressedChange={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+              aria-label="Heading 2"
+            >
+              <Heading2 className="h-4 w-4" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              pressed={editor.isActive('heading', { level: 3 })}
+              onPressedChange={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+              aria-label="Heading 3"
+            >
+              <Heading3 className="h-4 w-4" />
+            </Toggle>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+          </>
+        )}
 
-        <Separator orientation="vertical" className="h-6 mx-1" />
-
+        {/* Basic formatting - always shown */}
         <Toggle
           size="sm"
           pressed={editor.isActive('bold')}
@@ -149,25 +157,32 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your co
         >
           <Italic className="h-4 w-4" />
         </Toggle>
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('strike')}
-          onPressedChange={() => editor.chain().focus().toggleStrike().run()}
-          aria-label="Strikethrough"
-        >
-          <Strikethrough className="h-4 w-4" />
-        </Toggle>
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('code')}
-          onPressedChange={() => editor.chain().focus().toggleCode().run()}
-          aria-label="Code"
-        >
-          <Code className="h-4 w-4" />
-        </Toggle>
+        
+        {/* Strikethrough and code - only in full mode */}
+        {!compact && (
+          <>
+            <Toggle
+              size="sm"
+              pressed={editor.isActive('strike')}
+              onPressedChange={() => editor.chain().focus().toggleStrike().run()}
+              aria-label="Strikethrough"
+            >
+              <Strikethrough className="h-4 w-4" />
+            </Toggle>
+            <Toggle
+              size="sm"
+              pressed={editor.isActive('code')}
+              onPressedChange={() => editor.chain().focus().toggleCode().run()}
+              aria-label="Code"
+            >
+              <Code className="h-4 w-4" />
+            </Toggle>
+          </>
+        )}
 
         <Separator orientation="vertical" className="h-6 mx-1" />
 
+        {/* Lists - always shown */}
         <Toggle
           size="sm"
           pressed={editor.isActive('bulletList')}
@@ -184,17 +199,21 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your co
         >
           <ListOrdered className="h-4 w-4" />
         </Toggle>
-        <Toggle
-          size="sm"
-          pressed={editor.isActive('blockquote')}
-          onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
-          aria-label="Quote"
-        >
-          <Quote className="h-4 w-4" />
-        </Toggle>
+        
+        {/* Quote - only in full mode */}
+        {!compact && (
+          <Toggle
+            size="sm"
+            pressed={editor.isActive('blockquote')}
+            onPressedChange={() => editor.chain().focus().toggleBlockquote().run()}
+            aria-label="Quote"
+          >
+            <Quote className="h-4 w-4" />
+          </Toggle>
+        )}
 
+        {/* Link - always shown */}
         <Separator orientation="vertical" className="h-6 mx-1" />
-
         <Button
           variant="ghost"
           size="sm"
@@ -203,23 +222,29 @@ export function RichTextEditor({ content, onChange, placeholder = 'Write your co
         >
           <LinkIcon className="h-4 w-4" />
         </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={addImage}
-        >
-          <ImageIcon className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => editor.chain().focus().setHorizontalRule().run()}
-        >
-          <Minus className="h-4 w-4" />
-        </Button>
+        
+        {/* Image and horizontal rule - only in full mode */}
+        {!compact && (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={addImage}
+            >
+              <ImageIcon className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => editor.chain().focus().setHorizontalRule().run()}
+            >
+              <Minus className="h-4 w-4" />
+            </Button>
+          </>
+        )}
 
+        {/* Undo/Redo - always shown */}
         <Separator orientation="vertical" className="h-6 mx-1" />
-
         <Button
           variant="ghost"
           size="sm"

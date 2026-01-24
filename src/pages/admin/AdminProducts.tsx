@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap, X } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap, X, Filter, RotateCcw } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -108,6 +108,12 @@ export default function AdminProducts() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  
+  // Filter states
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [stockFilter, setStockFilter] = useState<string>('all');
+  const [featuredFilter, setFeaturedFilter] = useState<string>('all');
+  const [newArrivalFilter, setNewArrivalFilter] = useState<string>('all');
 
   useEffect(() => {
     fetchProducts();
@@ -145,10 +151,41 @@ export default function AdminProducts() {
     }
   }
 
-  const filteredProducts = products.filter(product =>
-    product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    product.slug.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredProducts = useMemo(() => {
+    return products.filter(product => {
+      // Search filter
+      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.slug.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Category filter
+      const matchesCategory = categoryFilter === 'all' || 
+        (categoryFilter === 'uncategorized' ? !product.category_id : product.category_id === categoryFilter);
+      
+      // Stock filter
+      const matchesStock = stockFilter === 'all' ||
+        (stockFilter === 'in_stock' ? product.in_stock : !product.in_stock);
+      
+      // Featured filter
+      const matchesFeatured = featuredFilter === 'all' ||
+        (featuredFilter === 'featured' ? product.featured : !product.featured);
+      
+      // New Arrival filter
+      const matchesNewArrival = newArrivalFilter === 'all' ||
+        (newArrivalFilter === 'new_arrival' ? product.new_arrival : !product.new_arrival);
+      
+      return matchesSearch && matchesCategory && matchesStock && matchesFeatured && matchesNewArrival;
+    });
+  }, [products, searchQuery, categoryFilter, stockFilter, featuredFilter, newArrivalFilter]);
+
+  const hasActiveFilters = categoryFilter !== 'all' || stockFilter !== 'all' || 
+    featuredFilter !== 'all' || newArrivalFilter !== 'all';
+
+  const resetFilters = () => {
+    setCategoryFilter('all');
+    setStockFilter('all');
+    setFeaturedFilter('all');
+    setNewArrivalFilter('all');
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-BD', {
@@ -351,15 +388,84 @@ export default function AdminProducts() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search products..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-4">
+              {/* Search and Filter Toggle Row */}
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="relative flex-1 max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search products..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={resetFilters}>
+                    <RotateCcw className="h-4 w-4 mr-1" />
+                    Reset Filters
+                  </Button>
+                )}
+              </div>
+              
+              {/* Filter Row */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <Filter className="h-4 w-4" />
+                  <span>Filters:</span>
+                </div>
+                
+                {/* Category Filter */}
+                <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+                  <SelectTrigger className="w-[160px] h-9">
+                    <SelectValue placeholder="Category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Categories</SelectItem>
+                    <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                {/* Stock Filter */}
+                <Select value={stockFilter} onValueChange={setStockFilter}>
+                  <SelectTrigger className="w-[140px] h-9">
+                    <SelectValue placeholder="Stock" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Stock</SelectItem>
+                    <SelectItem value="in_stock">In Stock</SelectItem>
+                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* Featured Filter */}
+                <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
+                  <SelectTrigger className="w-[130px] h-9">
+                    <SelectValue placeholder="Featured" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="featured">Featured</SelectItem>
+                    <SelectItem value="not_featured">Not Featured</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* New Arrival Filter */}
+                <Select value={newArrivalFilter} onValueChange={setNewArrivalFilter}>
+                  <SelectTrigger className="w-[140px] h-9">
+                    <SelectValue placeholder="New Arrival" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All</SelectItem>
+                    <SelectItem value="new_arrival">New Arrivals</SelectItem>
+                    <SelectItem value="not_new">Not New</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </CardHeader>

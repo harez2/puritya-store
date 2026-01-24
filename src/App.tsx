@@ -20,6 +20,7 @@ import Account from "./pages/Account";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
+import ScrollToTop from "./components/ScrollToTop";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
@@ -61,6 +62,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <UtmCapture />
+                <ScrollToTop />
                 <DataLayerProvider>
                   <FacebookPixelProvider>
                     <Routes>

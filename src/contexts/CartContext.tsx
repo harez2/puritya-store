@@ -4,7 +4,11 @@ import { supabase, CartItem, Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 import { useSiteSettings } from './SiteSettingsContext';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
-
+import {
+  trackAddToCart as trackDataLayerAddToCart,
+  trackRemoveFromCart as trackDataLayerRemoveFromCart,
+  DataLayerProduct,
+} from '@/lib/data-layer';
 export type CartItemWithProduct = {
   id: string;
   product_id: string;
@@ -41,8 +45,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItemWithProduct[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Facebook tracking helper
-  const trackAddToCart = (product: Product, quantity: number) => {
+  // Tracking helper for add to cart (Facebook + Data Layer)
+  const trackAddToCartEvent = (product: Product, quantity: number) => {
+    // Facebook Pixel tracking
     if (settings.facebook_pixel_id) {
       trackFacebookEvent(
         settings.facebook_pixel_id,
@@ -59,6 +64,28 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       );
     }
+    
+    // Data Layer tracking
+    const dataLayerProduct: DataLayerProduct = {
+      item_id: product.id,
+      item_name: product.name,
+      price: Number(product.price),
+      quantity,
+      item_category: product.category?.name,
+    };
+    trackDataLayerAddToCart(dataLayerProduct, 'BDT');
+  };
+
+  // Tracking helper for remove from cart (Data Layer)
+  const trackRemoveFromCartEvent = (product: Product, quantity: number) => {
+    const dataLayerProduct: DataLayerProduct = {
+      item_id: product.id,
+      item_name: product.name,
+      price: Number(product.price),
+      quantity,
+      item_category: product.category?.name,
+    };
+    trackDataLayerRemoveFromCart(dataLayerProduct, 'BDT');
   };
 
   // Load guest cart from localStorage
@@ -195,7 +222,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         // Track AddToCart event
         if (product) {
-          trackAddToCart(product as Product, quantity);
+          trackAddToCartEvent(product as Product, quantity);
         }
 
         toast({
@@ -237,7 +264,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
         // Track AddToCart event
         if (product) {
-          trackAddToCart(product as Product, quantity);
+          trackAddToCartEvent(product as Product, quantity);
         }
       }
 
@@ -286,10 +313,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const removeFromCart = async (cartItemId: string) => {
+    // Find item before removing for tracking
+    const itemToRemove = items.find(item => item.id === cartItemId);
+    
     if (!user) {
       const currentItems = items.filter(item => item.id !== cartItemId);
       setItems(currentItems);
       saveGuestCart(currentItems);
+      
+      // Track remove from cart
+      if (itemToRemove?.product) {
+        trackRemoveFromCartEvent(itemToRemove.product as Product, itemToRemove.quantity);
+      }
+      
       toast({
         title: "Removed from cart",
         description: "Item has been removed from your cart.",
@@ -304,6 +340,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         .eq('id', cartItemId);
 
       if (error) throw error;
+      
+      // Track remove from cart
+      if (itemToRemove?.product) {
+        trackRemoveFromCartEvent(itemToRemove.product as Product, itemToRemove.quantity);
+      }
+      
       await fetchCart();
       toast({
         title: "Removed from cart",

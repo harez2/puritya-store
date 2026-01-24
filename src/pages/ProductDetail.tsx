@@ -14,6 +14,7 @@ import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { formatPrice, cn } from '@/lib/utils';
+import { trackViewItem, trackViewItemList, DataLayerProduct } from '@/lib/data-layer';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -56,6 +57,17 @@ export default function ProductDetail() {
         setProduct(data);
         if (data?.sizes?.length) setSelectedSize(data.sizes[0]);
         if (data?.colors?.length) setSelectedColor(data.colors[0]);
+        
+        // Track view_item in data layer
+        if (data) {
+          const dataLayerProduct: DataLayerProduct = {
+            item_id: data.id,
+            item_name: data.name,
+            price: Number(data.price),
+            item_category: data.category?.name,
+          };
+          trackViewItem(dataLayerProduct, 'BDT');
+        }
         
         // Add to recently viewed
         if (data?.id) {

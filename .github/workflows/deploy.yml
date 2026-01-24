@@ -1,0 +1,42 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+
+            echo "📂 Go to project directory"
+            cd /opt/puritya-store
+
+            echo "⬇️ Pull latest code"
+            git pull origin main
+
+            echo "📦 Install dependencies"
+            npm ci
+
+            echo "🏗 Build project"
+            npm run build
+
+            echo "🚀 Deploy to web root"
+            rm -rf /var/www/puritya.store/*
+            cp -r dist/* /var/www/puritya.store/
+
+            echo "🔄 Reload Nginx"
+            sudo nginx -t
+            sudo systemctl reload nginx
+
+            echo "✅ Deployment completed"

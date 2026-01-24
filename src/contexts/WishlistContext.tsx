@@ -2,7 +2,9 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useAuth } from './AuthContext';
 import { supabase, WishlistItem, Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
+import { useSiteSettings } from './SiteSettingsContext';
 import { trackAddToWishlist, DataLayerProduct } from '@/lib/data-layer';
+import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 type WishlistContextType = {
   items: (WishlistItem & { product: Product })[];
   loading: boolean;
@@ -16,6 +18,7 @@ const WishlistContext = createContext<WishlistContextType | undefined>(undefined
 export function WishlistProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { settings } = useSiteSettings();
   const [items, setItems] = useState<(WishlistItem & { product: Product })[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -93,7 +96,7 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
 
         if (error) throw error;
         
-        // Track add to wishlist in data layer
+        // Track add to wishlist in data layer and Facebook Pixel
         if (product) {
           const dataLayerProduct: DataLayerProduct = {
             item_id: product.id,
@@ -102,6 +105,24 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             item_category: product.category?.name,
           };
           trackAddToWishlist(dataLayerProduct, 'BDT');
+          
+          // Track AddToWishlist in Facebook Pixel with content_ids for catalog matching
+          if (settings.facebook_pixel_id) {
+            trackFacebookEvent(
+              settings.facebook_pixel_id,
+              settings.facebook_capi_enabled,
+              settings.facebook_access_token || '',
+              FacebookEvents.AddToWishlist,
+              {
+                content_ids: [product.id],
+                content_name: product.name,
+                content_type: 'product',
+                content_category: product.category?.name,
+                value: Number(product.price),
+                currency: 'BDT',
+              }
+            );
+          }
         }
         
         toast({

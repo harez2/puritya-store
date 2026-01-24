@@ -13,8 +13,10 @@ import { supabase, Product } from '@/lib/supabase';
 import { useCart } from '@/contexts/CartContext';
 import { useWishlist } from '@/contexts/WishlistContext';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { formatPrice, cn } from '@/lib/utils';
 import { trackViewItem, trackViewItemList, DataLayerProduct } from '@/lib/data-layer';
+import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 
 export default function ProductDetail() {
   const { slug } = useParams();
@@ -22,6 +24,7 @@ export default function ProductDetail() {
   const { addToCart } = useCart();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { recentlyViewed, addProduct: addToRecentlyViewed, refresh: refreshRecentlyViewed } = useRecentlyViewed();
+  const { settings } = useSiteSettings();
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -67,6 +70,24 @@ export default function ProductDetail() {
             item_category: data.category?.name,
           };
           trackViewItem(dataLayerProduct, 'BDT');
+          
+          // Track ViewContent in Facebook Pixel with content_ids for catalog matching
+          if (settings.facebook_pixel_id) {
+            trackFacebookEvent(
+              settings.facebook_pixel_id,
+              settings.facebook_capi_enabled,
+              settings.facebook_access_token || '',
+              FacebookEvents.ViewContent,
+              {
+                content_ids: [data.id],
+                content_name: data.name,
+                content_type: 'product',
+                content_category: data.category?.name,
+                value: Number(data.price),
+                currency: 'BDT',
+              }
+            );
+          }
         }
         
         // Add to recently viewed

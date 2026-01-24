@@ -106,6 +106,8 @@ export default function AdminProducts() {
   const [quickEditProduct, setQuickEditProduct] = useState<Product | null>(null);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -269,6 +271,30 @@ export default function AdminProducts() {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    setBulkDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .in('id', selectedProductIds);
+
+      if (error) throw error;
+      
+      toast.success(`Deleted ${selectedProductIds.length} product(s)`);
+      setSelectedProductIds([]);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Error bulk deleting products:', error);
+      toast.error(error.message || 'Failed to delete products');
+    } finally {
+      setBulkDeleting(false);
+      setIsBulkDeleteDialogOpen(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -302,14 +328,24 @@ export default function AdminProducts() {
             <span className="text-sm font-medium">
               {selectedProductIds.length} product(s) selected
             </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedProductIds([])}
-            >
-              <X className="h-4 w-4 mr-1" />
-              Clear Selection
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => setIsBulkDeleteDialogOpen(true)}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Delete Selected
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setSelectedProductIds([])}
+              >
+                <X className="h-4 w-4 mr-1" />
+                Clear
+              </Button>
+            </div>
           </div>
         )}
 
@@ -690,6 +726,28 @@ export default function AdminProducts() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation Dialog */}
+      <AlertDialog open={isBulkDeleteDialogOpen} onOpenChange={setIsBulkDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedProductIds.length} Products</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {selectedProductIds.length} selected product(s)? This action cannot be undone and will permanently remove all selected products.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={bulkDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleBulkDelete} 
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={bulkDeleting}
+            >
+              {bulkDeleting ? 'Deleting...' : `Delete ${selectedProductIds.length} Products`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

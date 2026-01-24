@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -265,7 +265,7 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 md:grid-cols-10 gap-2">
+          <TabsList className="grid w-full grid-cols-6 md:grid-cols-12 gap-2">
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -309,6 +309,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="gtm" className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
               <span className="hidden sm:inline">GTM</span>
+            </TabsTrigger>
+            <TabsTrigger value="seo" className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              <span className="hidden sm:inline">SEO</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1022,6 +1026,121 @@ export default function AdminCustomization() {
               onContainerIdChange={(value) => handleChange('gtm_container_id', value)}
               onEnabledChange={(value) => handleChange('gtm_enabled', value)}
             />
+          </TabsContent>
+
+          {/* Global SEO Tab */}
+          <TabsContent value="seo" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Title & Meta Settings</CardTitle>
+                <CardDescription>Configure default SEO settings for your store</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label htmlFor="seo_title_template">Title Template</Label>
+                  <Input
+                    id="seo_title_template"
+                    value={localSettings.seo_title_template || '{page} | {store}'}
+                    onChange={(e) => handleChange('seo_title_template', e.target.value)}
+                    placeholder="{page} | {store}"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Use {'{page}'} for page title and {'{store}'} for store name. Example: "Products | Puritya"
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="seo_default_description">Default Meta Description</Label>
+                  <Textarea
+                    id="seo_default_description"
+                    value={localSettings.seo_default_description || ''}
+                    onChange={(e) => handleChange('seo_default_description', e.target.value)}
+                    placeholder="A brief description of your store for search engines..."
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {(localSettings.seo_default_description || '').length}/160 characters (recommended max)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="seo_default_keywords">Default Keywords</Label>
+                  <Input
+                    id="seo_default_keywords"
+                    value={localSettings.seo_default_keywords || ''}
+                    onChange={(e) => handleChange('seo_default_keywords', e.target.value)}
+                    placeholder="fashion, dresses, women's clothing, accessories"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Comma-separated keywords for your store
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Social Sharing</CardTitle>
+                <CardDescription>Configure how your site appears when shared on social media</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Default OG Image</Label>
+                  <SingleImageUpload
+                    image={localSettings.seo_og_image || null}
+                    onImageChange={(url) => handleChange('seo_og_image', url || '')}
+                    folder="seo"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Recommended: 1200x630px for optimal display on social platforms
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="seo_twitter_handle">Twitter Handle</Label>
+                  <Input
+                    id="seo_twitter_handle"
+                    value={localSettings.seo_twitter_handle || ''}
+                    onChange={(e) => handleChange('seo_twitter_handle', e.target.value)}
+                    placeholder="@yourstore"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Search Engine Indexing</CardTitle>
+                <CardDescription>Control how search engines crawl and index your site</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Allow Search Engine Indexing</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable to allow search engines like Google to index your pages
+                    </p>
+                  </div>
+                  <Switch
+                    checked={localSettings.seo_robots_index !== false}
+                    onCheckedChange={(checked) => handleChange('seo_robots_index', checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Allow Link Following</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Enable to allow search engines to follow links on your pages
+                    </p>
+                  </div>
+                  <Switch
+                    checked={localSettings.seo_robots_follow !== false}
+                    onCheckedChange={(checked) => handleChange('seo_robots_follow', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

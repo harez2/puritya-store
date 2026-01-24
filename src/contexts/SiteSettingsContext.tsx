@@ -108,6 +108,10 @@ export interface SiteSettings {
   facebook_capi_enabled: boolean;
   facebook_access_token: string;
 
+  // Facebook Catalog
+  facebook_catalog_id: string;
+  facebook_catalog_enabled: boolean;
+
   // Google Tag Manager
   gtm_container_id: string;
   gtm_enabled: boolean;
@@ -204,6 +208,8 @@ const defaultSettings: SiteSettings = {
   facebook_pixel_id: '',
   facebook_capi_enabled: false,
   facebook_access_token: '',
+  facebook_catalog_id: '',
+  facebook_catalog_enabled: false,
   gtm_container_id: '',
   gtm_enabled: false,
   shipping_options: [

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap, X } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -42,6 +43,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductBulkActions } from '@/components/admin/ProductBulkActions';
+import { ProductBulkEdit } from '@/components/admin/ProductBulkEdit';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { ProductQuickEdit } from '@/components/admin/ProductQuickEdit';
 
@@ -103,6 +105,7 @@ export default function AdminProducts() {
   const [saving, setSaving] = useState(false);
   const [quickEditProduct, setQuickEditProduct] = useState<Product | null>(null);
   const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   useEffect(() => {
     fetchProducts();
@@ -275,6 +278,12 @@ export default function AdminProducts() {
             <p className="text-muted-foreground">Manage your product catalog</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <ProductBulkEdit
+              selectedProductIds={selectedProductIds}
+              categories={categories}
+              onComplete={fetchProducts}
+              onClearSelection={() => setSelectedProductIds([])}
+            />
             <ProductBulkActions
               products={products}
               categories={categories}
@@ -286,6 +295,23 @@ export default function AdminProducts() {
             </Button>
           </div>
         </div>
+
+        {/* Selection Bar */}
+        {selectedProductIds.length > 0 && (
+          <div className="bg-muted/50 border rounded-lg p-3 flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {selectedProductIds.length} product(s) selected
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedProductIds([])}
+            >
+              <X className="h-4 w-4 mr-1" />
+              Clear Selection
+            </Button>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -313,6 +339,18 @@ export default function AdminProducts() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
+                      <th className="py-3 px-2 w-10">
+                        <Checkbox
+                          checked={filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedProductIds(filteredProducts.map(p => p.id));
+                            } else {
+                              setSelectedProductIds([]);
+                            }
+                          }}
+                        />
+                      </th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stock</th>
@@ -322,7 +360,19 @@ export default function AdminProducts() {
                   </thead>
                   <tbody>
                     {filteredProducts.map((product) => (
-                      <tr key={product.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <tr key={product.id} className={`border-b last:border-0 hover:bg-muted/50 ${selectedProductIds.includes(product.id) ? 'bg-muted/30' : ''}`}>
+                        <td className="py-3 px-2">
+                          <Checkbox
+                            checked={selectedProductIds.includes(product.id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedProductIds(prev => [...prev, product.id]);
+                              } else {
+                                setSelectedProductIds(prev => prev.filter(id => id !== product.id));
+                              }
+                            }}
+                          />
+                        </td>
                         <td className="py-3 px-2">
                           <div className="flex items-center gap-3">
                             {product.images && product.images[0] ? (

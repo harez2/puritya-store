@@ -121,6 +121,15 @@ export interface SiteSettings {
 
   // Payment Methods
   payment_methods: PaymentMethod[];
+
+  // Global SEO Settings
+  seo_title_template: string;
+  seo_default_description: string;
+  seo_default_keywords: string;
+  seo_og_image: string;
+  seo_twitter_handle: string;
+  seo_robots_index: boolean;
+  seo_robots_follow: boolean;
 }
 
 export interface CustomThemePreset {
@@ -221,6 +230,14 @@ const defaultSettings: SiteSettings = {
     { id: 'bkash', name: 'bKash', type: 'bkash', enabled: true, accountNumber: '' },
     { id: 'nagad', name: 'Nagad', type: 'nagad', enabled: true, accountNumber: '' },
   ],
+  // Global SEO defaults
+  seo_title_template: '{page} | {store}',
+  seo_default_description: '',
+  seo_default_keywords: '',
+  seo_og_image: '',
+  seo_twitter_handle: '',
+  seo_robots_index: true,
+  seo_robots_follow: true,
 };
 
 interface SiteSettingsContextType {

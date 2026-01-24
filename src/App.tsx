@@ -10,6 +10,7 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
+import { GoogleTagManagerProvider } from "@/components/GoogleTagManagerProvider";
 import { captureUtmParams } from "@/hooks/useUtmTracking";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import Index from "./pages/Index";
@@ -66,36 +67,37 @@ const App = () => (
                 <UtmCapture />
                 <ScrollToTop />
                 <DataLayerProvider>
-                  <FacebookPixelProvider>
-                    <Routes>
-                      <Route path="/" element={<Index />} />
-                      <Route path="/shop" element={<Shop />} />
-                      <Route path="/product/:slug" element={<ProductDetail />} />
-                      <Route path="/auth" element={<Auth />} />
-                      <Route path="/account" element={<Account />} />
-                      <Route path="/wishlist" element={<Wishlist />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/blog" element={<Blog />} />
-                      <Route path="/blog/:slug" element={<BlogDetail />} />
-                      {/* Admin Routes */}
-                      <Route path="/admin" element={<AdminDashboard />} />
-                      <Route path="/admin/products" element={<AdminProducts />} />
-                      <Route path="/admin/orders" element={<AdminOrders />} />
-                      <Route path="/admin/customers" element={<AdminCustomers />} />
-                      <Route path="/admin/categories" element={<AdminCategories />} />
-                      <Route path="/admin/pages" element={<AdminPages />} />
-                      <Route path="/admin/reviews" element={<AdminReviews />} />
-                      <Route path="/admin/roles" element={<AdminRoles />} />
-                      <Route path="/admin/blogs" element={<AdminBlogs />} />
-                      <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
-                      <Route path="/admin/customization" element={<AdminCustomization />} />
-                      <Route path="/admin/settings" element={<AdminSettings />} />
-                      {/* Dynamic pages - must be last to catch remaining routes */}
-                      <Route path="/:slug" element={<DynamicPage />} />
-                      <Route path="*" element={<NotFound />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </FacebookPixelProvider>
+                  <GoogleTagManagerProvider>
+                    <FacebookPixelProvider>
+                      <Routes>
+                        <Route path="/" element={<Index />} />
+                        <Route path="/shop" element={<Shop />} />
+                        <Route path="/product/:slug" element={<ProductDetail />} />
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/account" element={<Account />} />
+                        <Route path="/wishlist" element={<Wishlist />} />
+                        <Route path="/checkout" element={<Checkout />} />
+                        <Route path="/blog" element={<Blog />} />
+                        <Route path="/blog/:slug" element={<BlogDetail />} />
+                        {/* Admin Routes */}
+                        <Route path="/admin" element={<AdminDashboard />} />
+                        <Route path="/admin/products" element={<AdminProducts />} />
+                        <Route path="/admin/orders" element={<AdminOrders />} />
+                        <Route path="/admin/customers" element={<AdminCustomers />} />
+                        <Route path="/admin/categories" element={<AdminCategories />} />
+                        <Route path="/admin/pages" element={<AdminPages />} />
+                        <Route path="/admin/reviews" element={<AdminReviews />} />
+                        <Route path="/admin/roles" element={<AdminRoles />} />
+                        <Route path="/admin/blogs" element={<AdminBlogs />} />
+                        <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
+                        <Route path="/admin/customization" element={<AdminCustomization />} />
+                        <Route path="/admin/settings" element={<AdminSettings />} />
+                        {/* Dynamic pages - must be last to catch remaining routes */}
+                        <Route path="/:slug" element={<DynamicPage />} />
+                        <Route path="*" element={<NotFound />} />
+                      </Routes>
+                    </FacebookPixelProvider>
+                  </GoogleTagManagerProvider>
                 </DataLayerProvider>
               </BrowserRouter>
             </TooltipProvider>

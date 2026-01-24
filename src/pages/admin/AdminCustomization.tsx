@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +19,7 @@ import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
 import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
 import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
+import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup';
 
 interface HSLColor {
   h: number;
@@ -304,6 +305,10 @@ export default function AdminCustomization() {
             <TabsTrigger value="facebook" className="flex items-center gap-2">
               <Facebook className="h-4 w-4" />
               <span className="hidden sm:inline">Facebook</span>
+            </TabsTrigger>
+            <TabsTrigger value="gtm" className="flex items-center gap-2">
+              <Tag className="h-4 w-4" />
+              <span className="hidden sm:inline">GTM</span>
             </TabsTrigger>
           </TabsList>
 
@@ -1002,6 +1007,16 @@ export default function AdminCustomization() {
               onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
               onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
               onAccessTokenChange={(value) => handleChange('facebook_access_token', value)}
+            />
+          </TabsContent>
+
+          {/* Google Tag Manager Tab */}
+          <TabsContent value="gtm" className="space-y-6">
+            <GoogleTagManagerSetup
+              containerId={localSettings.gtm_container_id || ''}
+              enabled={localSettings.gtm_enabled || false}
+              onContainerIdChange={(value) => handleChange('gtm_container_id', value)}
+              onEnabledChange={(value) => handleChange('gtm_enabled', value)}
             />
           </TabsContent>
         </Tabs>

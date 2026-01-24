@@ -92,6 +92,7 @@ export type Database = {
           excerpt: string | null
           featured_image: string | null
           id: string
+          meta_description: string | null
           published: boolean
           published_at: string | null
           slug: string
@@ -106,6 +107,7 @@ export type Database = {
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          meta_description?: string | null
           published?: boolean
           published_at?: string | null
           slug: string
@@ -120,6 +122,7 @@ export type Database = {
           excerpt?: string | null
           featured_image?: string | null
           id?: string
+          meta_description?: string | null
           published?: boolean
           published_at?: string | null
           slug?: string
@@ -496,6 +499,7 @@ export type Database = {
           images: string[] | null
           in_stock: boolean | null
           low_stock_threshold: number
+          meta_description: string | null
           name: string
           new_arrival: boolean | null
           price: number
@@ -516,6 +520,7 @@ export type Database = {
           images?: string[] | null
           in_stock?: boolean | null
           low_stock_threshold?: number
+          meta_description?: string | null
           name: string
           new_arrival?: boolean | null
           price: number
@@ -536,6 +541,7 @@ export type Database = {
           images?: string[] | null
           in_stock?: boolean | null
           low_stock_threshold?: number
+          meta_description?: string | null
           name?: string
           new_arrival?: boolean | null
           price?: number

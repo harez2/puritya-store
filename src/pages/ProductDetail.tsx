@@ -1,5 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { Heart, Minus, Plus, ShoppingBag, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -160,9 +161,29 @@ export default function ProductDetail() {
     ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
     : 0;
 
+  // Strip HTML for fallback meta description
+  const stripHtml = (html: string) => {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  };
+
+  // Get meta description with fallbacks
+  const metaDescription = product.meta_description || 
+    (product.short_description ? stripHtml(product.short_description).substring(0, 160) : '') ||
+    (product.description ? stripHtml(product.description).substring(0, 160) : '');
 
   return (
     <Layout>
+      <Helmet>
+        <title>{product.name} | {settings.store_name}</title>
+        {metaDescription && <meta name="description" content={metaDescription} />}
+        <meta property="og:title" content={product.name} />
+        {metaDescription && <meta property="og:description" content={metaDescription} />}
+        {product.images?.[0] && <meta property="og:image" content={product.images[0]} />}
+        <meta property="og:type" content="product" />
+        <meta property="product:price:amount" content={String(product.price)} />
+        <meta property="product:price:currency" content="BDT" />
+      </Helmet>
       <div className="container mx-auto px-4 py-8">
         <PageBreadcrumb items={breadcrumbItems} className="mb-8" />
 

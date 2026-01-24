@@ -66,6 +66,7 @@ type Blog = {
   created_at: string;
   updated_at: string;
   category_id: string | null;
+  meta_description: string | null;
   blog_categories: BlogCategory | null;
 };
 
@@ -96,6 +97,7 @@ export default function AdminBlogs() {
     featured_image: '',
     published: false,
     category_id: '',
+    meta_description: '',
   });
 
   useEffect(() => {
@@ -147,6 +149,7 @@ export default function AdminBlogs() {
       featured_image: '',
       published: false,
       category_id: '',
+      meta_description: '',
     });
     setIsDialogOpen(true);
   };
@@ -161,6 +164,7 @@ export default function AdminBlogs() {
       featured_image: blog.featured_image || '',
       published: blog.published,
       category_id: blog.category_id || '',
+      meta_description: blog.meta_description || '',
     });
     setIsDialogOpen(true);
   };
@@ -189,6 +193,7 @@ export default function AdminBlogs() {
         published_at: formData.published ? new Date().toISOString() : null,
         author_id: user?.id,
         category_id: formData.category_id || null,
+        meta_description: formData.meta_description || null,
       };
 
       if (selectedBlog) {
@@ -433,6 +438,20 @@ export default function AdminBlogs() {
                 placeholder="Brief description of the post..."
                 rows={2}
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meta_description">Meta Description (SEO)</Label>
+              <Textarea
+                id="meta_description"
+                value={formData.meta_description}
+                onChange={(e) => setFormData(prev => ({ ...prev, meta_description: e.target.value }))}
+                placeholder="Search engine description (recommended: 150-160 characters)"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">
+                {formData.meta_description.length}/160 characters
+              </p>
             </div>
 
             <div className="space-y-2">

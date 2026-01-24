@@ -21,6 +21,7 @@ type Blog = {
   published_at: string | null;
   created_at: string;
   category_id: string | null;
+  meta_description: string | null;
 };
 
 type RelatedPost = {
@@ -149,7 +150,7 @@ export default function BlogDetail() {
   };
 
   const readingTime = calculateReadingTime(blog.content);
-  const metaDescription = blog.excerpt || stripHtml(blog.content).substring(0, 160);
+  const metaDescription = blog.meta_description || blog.excerpt || stripHtml(blog.content).substring(0, 160);
   const canonicalUrl = `${SITE_URL}/blog/${blog.slug}`;
   const publishedDate = blog.published_at || blog.created_at;
 

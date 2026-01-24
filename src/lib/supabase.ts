@@ -8,6 +8,7 @@ export type Product = {
   slug: string;
   short_description: string | null;
   description: string | null;
+  meta_description: string | null;
   price: number;
   compare_at_price: number | null;
   category_id: string | null;

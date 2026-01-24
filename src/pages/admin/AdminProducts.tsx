@@ -49,6 +49,7 @@ interface Product {
   slug: string;
   short_description: string | null;
   description: string | null;
+  meta_description: string | null;
   price: number;
   compare_at_price: number | null;
   images: string[] | null;
@@ -73,6 +74,7 @@ const initialProductForm = {
   slug: '',
   short_description: '',
   description: '',
+  meta_description: '',
   price: 0,
   compare_at_price: 0,
   images: [] as string[],
@@ -155,6 +157,7 @@ export default function AdminProducts() {
         slug: product.slug,
         short_description: product.short_description || '',
         description: product.description || '',
+        meta_description: product.meta_description || '',
         price: product.price,
         compare_at_price: product.compare_at_price || 0,
         images: product.images || [],
@@ -197,6 +200,7 @@ export default function AdminProducts() {
         slug: formData.slug || generateSlug(formData.name),
         short_description: formData.short_description || null,
         description: formData.description || null,
+        meta_description: formData.meta_description || null,
         price: formData.price,
         compare_at_price: formData.compare_at_price || null,
         images: formData.images,
@@ -459,6 +463,20 @@ export default function AdminProducts() {
                 onChange={(content) => setFormData({ ...formData, description: content })}
                 placeholder="Detailed product description with full formatting..."
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="meta_description">Meta Description (SEO)</Label>
+              <Textarea
+                id="meta_description"
+                value={formData.meta_description}
+                onChange={(e) => setFormData({ ...formData, meta_description: e.target.value })}
+                placeholder="Brief description for search engines (recommended: 150-160 characters)"
+                rows={2}
+              />
+              <p className="text-xs text-muted-foreground">
+                {formData.meta_description.length}/160 characters
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

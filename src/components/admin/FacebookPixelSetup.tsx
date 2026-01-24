@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Key, Eye, EyeOff, ShoppingBag } from 'lucide-react';
+import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Key, Eye, EyeOff, ShoppingBag, Copy, Rss } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { toast } from 'sonner';
 
 interface FacebookPixelSetupProps {
   pixelId: string;
@@ -326,6 +327,58 @@ export function FacebookPixelSetup({
                   for dynamic product ads and retargeting.
                 </AlertDescription>
               </Alert>
+
+              <Separator />
+
+              {/* Product Feed URL Section */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Rss className="h-4 w-4 text-muted-foreground" />
+                  <h4 className="font-medium text-sm">Product Feed URL</h4>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Use this URL in Facebook Commerce Manager to automatically sync your products:
+                </p>
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-feed`}
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-feed`);
+                        toast.success('XML feed URL copied!');
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-feed?format=csv`}
+                      className="font-mono text-xs"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/facebook-feed?format=csv`);
+                        toast.success('CSV feed URL copied!');
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    First URL returns XML format, second returns CSV format. Both are compatible with Facebook Catalog.
+                  </p>
+                </div>
+              </div>
 
               <Separator />
 

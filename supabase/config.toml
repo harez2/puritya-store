@@ -1,1 +1,10 @@
 project_id = "kmbcslfbhpcmxvdsokja"
+
+[functions.admin-users]
+verify_jwt = true
+
+[functions.facebook-capi]
+verify_jwt = false
+
+[functions.facebook-feed]
+verify_jwt = false

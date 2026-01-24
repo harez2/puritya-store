@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
+import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -38,9 +39,18 @@ export default function Checkout() {
   const { settings } = useSiteSettings();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { 
+    processing: gatewayProcessing, 
+    initiateBkashPayment, 
+    initiateSslcommerzPayment 
+  } = usePaymentGateway();
+  
+  // Get enabled payment methods from settings
+  const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
+  const defaultMethod = enabledPaymentMethods.find(m => m.isDefault) || enabledPaymentMethods[0];
   
   const [shippingLocation, setShippingLocation] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
-  const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [paymentMethod, setPaymentMethod] = useState<string>(defaultMethod?.type || 'cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState('');
@@ -180,6 +190,10 @@ export default function Checkout() {
       // Generate order number
       const orderNum = 'PUR-' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '-' + Math.floor(1000 + Math.random() * 9000);
 
+      // Get the selected payment method details
+      const selectedMethod = enabledPaymentMethods.find(m => m.type === paymentMethod);
+      const paymentLabel = selectedMethod?.name || paymentMethod;
+
       // Store order details for confirmation page before clearing cart
       const savedOrderDetails = {
         items: [...items],
@@ -192,7 +206,7 @@ export default function Checkout() {
           address: form.address.trim(),
           location: shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
         },
-        paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad',
+        paymentMethod: paymentLabel,
         orderDate: new Date().toLocaleString('en-BD', { 
           dateStyle: 'long', 
           timeStyle: 'short',
@@ -202,6 +216,19 @@ export default function Checkout() {
 
       // Get UTM params
       const utmParams = getUtmParams();
+
+      // For non-logged-in users with gateway payments, we need to require login
+      if (!user && (paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz')) {
+        toast({
+          title: "Login Required",
+          description: "Please sign in to use online payment gateways.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      let orderId: string | null = null;
 
       if (user) {
         // Logged-in user: save to database
@@ -216,7 +243,7 @@ export default function Checkout() {
             total,
             shipping_address: shippingAddress,
             payment_method: paymentMethod,
-            payment_status: 'pending',
+            payment_status: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
             notes: form.notes.trim() || null,
             order_source: 'cart',
             utm_source: utmParams.utm_source,
@@ -227,6 +254,8 @@ export default function Checkout() {
           .single();
 
         if (orderError) throw orderError;
+
+        orderId = order.id;
 
         // Add order items
         const orderItems = items.map(item => ({
@@ -247,11 +276,44 @@ export default function Checkout() {
         if (itemsError) throw itemsError;
 
         setOrderNumber(order.order_number);
+
+        // Handle gateway payments - redirect to payment provider
+        if (paymentMethod === 'bkash_gateway') {
+          const callbackUrl = `${window.location.origin}/payment/callback`;
+          const result = await initiateBkashPayment(order.id, callbackUrl);
+          
+          if (result.success && result.redirectUrl) {
+            // Redirect to bKash payment page
+            window.location.href = result.redirectUrl;
+            return;
+          } else {
+            throw new Error(result.error || 'Failed to initiate bKash payment');
+          }
+        }
+
+        if (paymentMethod === 'sslcommerz') {
+          const baseUrl = window.location.origin;
+          const result = await initiateSslcommerzPayment(
+            order.id,
+            `${baseUrl}/payment/callback?status=VALID`,
+            `${baseUrl}/payment/callback?status=FAILED`,
+            `${baseUrl}/payment/callback?status=CANCELLED`
+          );
+          
+          if (result.success && result.redirectUrl) {
+            // Redirect to SSLCommerz payment page
+            window.location.href = result.redirectUrl;
+            return;
+          } else {
+            throw new Error(result.error || 'Failed to initiate SSLCommerz payment');
+          }
+        }
       } else {
         // Guest checkout: just show confirmation
         setOrderNumber(orderNum);
       }
 
+      // For non-gateway payments, complete the order immediately
       setOrderDetails(savedOrderDetails);
       await clearCart();
       clearUtmParams(); // Clear UTM after order is placed
@@ -297,9 +359,9 @@ export default function Checkout() {
         );
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error placing order:', error);
-      const errorMessage = error?.message || error?.details || "There was an error placing your order. Please try again.";
+      const errorMessage = error instanceof Error ? error.message : "There was an error placing your order. Please try again.";
       toast({
         title: "Order Failed",
         description: errorMessage,
@@ -564,28 +626,58 @@ export default function Checkout() {
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="font-display text-xl mb-6">Payment Method</h2>
                 <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
-                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === 'cod' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                    <RadioGroupItem value="cod" id="cod" />
-                    <Label htmlFor="cod" className="flex-1 cursor-pointer">
-                      <span className="font-medium">Cash on Delivery</span>
-                      <p className="text-sm text-muted-foreground">Pay when you receive your order</p>
-                    </Label>
-                  </div>
-                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${paymentMethod === 'bkash' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                    <RadioGroupItem value="bkash" id="bkash" />
-                    <Label htmlFor="bkash" className="flex-1 cursor-pointer">
-                      <span className="font-medium">bKash</span>
-                      <p className="text-sm text-muted-foreground">Pay via bKash mobile banking</p>
-                    </Label>
-                  </div>
-                  <div className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${paymentMethod === 'nagad' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                    <RadioGroupItem value="nagad" id="nagad" />
-                    <Label htmlFor="nagad" className="flex-1 cursor-pointer">
-                      <span className="font-medium">Nagad</span>
-                      <p className="text-sm text-muted-foreground">Pay via Nagad mobile banking</p>
-                    </Label>
-                  </div>
+                  {enabledPaymentMethods.map((method, index) => {
+                    const isGateway = method.type === 'bkash_gateway' || method.type === 'sslcommerz';
+                    const descriptions: Record<string, string> = {
+                      cod: 'Pay when you receive your order',
+                      bkash: 'Pay via bKash (send to merchant number)',
+                      nagad: 'Pay via Nagad (send to merchant number)',
+                      bkash_gateway: 'Secure online payment via bKash',
+                      sslcommerz: 'Pay with Cards, bKash, Nagad & more',
+                      card: 'Pay with credit or debit card',
+                      other: method.instructions || 'Alternative payment method',
+                    };
+                    
+                    return (
+                      <div 
+                        key={method.id}
+                        className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${index > 0 ? 'mt-3' : ''} ${paymentMethod === method.type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}
+                      >
+                        <RadioGroupItem value={method.type} id={`payment_${method.id}`} />
+                        <Label htmlFor={`payment_${method.id}`} className="flex-1 cursor-pointer">
+                          <span className="font-medium flex items-center gap-2">
+                            {method.name}
+                            {isGateway && (
+                              <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                Online
+                              </span>
+                            )}
+                          </span>
+                          <p className="text-sm text-muted-foreground">
+                            {descriptions[method.type] || method.instructions}
+                          </p>
+                        </Label>
+                      </div>
+                    );
+                  })}
                 </RadioGroup>
+                
+                {/* Show instructions for manual payment methods */}
+                {(paymentMethod === 'bkash' || paymentMethod === 'nagad') && (
+                  <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <p className="text-sm font-medium mb-2">Payment Instructions:</p>
+                    {enabledPaymentMethods.find(m => m.type === paymentMethod)?.accountNumber && (
+                      <p className="text-sm text-muted-foreground">
+                        Send payment to: <span className="font-mono font-medium">{enabledPaymentMethods.find(m => m.type === paymentMethod)?.accountNumber}</span>
+                      </p>
+                    )}
+                    {enabledPaymentMethods.find(m => m.type === paymentMethod)?.instructions && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {enabledPaymentMethods.find(m => m.type === paymentMethod)?.instructions}
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Order Notes */}
@@ -648,9 +740,15 @@ export default function Checkout() {
                   className="w-full mt-6" 
                   size="lg"
                   onClick={handleSubmitOrder}
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || gatewayProcessing}
                 >
-                  {isSubmitting ? 'Placing Order...' : 'Place Order'}
+                  {isSubmitting || gatewayProcessing ? (
+                    'Processing...'
+                  ) : paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz' ? (
+                    'Pay Now'
+                  ) : (
+                    'Place Order'
+                  )}
                 </Button>
                 
                 <p className="text-xs text-muted-foreground text-center mt-4">

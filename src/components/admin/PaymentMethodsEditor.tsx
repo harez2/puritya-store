@@ -15,14 +15,18 @@ const paymentTypeIcons: Record<string, React.ReactNode> = {
   bkash: <Smartphone className="h-5 w-5 text-pink-500" />,
   nagad: <Smartphone className="h-5 w-5 text-orange-500" />,
   card: <CreditCard className="h-5 w-5" />,
+  bkash_gateway: <Smartphone className="h-5 w-5 text-pink-500" />,
+  sslcommerz: <CreditCard className="h-5 w-5 text-green-600" />,
   other: <CreditCard className="h-5 w-5" />,
 };
 
 const paymentTypeLabels: Record<string, string> = {
   cod: 'Cash on Delivery',
-  bkash: 'bKash',
-  nagad: 'Nagad',
+  bkash: 'bKash (Manual)',
+  nagad: 'Nagad (Manual)',
   card: 'Card Payment',
+  bkash_gateway: 'bKash (Gateway)',
+  sslcommerz: 'SSLCommerz',
   other: 'Other',
 };
 
@@ -156,8 +160,10 @@ export default function PaymentMethodsEditor() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="cod">Cash on Delivery</SelectItem>
-                    <SelectItem value="bkash">bKash</SelectItem>
-                    <SelectItem value="nagad">Nagad</SelectItem>
+                    <SelectItem value="bkash">bKash (Manual)</SelectItem>
+                    <SelectItem value="nagad">Nagad (Manual)</SelectItem>
+                    <SelectItem value="bkash_gateway">bKash (Gateway)</SelectItem>
+                    <SelectItem value="sslcommerz">SSLCommerz</SelectItem>
                     <SelectItem value="card">Card Payment</SelectItem>
                     <SelectItem value="other">Other</SelectItem>
                   </SelectContent>

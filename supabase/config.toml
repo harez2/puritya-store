@@ -11,3 +11,9 @@ verify_jwt = false
 
 [functions.sitemap]
 verify_jwt = false
+
+[functions.bkash-payment]
+verify_jwt = false
+
+[functions.sslcommerz-payment]
+verify_jwt = false

@@ -7,6 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Store, Bell, Shield } from 'lucide-react';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentMethodsEditor from '@/components/admin/PaymentMethodsEditor';
+import PaymentGatewaysEditor from '@/components/admin/PaymentGatewaysEditor';
 
 export default function AdminSettings() {
   return (
@@ -58,6 +59,9 @@ export default function AdminSettings() {
 
           {/* Payment Methods */}
           <PaymentMethodsEditor />
+
+          {/* Payment Gateways */}
+          <PaymentGatewaysEditor />
 
           {/* Notification Settings */}
           <Card>

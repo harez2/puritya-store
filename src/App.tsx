@@ -20,6 +20,7 @@ import Auth from "./pages/Auth";
 import Account from "./pages/Account";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
+import PaymentCallback from "./pages/PaymentCallback";
 import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -77,6 +78,7 @@ const App = () => (
                         <Route path="/account" element={<Account />} />
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/checkout" element={<Checkout />} />
+                        <Route path="/payment/callback" element={<PaymentCallback />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogDetail />} />
                         {/* Admin Routes */}

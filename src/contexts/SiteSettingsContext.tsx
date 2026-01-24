@@ -33,10 +33,27 @@ export interface ShippingOption {
 export interface PaymentMethod {
   id: string;
   name: string;
-  type: 'cod' | 'bkash' | 'nagad' | 'card' | 'other';
+  type: 'cod' | 'bkash' | 'nagad' | 'card' | 'sslcommerz' | 'bkash_gateway' | 'other';
   enabled: boolean;
   instructions?: string;
   accountNumber?: string;
+  isDefault?: boolean;
+}
+
+export interface PaymentGatewayConfig {
+  // bKash Gateway
+  bkash_enabled: boolean;
+  bkash_sandbox: boolean;
+  bkash_app_key: string;
+  bkash_app_secret: string;
+  bkash_is_default: boolean;
+
+  // SSLCommerz Gateway
+  sslcommerz_enabled: boolean;
+  sslcommerz_sandbox: boolean;
+  sslcommerz_store_id: string;
+  sslcommerz_store_password: string;
+  sslcommerz_is_default: boolean;
 }
 
 export interface SiteSettings {
@@ -121,6 +138,9 @@ export interface SiteSettings {
 
   // Payment Methods
   payment_methods: PaymentMethod[];
+
+  // Payment Gateways
+  payment_gateways: PaymentGatewayConfig;
 
   // Global SEO Settings
   seo_title_template: string;
@@ -226,10 +246,23 @@ const defaultSettings: SiteSettings = {
     { id: '2', name: 'Outside Dhaka', price: 120, enabled: true },
   ],
   payment_methods: [
-    { id: 'cod', name: 'Cash on Delivery', type: 'cod', enabled: true },
+    { id: 'cod', name: 'Cash on Delivery', type: 'cod', enabled: true, isDefault: true },
     { id: 'bkash', name: 'bKash', type: 'bkash', enabled: true, accountNumber: '' },
     { id: 'nagad', name: 'Nagad', type: 'nagad', enabled: true, accountNumber: '' },
   ],
+  // Payment Gateways Configuration
+  payment_gateways: {
+    bkash_enabled: false,
+    bkash_sandbox: true,
+    bkash_app_key: '',
+    bkash_app_secret: '',
+    bkash_is_default: false,
+    sslcommerz_enabled: false,
+    sslcommerz_sandbox: true,
+    sslcommerz_store_id: '',
+    sslcommerz_store_password: '',
+    sslcommerz_is_default: false,
+  },
   // Global SEO defaults
   seo_title_template: '{page} | {store}',
   seo_default_description: '',

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -42,6 +43,7 @@ import { toast } from 'sonner';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductBulkActions } from '@/components/admin/ProductBulkActions';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { ProductQuickEdit } from '@/components/admin/ProductQuickEdit';
 
 interface Product {
   id: string;
@@ -99,6 +101,8 @@ export default function AdminProducts() {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState(initialProductForm);
   const [saving, setSaving] = useState(false);
+  const [quickEditProduct, setQuickEditProduct] = useState<Product | null>(null);
+  const [isQuickEditOpen, setIsQuickEditOpen] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -379,10 +383,20 @@ export default function AdminProducts() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => {
+                                  setQuickEditProduct(product);
+                                  setIsQuickEditOpen(true);
+                                }}
+                              >
+                                <Zap className="h-4 w-4 mr-2" />
+                                Quick Edit
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleOpenDialog(product)}>
                                 <Pencil className="h-4 w-4 mr-2" />
-                                Edit
+                                Full Edit
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 className="text-destructive"
                                 onClick={() => {
@@ -630,6 +644,15 @@ export default function AdminProducts() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Quick Edit Sheet */}
+      <ProductQuickEdit
+        product={quickEditProduct}
+        categories={categories}
+        open={isQuickEditOpen}
+        onOpenChange={setIsQuickEditOpen}
+        onSave={fetchProducts}
+      />
     </AdminLayout>
   );
 }

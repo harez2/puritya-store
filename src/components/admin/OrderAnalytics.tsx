@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,12 +15,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
-import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search, Users, MousePointerClick, Target } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search, Users, MousePointerClick, Target, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   BarChart,
   Bar,
@@ -592,6 +601,262 @@ export function OrderAnalytics() {
     }).format(amount);
   };
 
+  const formatCurrencyPlain = (amount: number) => {
+    return `BDT ${amount.toLocaleString('en-BD', { minimumFractionDigits: 0 })}`;
+  };
+
+  // Export to CSV
+  const exportToCSV = useCallback(() => {
+    try {
+      const dateRange = startDate && endDate 
+        ? `${format(startDate, 'yyyy-MM-dd')}_to_${format(endDate, 'yyyy-MM-dd')}`
+        : 'all-time';
+      
+      // Summary data
+      let csvContent = 'ANALYTICS REPORT\n';
+      csvContent += `Period,${startDate ? format(startDate, 'MMM d, yyyy') : 'All'} - ${endDate ? format(endDate, 'MMM d, yyyy') : 'All'}\n`;
+      csvContent += `Generated,${format(new Date(), 'MMM d, yyyy HH:mm')}\n\n`;
+      
+      // KPI Summary
+      csvContent += 'KEY METRICS\n';
+      csvContent += 'Metric,Value,Change vs Previous\n';
+      csvContent += `Total Revenue,${formatCurrencyPlain(stats.totalRevenue)},${percentageChanges.revenue.toFixed(1)}%\n`;
+      csvContent += `Total Orders,${stats.totalOrders},${percentageChanges.orders.toFixed(1)}%\n`;
+      csvContent += `Average Order Value,${formatCurrencyPlain(stats.avgOrderValue)},${percentageChanges.avgOrder.toFixed(1)}%\n`;
+      csvContent += `Items Sold,${stats.totalItems},${percentageChanges.items.toFixed(1)}%\n\n`;
+      
+      // Conversion Stats
+      csvContent += 'CONVERSION FUNNEL\n';
+      csvContent += 'Metric,Value\n';
+      csvContent += `Total Visitors,${overallConversion.totalVisitors}\n`;
+      csvContent += `Total Conversions,${overallConversion.totalOrders}\n`;
+      csvContent += `Conversion Rate,${overallConversion.conversionRate.toFixed(2)}%\n\n`;
+      
+      // Top Products
+      csvContent += 'TOP PRODUCTS\n';
+      csvContent += 'Rank,Product Name,Quantity Sold,Revenue\n';
+      topProducts.forEach((product, index) => {
+        csvContent += `${index + 1},"${product.name}",${product.totalQuantity},${formatCurrencyPlain(product.totalRevenue)}\n`;
+      });
+      csvContent += '\n';
+      
+      // Top Categories
+      csvContent += 'TOP CATEGORIES\n';
+      csvContent += 'Rank,Category,Items Sold,Orders,Revenue\n';
+      topCategories.forEach((category, index) => {
+        csvContent += `${index + 1},"${category.name}",${category.totalQuantity},${category.orderCount},${formatCurrencyPlain(category.totalRevenue)}\n`;
+      });
+      csvContent += '\n';
+      
+      // Traffic Sources
+      csvContent += 'TRAFFIC SOURCES\n';
+      csvContent += 'Source,Orders,AOV,Revenue\n';
+      utmSourceData.forEach((data) => {
+        csvContent += `"${data.source}",${data.orders},${formatCurrencyPlain(data.avgOrderValue)},${formatCurrencyPlain(data.revenue)}\n`;
+      });
+      csvContent += '\n';
+      
+      // Conversion by Source
+      csvContent += 'CONVERSION BY SOURCE\n';
+      csvContent += 'Source,Visitors,Orders,Conversion Rate,Revenue\n';
+      conversionData.forEach((data) => {
+        csvContent += `"${data.source}",${data.visitors},${data.orders},${data.conversionRate.toFixed(2)}%,${formatCurrencyPlain(data.revenue)}\n`;
+      });
+      csvContent += '\n';
+      
+      // Campaign Performance
+      if (utmCampaignData.length > 0) {
+        csvContent += 'CAMPAIGN PERFORMANCE\n';
+        csvContent += 'Campaign,Source,Orders,Revenue,AOV\n';
+        utmCampaignData.forEach((campaign) => {
+          const aov = campaign.orders > 0 ? campaign.revenue / campaign.orders : 0;
+          csvContent += `"${campaign.campaign}","${campaign.source}",${campaign.orders},${formatCurrencyPlain(campaign.revenue)},${formatCurrencyPlain(aov)}\n`;
+        });
+      }
+      
+      // Create and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `analytics-report_${dateRange}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast.success('CSV report downloaded successfully');
+    } catch (error) {
+      console.error('Error exporting CSV:', error);
+      toast.error('Failed to export CSV');
+    }
+  }, [startDate, endDate, stats, percentageChanges, overallConversion, topProducts, topCategories, utmSourceData, conversionData, utmCampaignData]);
+
+  // Export to PDF
+  const exportToPDF = useCallback(() => {
+    try {
+      const dateRange = startDate && endDate 
+        ? `${format(startDate, 'MMM d, yyyy')} - ${format(endDate, 'MMM d, yyyy')}`
+        : 'All Time';
+      
+      const doc = new jsPDF();
+      let yPos = 20;
+      
+      // Title
+      doc.setFontSize(20);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Analytics Report', 14, yPos);
+      yPos += 10;
+      
+      // Date range
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(100);
+      doc.text(`Period: ${dateRange}`, 14, yPos);
+      yPos += 6;
+      doc.text(`Generated: ${format(new Date(), 'MMM d, yyyy HH:mm')}`, 14, yPos);
+      yPos += 12;
+      
+      // KPI Summary
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0);
+      doc.text('Key Metrics', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value', 'Change']],
+        body: [
+          ['Total Revenue', formatCurrencyPlain(stats.totalRevenue), `${percentageChanges.revenue >= 0 ? '+' : ''}${percentageChanges.revenue.toFixed(1)}%`],
+          ['Total Orders', stats.totalOrders.toString(), `${percentageChanges.orders >= 0 ? '+' : ''}${percentageChanges.orders.toFixed(1)}%`],
+          ['Average Order Value', formatCurrencyPlain(stats.avgOrderValue), `${percentageChanges.avgOrder >= 0 ? '+' : ''}${percentageChanges.avgOrder.toFixed(1)}%`],
+          ['Items Sold', stats.totalItems.toString(), `${percentageChanges.items >= 0 ? '+' : ''}${percentageChanges.items.toFixed(1)}%`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 76] },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+      
+      // Conversion Funnel
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Conversion Funnel', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Metric', 'Value']],
+        body: [
+          ['Total Visitors', overallConversion.totalVisitors.toString()],
+          ['Total Conversions', overallConversion.totalOrders.toString()],
+          ['Conversion Rate', `${overallConversion.conversionRate.toFixed(2)}%`],
+        ],
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 76] },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+      
+      // Top Products
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Top Products', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['#', 'Product', 'Qty Sold', 'Revenue']],
+        body: topProducts.map((p, i) => [
+          (i + 1).toString(),
+          p.name.substring(0, 30) + (p.name.length > 30 ? '...' : ''),
+          p.totalQuantity.toString(),
+          formatCurrencyPlain(p.totalRevenue),
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 76] },
+      });
+      
+      // New page for more tables
+      doc.addPage();
+      yPos = 20;
+      
+      // Traffic Sources
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Traffic Sources', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Source', 'Orders', 'AOV', 'Revenue']],
+        body: utmSourceData.map((d) => [
+          d.source,
+          d.orders.toString(),
+          formatCurrencyPlain(d.avgOrderValue),
+          formatCurrencyPlain(d.revenue),
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 76] },
+      });
+      
+      yPos = (doc as any).lastAutoTable.finalY + 12;
+      
+      // Conversion by Source
+      doc.setFontSize(14);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Conversion by Source', 14, yPos);
+      yPos += 8;
+      
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Source', 'Visitors', 'Orders', 'Conv. Rate', 'Revenue']],
+        body: conversionData.slice(0, 10).map((d) => [
+          d.source,
+          d.visitors.toString(),
+          d.orders.toString(),
+          `${d.conversionRate.toFixed(2)}%`,
+          formatCurrencyPlain(d.revenue),
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [139, 92, 76] },
+      });
+      
+      // Campaign Performance
+      if (utmCampaignData.length > 0) {
+        yPos = (doc as any).lastAutoTable.finalY + 12;
+        
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Campaign Performance', 14, yPos);
+        yPos += 8;
+        
+        autoTable(doc, {
+          startY: yPos,
+          head: [['Campaign', 'Source', 'Orders', 'Revenue']],
+          body: utmCampaignData.map((c) => [
+            c.campaign.substring(0, 25) + (c.campaign.length > 25 ? '...' : ''),
+            c.source,
+            c.orders.toString(),
+            formatCurrencyPlain(c.revenue),
+          ]),
+          theme: 'striped',
+          headStyles: { fillColor: [139, 92, 76] },
+        });
+      }
+      
+      // Save
+      const fileName = `analytics-report_${format(startDate || new Date(), 'yyyy-MM-dd')}_to_${format(endDate || new Date(), 'yyyy-MM-dd')}.pdf`;
+      doc.save(fileName);
+      
+      toast.success('PDF report downloaded successfully');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.error('Failed to export PDF');
+    }
+  }, [startDate, endDate, stats, percentageChanges, overallConversion, topProducts, utmSourceData, conversionData, utmCampaignData]);
+
   if (loading) {
     return (
       <Card>
@@ -698,6 +963,25 @@ export function OrderAnalytics() {
               <Label htmlFor="comparison-toggle" className="text-sm cursor-pointer">
                 Compare with previous period
               </Label>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="ml-2">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={exportToCSV}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Download CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={exportToPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Download PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
 

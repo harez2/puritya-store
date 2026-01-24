@@ -41,6 +41,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { ProductBulkActions } from '@/components/admin/ProductBulkActions';
+import { RichTextEditor } from '@/components/admin/RichTextEditor';
 
 interface Product {
   id: string;
@@ -427,11 +428,10 @@ export default function AdminProducts() {
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                rows={3}
+              <RichTextEditor
+                content={formData.description}
+                onChange={(content) => setFormData({ ...formData, description: content })}
+                placeholder="Write your product description here..."
               />
             </div>
 

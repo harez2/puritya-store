@@ -314,7 +314,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at: string
-          user_id: string
+          user_id: string | null
           utm_campaign: string | null
           utm_medium: string | null
           utm_source: string | null
@@ -333,7 +333,7 @@ export type Database = {
           subtotal: number
           total: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null
@@ -352,7 +352,7 @@ export type Database = {
           subtotal?: number
           total?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           utm_campaign?: string | null
           utm_medium?: string | null
           utm_source?: string | null

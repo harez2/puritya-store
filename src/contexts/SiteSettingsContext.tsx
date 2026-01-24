@@ -108,6 +108,10 @@ export interface SiteSettings {
   facebook_capi_enabled: boolean;
   facebook_access_token: string;
 
+  // Google Tag Manager
+  gtm_container_id: string;
+  gtm_enabled: boolean;
+
   // Shipping Options
   shipping_options: ShippingOption[];
 
@@ -200,6 +204,8 @@ const defaultSettings: SiteSettings = {
   facebook_pixel_id: '',
   facebook_capi_enabled: false,
   facebook_access_token: '',
+  gtm_container_id: '',
+  gtm_enabled: false,
   shipping_options: [
     { id: '1', name: 'Inside Dhaka', price: 60, enabled: true },
     { id: '2', name: 'Outside Dhaka', price: 120, enabled: true },

@@ -47,6 +47,7 @@ interface Product {
   id: string;
   name: string;
   slug: string;
+  short_description: string | null;
   description: string | null;
   price: number;
   compare_at_price: number | null;
@@ -70,6 +71,7 @@ interface Category {
 const initialProductForm = {
   name: '',
   slug: '',
+  short_description: '',
   description: '',
   price: 0,
   compare_at_price: 0,
@@ -151,6 +153,7 @@ export default function AdminProducts() {
       setFormData({
         name: product.name,
         slug: product.slug,
+        short_description: product.short_description || '',
         description: product.description || '',
         price: product.price,
         compare_at_price: product.compare_at_price || 0,
@@ -192,6 +195,7 @@ export default function AdminProducts() {
       const productData = {
         name: formData.name,
         slug: formData.slug || generateSlug(formData.name),
+        short_description: formData.short_description || null,
         description: formData.description || null,
         price: formData.price,
         compare_at_price: formData.compare_at_price || null,
@@ -427,11 +431,21 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="short_description">Short Description</Label>
+              <RichTextEditor
+                content={formData.short_description}
+                onChange={(content) => setFormData({ ...formData, short_description: content })}
+                placeholder="Brief product summary for listings and previews..."
+                compact
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="description">Long Description</Label>
               <RichTextEditor
                 content={formData.description}
                 onChange={(content) => setFormData({ ...formData, description: content })}
-                placeholder="Write your product description here..."
+                placeholder="Detailed product description with full formatting..."
               />
             </div>
 

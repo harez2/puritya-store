@@ -466,6 +466,7 @@ export type Database = {
           name: string
           new_arrival: boolean | null
           price: number
+          short_description: string | null
           sizes: string[] | null
           slug: string
           stock_quantity: number
@@ -485,6 +486,7 @@ export type Database = {
           name: string
           new_arrival?: boolean | null
           price: number
+          short_description?: string | null
           sizes?: string[] | null
           slug: string
           stock_quantity?: number
@@ -504,6 +506,7 @@ export type Database = {
           name?: string
           new_arrival?: boolean | null
           price?: number
+          short_description?: string | null
           sizes?: string[] | null
           slug?: string
           stock_quantity?: number

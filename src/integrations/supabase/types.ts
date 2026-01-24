@@ -658,6 +658,42 @@ export type Database = {
         }
         Relationships: []
       }
+      visitor_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          landing_page: string | null
+          referrer: string | null
+          session_id: string
+          user_agent: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          referrer?: string | null
+          session_id: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          landing_page?: string | null
+          referrer?: string | null
+          session_id?: string
+          user_agent?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: []
+      }
       wishlist: {
         Row: {
           created_at: string

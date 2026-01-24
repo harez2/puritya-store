@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
-import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search } from 'lucide-react';
+import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search, Users, MousePointerClick, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -58,6 +58,23 @@ interface UtmCampaignData {
   campaign: string;
   source: string;
   orders: number;
+  revenue: number;
+}
+
+interface VisitorSession {
+  id: string;
+  session_id: string;
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  created_at: string;
+}
+
+interface ConversionData {
+  source: string;
+  visitors: number;
+  orders: number;
+  conversionRate: number;
   revenue: number;
 }
 
@@ -114,6 +131,7 @@ export function OrderAnalytics() {
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [visitorSessions, setVisitorSessions] = useState<VisitorSession[]>([]);
   const [loading, setLoading] = useState(true);
   
   // Filtering state
@@ -160,22 +178,25 @@ export function OrderAnalytics() {
 
   async function fetchAnalyticsData() {
     try {
-      const [ordersRes, itemsRes, productsRes, categoriesRes] = await Promise.all([
+      const [ordersRes, itemsRes, productsRes, categoriesRes, visitorsRes] = await Promise.all([
         supabase.from('orders').select('id, order_number, total, subtotal, status, created_at, utm_source, utm_medium, utm_campaign').order('created_at', { ascending: false }),
         supabase.from('order_items').select('id, order_id, product_id, product_name, quantity, price'),
         supabase.from('products').select('id, name, category_id, images'),
         supabase.from('categories').select('id, name'),
+        supabase.from('visitor_sessions').select('id, session_id, utm_source, utm_medium, utm_campaign, created_at'),
       ]);
 
       if (ordersRes.error) throw ordersRes.error;
       if (itemsRes.error) throw itemsRes.error;
       if (productsRes.error) throw productsRes.error;
       if (categoriesRes.error) throw categoriesRes.error;
+      if (visitorsRes.error) throw visitorsRes.error;
 
       setOrders(ordersRes.data || []);
       setOrderItems(itemsRes.data || []);
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
+      setVisitorSessions(visitorsRes.data || []);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {
@@ -206,6 +227,23 @@ export function OrderAnalytics() {
     const orderIds = new Set(filteredOrders.map(o => o.id));
     return orderItems.filter(item => orderIds.has(item.order_id));
   }, [filteredOrders, orderItems]);
+
+  // Filtered visitors based on date range
+  const filteredVisitors = useMemo(() => {
+    return visitorSessions.filter(session => {
+      const sessionDate = new Date(session.created_at);
+      
+      let matchesDate = true;
+      if (startDate && endDate) {
+        matchesDate = isWithinInterval(sessionDate, {
+          start: startOfDay(startDate),
+          end: endOfDay(endDate),
+        });
+      }
+      
+      return matchesDate;
+    });
+  }, [visitorSessions, startDate, endDate]);
 
   // Calculate previous period date range for comparison
   const previousPeriodDates = useMemo(() => {
@@ -477,6 +515,56 @@ export function OrderAnalytics() {
       color: COLORS[index % COLORS.length],
     }));
   }, [utmSourceData]);
+
+  // Conversion rate data by source
+  const conversionData = useMemo(() => {
+    const sourceMap = new Map<string, { visitors: number; orders: number; revenue: number }>();
+    
+    // Count unique sessions (visitors) per source
+    filteredVisitors.forEach(session => {
+      const source = session.utm_source || 'Direct / Organic';
+      const existing = sourceMap.get(source);
+      
+      if (existing) {
+        existing.visitors += 1;
+      } else {
+        sourceMap.set(source, { visitors: 1, orders: 0, revenue: 0 });
+      }
+    });
+    
+    // Count orders per source
+    filteredOrders.forEach(order => {
+      const source = order.utm_source || 'Direct / Organic';
+      const existing = sourceMap.get(source);
+      
+      if (existing) {
+        existing.orders += 1;
+        existing.revenue += Number(order.total);
+      } else {
+        sourceMap.set(source, { visitors: 0, orders: 1, revenue: Number(order.total) });
+      }
+    });
+    
+    return Array.from(sourceMap.entries())
+      .map(([source, data]) => ({
+        source,
+        visitors: data.visitors,
+        orders: data.orders,
+        conversionRate: data.visitors > 0 ? (data.orders / data.visitors) * 100 : 0,
+        revenue: data.revenue,
+      }))
+      .sort((a, b) => b.conversionRate - a.conversionRate)
+      .filter(d => d.visitors > 0 || d.orders > 0);
+  }, [filteredVisitors, filteredOrders]);
+
+  // Overall conversion stats
+  const overallConversion = useMemo(() => {
+    const totalVisitors = filteredVisitors.length;
+    const totalOrders = filteredOrders.length;
+    const conversionRate = totalVisitors > 0 ? (totalOrders / totalVisitors) * 100 : 0;
+    
+    return { totalVisitors, totalOrders, conversionRate };
+  }, [filteredVisitors, filteredOrders]);
 
   // Helper to get source icon
   const getSourceIcon = (source: string) => {
@@ -977,6 +1065,115 @@ export function OrderAnalytics() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold">{formatCurrency(data.revenue)}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Conversion Rate Analytics */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Overall Conversion Stats */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Target className="h-5 w-5" />
+              Conversion Funnel
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-6">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    <Users className="h-6 w-6 text-blue-500" />
+                  </div>
+                  <p className="text-2xl font-bold">{overallConversion.totalVisitors}</p>
+                  <p className="text-sm text-muted-foreground">Visitors</p>
+                </div>
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    <MousePointerClick className="h-6 w-6 text-purple-500" />
+                  </div>
+                  <p className="text-2xl font-bold">{overallConversion.totalOrders}</p>
+                  <p className="text-sm text-muted-foreground">Orders</p>
+                </div>
+                <div className="text-center p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center justify-center mb-2">
+                    <Target className="h-6 w-6 text-green-500" />
+                  </div>
+                  <p className="text-2xl font-bold">{overallConversion.conversionRate.toFixed(2)}%</p>
+                  <p className="text-sm text-muted-foreground">Conversion Rate</p>
+                </div>
+              </div>
+              
+              {/* Conversion Funnel Visual */}
+              <div className="relative">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Visitors</span>
+                  <span className="text-sm text-muted-foreground">{overallConversion.totalVisitors}</span>
+                </div>
+                <div className="h-4 bg-blue-100 dark:bg-blue-900/30 rounded-full overflow-hidden">
+                  <div className="h-full bg-blue-500 rounded-full" style={{ width: '100%' }} />
+                </div>
+                
+                <div className="flex items-center justify-between mb-2 mt-4">
+                  <span className="text-sm font-medium">Conversions</span>
+                  <span className="text-sm text-muted-foreground">{overallConversion.totalOrders}</span>
+                </div>
+                <div className="h-4 bg-green-100 dark:bg-green-900/30 rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full transition-all" 
+                    style={{ width: `${Math.min(overallConversion.conversionRate * 10, 100)}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Conversion by Source */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <MousePointerClick className="h-5 w-5" />
+              Conversion by Traffic Source
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {conversionData.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No visitor data available yet. Start driving traffic to see conversion rates.
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {conversionData.slice(0, 6).map((data, index) => (
+                  <div key={data.source} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                    <span className="font-bold text-lg text-muted-foreground w-6">#{index + 1}</span>
+                    <div className="h-10 w-10 rounded flex items-center justify-center bg-background border">
+                      {getSourceIcon(data.source)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{data.source}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {data.visitors} visitors → {data.orders} orders
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className={cn(
+                        "font-semibold",
+                        data.conversionRate >= 3 && "text-green-600 dark:text-green-400",
+                        data.conversionRate > 0 && data.conversionRate < 3 && "text-amber-600 dark:text-amber-400",
+                        data.conversionRate === 0 && "text-muted-foreground"
+                      )}>
+                        {data.conversionRate.toFixed(2)}%
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(data.revenue)}
+                      </p>
                     </div>
                   </div>
                 ))}

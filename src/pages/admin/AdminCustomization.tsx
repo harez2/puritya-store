@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1138,6 +1138,93 @@ export default function AdminCustomization() {
                     checked={localSettings.seo_robots_follow !== false}
                     onCheckedChange={(checked) => handleChange('seo_robots_follow', checked)}
                   />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Sitemap & Robots</CardTitle>
+                <CardDescription>Your sitemap is automatically generated with all products, blogs, and pages</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Sitemap URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value="https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap"
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap');
+                        toast({ title: 'Copied!', description: 'Sitemap URL copied to clipboard' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      asChild
+                    >
+                      <a href="https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Submit this URL to Google Search Console for better indexing
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Robots.txt URL</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value="https://puritya-store.lovable.app/robots.txt"
+                      className="font-mono text-sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText('https://puritya-store.lovable.app/robots.txt');
+                        toast({ title: 'Copied!', description: 'Robots.txt URL copied to clipboard' });
+                      }}
+                    >
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      asChild
+                    >
+                      <a href="https://puritya-store.lovable.app/robots.txt" target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="rounded-lg border bg-muted/50 p-4">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium">Sitemap includes:</p>
+                      <ul className="text-xs text-muted-foreground space-y-1">
+                        <li>• All product pages with last modified dates</li>
+                        <li>• Published blog posts</li>
+                        <li>• Published static pages</li>
+                        <li>• Category pages</li>
+                        <li>• Core pages (Home, Shop, Blog)</li>
+                      </ul>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>

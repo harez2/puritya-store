@@ -144,10 +144,10 @@ export function OrderAnalytics() {
   const [visitorSessions, setVisitorSessions] = useState<VisitorSession[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Filtering state
-  const [datePreset, setDatePreset] = useState<DatePreset>('30days');
-  const [startDate, setStartDate] = useState<Date | undefined>(subDays(new Date(), 30));
-  const [endDate, setEndDate] = useState<Date | undefined>(new Date());
+  // Filtering state - default to today
+  const [datePreset, setDatePreset] = useState<DatePreset>('today');
+  const [startDate, setStartDate] = useState<Date | undefined>(startOfDay(new Date()));
+  const [endDate, setEndDate] = useState<Date | undefined>(endOfDay(new Date()));
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showComparison, setShowComparison] = useState(true);
   const [comparisonType, setComparisonType] = useState<ComparisonType>('previous_period');

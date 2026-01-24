@@ -709,13 +709,20 @@ export default function AdminOrders() {
                           </Select>
                         </td>
                         <td className="py-3 px-2">
-                          <Badge variant="outline" className={`capitalize ${
-                            order.payment_status === 'paid' 
-                              ? 'bg-green-100 text-green-800 border-green-200' 
-                              : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                          }`}>
-                            {order.payment_status || 'pending'}
-                          </Badge>
+                          <div className="flex flex-col gap-1">
+                            <Badge variant="outline" className={`capitalize w-fit ${
+                              order.payment_status === 'paid' 
+                                ? 'bg-green-100 text-green-800 border-green-200' 
+                                : 'bg-yellow-100 text-yellow-800 border-yellow-200'
+                            }`}>
+                              {order.payment_method || 'N/A'}
+                            </Badge>
+                            {order.payment_status && order.payment_status !== 'paid' && (
+                              <span className="text-xs text-muted-foreground capitalize">
+                                {order.payment_status}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}

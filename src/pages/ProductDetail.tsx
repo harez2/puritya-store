@@ -172,6 +172,36 @@ export default function ProductDetail() {
     (product.short_description ? stripHtml(product.short_description).substring(0, 160) : '') ||
     (product.description ? stripHtml(product.description).substring(0, 160) : '');
 
+  // JSON-LD structured data for Google rich snippets
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": product.name,
+    "description": metaDescription || product.name,
+    "image": product.images || [],
+    "sku": product.id,
+    "brand": {
+      "@type": "Brand",
+      "name": settings.store_name || "Store"
+    },
+    "offers": {
+      "@type": "Offer",
+      "url": window.location.href,
+      "priceCurrency": "BDT",
+      "price": Number(product.price),
+      "availability": product.in_stock 
+        ? "https://schema.org/InStock" 
+        : "https://schema.org/OutOfStock",
+      "itemCondition": "https://schema.org/NewCondition",
+      ...(product.compare_at_price && {
+        "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      })
+    },
+    ...(product.category && {
+      "category": product.category.name
+    })
+  };
+
   return (
     <Layout>
       <Helmet>
@@ -183,6 +213,9 @@ export default function ProductDetail() {
         <meta property="og:type" content="product" />
         <meta property="product:price:amount" content={String(product.price)} />
         <meta property="product:price:currency" content="BDT" />
+        <script type="application/ld+json">
+          {JSON.stringify(jsonLd)}
+        </script>
       </Helmet>
       <div className="container mx-auto px-4 py-8">
         <PageBreadcrumb items={breadcrumbItems} className="mb-8" />

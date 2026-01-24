@@ -22,8 +22,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
-import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays } from 'date-fns';
-import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search, Users, MousePointerClick, Target, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { format, subDays, startOfDay, endOfDay, isWithinInterval, startOfMonth, endOfMonth, subMonths, differenceInDays, subYears } from 'date-fns';
+import { CalendarIcon, TrendingUp, TrendingDown, Package, Layers, X, BarChart3, ArrowUp, ArrowDown, Minus, Megaphone, Globe, Facebook, Mail, Search, Users, MousePointerClick, Target, Download, FileText, FileSpreadsheet, GitCompare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -134,6 +134,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 type DatePreset = 'today' | 'yesterday' | '7days' | '30days' | 'thisMonth' | 'lastMonth' | 'custom';
+type ComparisonType = 'previous_period' | 'previous_month' | 'previous_year' | 'custom';
 
 export function OrderAnalytics() {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
@@ -149,6 +150,9 @@ export function OrderAnalytics() {
   const [endDate, setEndDate] = useState<Date | undefined>(new Date());
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showComparison, setShowComparison] = useState(true);
+  const [comparisonType, setComparisonType] = useState<ComparisonType>('previous_period');
+  const [customCompareStart, setCustomCompareStart] = useState<Date | undefined>();
+  const [customCompareEnd, setCustomCompareEnd] = useState<Date | undefined>();
 
   useEffect(() => {
     fetchAnalyticsData();
@@ -254,16 +258,34 @@ export function OrderAnalytics() {
     });
   }, [visitorSessions, startDate, endDate]);
 
-  // Calculate previous period date range for comparison
+  // Calculate previous period date range for comparison based on comparison type
   const previousPeriodDates = useMemo(() => {
     if (!startDate || !endDate) return { start: undefined, end: undefined };
     
-    const periodLength = differenceInDays(endDate, startDate) + 1;
-    const prevEnd = subDays(startDate, 1);
-    const prevStart = subDays(prevEnd, periodLength - 1);
-    
-    return { start: prevStart, end: prevEnd };
-  }, [startDate, endDate]);
+    switch (comparisonType) {
+      case 'previous_period': {
+        const periodLength = differenceInDays(endDate, startDate) + 1;
+        const prevEnd = subDays(startDate, 1);
+        const prevStart = subDays(prevEnd, periodLength - 1);
+        return { start: prevStart, end: prevEnd };
+      }
+      case 'previous_month': {
+        const prevStart = subMonths(startDate, 1);
+        const prevEnd = subMonths(endDate, 1);
+        return { start: prevStart, end: prevEnd };
+      }
+      case 'previous_year': {
+        const prevStart = subYears(startDate, 1);
+        const prevEnd = subYears(endDate, 1);
+        return { start: prevStart, end: prevEnd };
+      }
+      case 'custom': {
+        return { start: customCompareStart, end: customCompareEnd };
+      }
+      default:
+        return { start: undefined, end: undefined };
+    }
+  }, [startDate, endDate, comparisonType, customCompareStart, customCompareEnd]);
 
   // Filter orders for previous period
   const previousPeriodOrders = useMemo(() => {
@@ -322,6 +344,22 @@ export function OrderAnalytics() {
     };
   }, [stats, previousStats]);
 
+  // Helper function to get comparison label
+  const getComparisonLabel = () => {
+    switch (comparisonType) {
+      case 'previous_period':
+        return 'vs prev period';
+      case 'previous_month':
+        return 'vs last month';
+      case 'previous_year':
+        return 'vs last year';
+      case 'custom':
+        return 'vs custom';
+      default:
+        return 'vs prev period';
+    }
+  };
+
   // Helper to render change indicator
   const ChangeIndicator = ({ value, prefix = '' }: { value: number; prefix?: string }) => {
     if (!showComparison) return null;
@@ -344,7 +382,7 @@ export function OrderAnalytics() {
           <ArrowDown className="h-3 w-3" />
         )}
         <span>{prefix}{Math.abs(value).toFixed(1)}%</span>
-        <span className="text-muted-foreground font-normal">vs prev period</span>
+        <span className="text-muted-foreground font-normal">{getComparisonLabel()}</span>
       </div>
     );
   };
@@ -961,8 +999,23 @@ export function OrderAnalytics() {
                 onCheckedChange={setShowComparison}
               />
               <Label htmlFor="comparison-toggle" className="text-sm cursor-pointer">
-                Compare with previous period
+                Compare
               </Label>
+              
+              {showComparison && (
+                <Select value={comparisonType} onValueChange={(v) => setComparisonType(v as ComparisonType)}>
+                  <SelectTrigger className="w-[160px]">
+                    <GitCompare className="h-4 w-4 mr-2" />
+                    <SelectValue placeholder="Compare with" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="previous_period">Previous Period</SelectItem>
+                    <SelectItem value="previous_month">Same Period Last Month</SelectItem>
+                    <SelectItem value="previous_year">Same Period Last Year</SelectItem>
+                    <SelectItem value="custom">Custom Range</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -985,12 +1038,83 @@ export function OrderAnalytics() {
             </div>
           </div>
 
-          {showComparison && previousPeriodDates.start && previousPeriodDates.end && (
+          {/* Custom comparison date pickers */}
+          {showComparison && comparisonType === 'custom' && (
+            <div className="mt-3 flex flex-wrap items-center gap-3 p-3 bg-muted/50 rounded-lg">
+              <span className="text-sm font-medium">Compare with:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !customCompareStart && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customCompareStart ? format(customCompareStart, "MMM d, yyyy") : "Start date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar 
+                    mode="single" 
+                    selected={customCompareStart} 
+                    onSelect={setCustomCompareStart} 
+                    initialFocus 
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <span className="text-muted-foreground">to</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "w-[140px] justify-start text-left font-normal",
+                      !customCompareEnd && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {customCompareEnd ? format(customCompareEnd, "MMM d, yyyy") : "End date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar 
+                    mode="single" 
+                    selected={customCompareEnd} 
+                    onSelect={setCustomCompareEnd} 
+                    initialFocus 
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
+
+          {showComparison && previousPeriodDates.start && previousPeriodDates.end && comparisonType !== 'custom' && (
             <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
               <span className="font-medium text-foreground">Comparing: </span>
               {format(startDate!, 'MMM d')} - {format(endDate!, 'MMM d, yyyy')}
               <span className="mx-2">vs</span>
               {format(previousPeriodDates.start, 'MMM d')} - {format(previousPeriodDates.end, 'MMM d, yyyy')}
+              <Badge variant="outline" className="ml-2 text-xs">
+                {comparisonType === 'previous_period' && 'Previous Period'}
+                {comparisonType === 'previous_month' && 'Last Month'}
+                {comparisonType === 'previous_year' && 'Last Year'}
+              </Badge>
+            </div>
+          )}
+
+          {showComparison && comparisonType === 'custom' && customCompareStart && customCompareEnd && (
+            <div className="mt-3 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground">
+              <span className="font-medium text-foreground">Comparing: </span>
+              {format(startDate!, 'MMM d')} - {format(endDate!, 'MMM d, yyyy')}
+              <span className="mx-2">vs</span>
+              {format(customCompareStart, 'MMM d')} - {format(customCompareEnd, 'MMM d, yyyy')}
+              <Badge variant="outline" className="ml-2 text-xs">Custom Range</Badge>
             </div>
           )}
         </CardContent>

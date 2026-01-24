@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Key, Eye, EyeOff } from 'lucide-react';
+import { Facebook, Server, Monitor, CheckCircle, AlertCircle, ExternalLink, Shield, Key, Eye, EyeOff, ShoppingBag } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,28 +7,38 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 interface FacebookPixelSetupProps {
   pixelId: string;
   capiEnabled: boolean;
   accessToken: string;
+  catalogId: string;
+  catalogEnabled: boolean;
   onPixelIdChange: (value: string) => void;
   onCapiEnabledChange: (value: boolean) => void;
   onAccessTokenChange: (value: string) => void;
+  onCatalogIdChange: (value: string) => void;
+  onCatalogEnabledChange: (value: boolean) => void;
 }
 
 export function FacebookPixelSetup({
   pixelId,
   capiEnabled,
   accessToken,
+  catalogId,
+  catalogEnabled,
   onPixelIdChange,
   onCapiEnabledChange,
   onAccessTokenChange,
+  onCatalogIdChange,
+  onCatalogEnabledChange,
 }: FacebookPixelSetupProps) {
   const [showToken, setShowToken] = useState(false);
   const isPixelConfigured = pixelId.trim().length > 0;
   const hasAccessToken = accessToken.trim().length > 0;
   const isCapiReady = isPixelConfigured && hasAccessToken;
+  const isCatalogConfigured = catalogId.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -48,7 +58,7 @@ export function FacebookPixelSetup({
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
               <Monitor className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -83,6 +93,29 @@ export function FacebookPixelSetup({
                   <Badge variant="destructive">
                     <AlertCircle className="h-3 w-3 mr-1" />
                     Missing Token
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary">Disabled</Badge>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
+              <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+              <div>
+                <div className="font-medium text-sm">Product Catalog</div>
+                <div className="text-xs text-muted-foreground">Dynamic ads</div>
+              </div>
+              <div className="ml-auto">
+                {catalogEnabled && isCatalogConfigured ? (
+                  <Badge variant="default" className="bg-green-500">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Active
+                  </Badge>
+                ) : catalogEnabled && !isCatalogConfigured ? (
+                  <Badge variant="destructive">
+                    <AlertCircle className="h-3 w-3 mr-1" />
+                    Missing ID
                   </Badge>
                 ) : (
                   <Badge variant="secondary">Disabled</Badge>
@@ -214,6 +247,106 @@ export function FacebookPixelSetup({
                 and iOS 14+ compatibility. Events are deduplicated using event IDs.
               </AlertDescription>
             </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Facebook Catalog Configuration */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <ShoppingBag className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Facebook Catalog</CardTitle>
+              <CardDescription>
+                Connect your product catalog for dynamic ads and Facebook/Instagram Shopping
+              </CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <Label htmlFor="catalog-toggle">Enable Facebook Catalog</Label>
+              <p className="text-xs text-muted-foreground">
+                Link product events to your catalog for retargeting and dynamic ads
+              </p>
+            </div>
+            <Switch
+              id="catalog-toggle"
+              checked={catalogEnabled}
+              onCheckedChange={onCatalogEnabledChange}
+            />
+          </div>
+
+          {catalogEnabled && (
+            <div className="space-y-2">
+              <Label htmlFor="catalog-id">Catalog ID</Label>
+              <Input
+                id="catalog-id"
+                value={catalogId}
+                onChange={(e) => onCatalogIdChange(e.target.value.trim())}
+                placeholder="Enter your Catalog ID (e.g., 1234567890123456)"
+                className="font-mono"
+              />
+              <p className="text-xs text-muted-foreground">
+                Find your Catalog ID in{' '}
+                <a
+                  href="https://business.facebook.com/commerce"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Facebook Commerce Manager
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </p>
+            </div>
+          )}
+
+          {catalogEnabled && !isCatalogConfigured && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Catalog ID Required</AlertTitle>
+              <AlertDescription>
+                Enter your Facebook Catalog ID above to enable product catalog integration.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {catalogEnabled && isCatalogConfigured && (
+            <>
+              <Alert>
+                <CheckCircle className="h-4 w-4" />
+                <AlertTitle>Catalog Connected</AlertTitle>
+                <AlertDescription>
+                  Product events (ViewContent, AddToCart, Purchase) will include catalog product IDs 
+                  for dynamic product ads and retargeting.
+                </AlertDescription>
+              </Alert>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Catalog Features Enabled</h4>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {[
+                    { name: 'Dynamic Ads', desc: 'Retarget with viewed products' },
+                    { name: 'Instagram Shopping', desc: 'Tag products in posts' },
+                    { name: 'Facebook Shops', desc: 'Sell directly on Facebook' },
+                    { name: 'Advantage+ Catalog', desc: 'AI-powered ad optimization' },
+                  ].map((feature) => (
+                    <div key={feature.name} className="flex items-center gap-2 p-2 text-sm">
+                      <CheckCircle className="h-4 w-4 text-green-500" />
+                      <span className="font-medium">{feature.name}</span>
+                      <span className="text-muted-foreground">- {feature.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

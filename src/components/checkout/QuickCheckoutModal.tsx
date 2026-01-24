@@ -232,47 +232,46 @@ export default function QuickCheckoutModal({
       // Get UTM params
       const utmParams = getUtmParams();
 
-      if (user) {
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: user.id,
-            order_number: orderNum,
-            status: 'pending',
-            subtotal,
-            shipping_fee: shippingFee,
-            order_source: 'quick_buy',
-            total,
-            shipping_address: shippingAddress,
-            payment_method: paymentMethod,
-            payment_status: 'pending',
-            notes: form.notes.trim() || null,
-            utm_source: utmParams.utm_source,
-            utm_medium: utmParams.utm_medium,
-            utm_campaign: utmParams.utm_campaign,
-          })
-          .select()
-          .single();
+      // Save order to database (for both logged-in and guest users)
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user?.id || null,
+          order_number: orderNum,
+          status: 'pending',
+          subtotal,
+          shipping_fee: shippingFee,
+          order_source: 'quick_buy',
+          total,
+          shipping_address: shippingAddress,
+          payment_method: paymentMethod,
+          payment_status: 'pending',
+          notes: form.notes.trim() || null,
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign,
+        })
+        .select()
+        .single();
 
-        if (orderError) throw orderError;
+      if (orderError) throw orderError;
 
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert({
-            order_id: order.id,
-            product_id: product.id,
-            product_name: product.name,
-            product_image: product.images?.[0] || null,
-            quantity,
-            size: size || null,
-            color: color || null,
-            price,
-          });
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert({
+          order_id: order.id,
+          product_id: product.id,
+          product_name: product.name,
+          product_image: product.images?.[0] || null,
+          quantity,
+          size: size || null,
+          color: color || null,
+          price,
+        });
 
-        if (itemsError) throw itemsError;
+      if (itemsError) throw itemsError;
 
-        savedOrderDetails.orderNumber = order.order_number;
-      }
+      savedOrderDetails.orderNumber = order.order_number;
 
       setOrderDetails(savedOrderDetails);
       clearUtmParams(); // Clear UTM after order is placed

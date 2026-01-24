@@ -11,6 +11,7 @@ import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
 import { captureUtmParams } from "@/hooks/useUtmTracking";
+import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
@@ -35,9 +36,12 @@ import BlogDetail from "./pages/BlogDetail";
 
 const queryClient = new QueryClient();
 
-// Component to capture UTM params on route changes
+// Component to capture UTM params and track visitors on route changes
 function UtmCapture() {
   const location = useLocation();
+  
+  // Track visitor session
+  useVisitorTracking();
   
   useEffect(() => {
     captureUtmParams();

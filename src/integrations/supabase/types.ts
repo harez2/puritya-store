@@ -353,6 +353,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          meta_description: string | null
+          published: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          meta_description?: string | null
+          published?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          meta_description?: string | null
+          published?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_invites: {
         Row: {
           created_at: string

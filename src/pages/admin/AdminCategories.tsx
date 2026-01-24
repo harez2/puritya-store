@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, MoreHorizontal } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreHorizontal, ImageIcon } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,6 +40,7 @@ interface Category {
   slug: string;
   description: string | null;
   image_url: string | null;
+  show_cover_photo: boolean;
   created_at: string;
 }
 
@@ -47,6 +49,7 @@ const initialFormData = {
   slug: '',
   description: '',
   image_url: '',
+  show_cover_photo: false,
 };
 
 export default function AdminCategories() {
@@ -88,6 +91,7 @@ export default function AdminCategories() {
         slug: category.slug,
         description: category.description || '',
         image_url: category.image_url || '',
+        show_cover_photo: category.show_cover_photo,
       });
     } else {
       setEditingCategory(null);
@@ -119,6 +123,7 @@ export default function AdminCategories() {
         slug: formData.slug || generateSlug(formData.name),
         description: formData.description || null,
         image_url: formData.image_url || null,
+        show_cover_photo: formData.show_cover_photo,
       };
 
       if (editingCategory) {
@@ -231,10 +236,16 @@ export default function AdminCategories() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-2">
                   <p className="text-sm text-muted-foreground line-clamp-2">
                     {category.description || 'No description'}
                   </p>
+                  {category.show_cover_photo && (
+                    <div className="flex items-center gap-1.5 text-xs text-primary">
+                      <ImageIcon className="h-3 w-3" />
+                      <span>Cover photo enabled</span>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))
@@ -285,6 +296,22 @@ export default function AdminCategories() {
                 image={formData.image_url || null}
                 onImageChange={(url) => setFormData({ ...formData, image_url: url || '' })}
                 folder="categories"
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="show_cover_photo" className="text-sm font-medium">
+                  Show Cover Photo on Category Page
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Display the category image as a banner on the shop page
+                </p>
+              </div>
+              <Switch
+                id="show_cover_photo"
+                checked={formData.show_cover_photo}
+                onCheckedChange={(checked) => setFormData({ ...formData, show_cover_photo: checked })}
               />
             </div>
 

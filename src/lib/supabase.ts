@@ -29,6 +29,7 @@ export type Category = {
   slug: string;
   description: string | null;
   image_url: string | null;
+  show_cover_photo: boolean;
   created_at: string;
 };
 

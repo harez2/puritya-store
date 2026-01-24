@@ -75,6 +75,7 @@ const customizationSubItems = [
   { title: 'CSS', tab: 'custom-css', icon: Code },
   { title: 'Scripts', tab: 'scripts', icon: FileCode2 },
   { title: 'Facebook', tab: 'facebook', icon: Facebook },
+  { title: 'GTM', tab: 'gtm', icon: Code },
 ];
 
 export function AdminSidebar() {

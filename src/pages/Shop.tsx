@@ -9,6 +9,7 @@ import Layout from '@/components/layout/Layout';
 import PageBreadcrumb, { type BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import ProductCard from '@/components/products/ProductCard';
 import { supabase, Product, Category } from '@/lib/supabase';
+import { trackViewItemList, trackSearch, DataLayerProduct } from '@/lib/data-layer';
 
 export default function Shop() {
   const [searchParams] = useSearchParams();
@@ -48,6 +49,32 @@ export default function Shop() {
 
         setProducts(filteredProducts);
         setCategories(categoriesRes.data || []);
+        
+        // Track view_item_list in data layer
+        if (filteredProducts.length > 0) {
+          const listName = categoryFilter 
+            ? `Category: ${categoryFilter}` 
+            : filter === 'new' 
+              ? 'New Arrivals' 
+              : searchQuery 
+                ? `Search: ${searchQuery}` 
+                : 'Shop All';
+          
+          const dataLayerProducts: DataLayerProduct[] = filteredProducts.slice(0, 20).map((p, index) => ({
+            item_id: p.id,
+            item_name: p.name,
+            price: Number(p.price),
+            item_category: p.category?.name,
+            index,
+          }));
+          
+          trackViewItemList(dataLayerProducts, listName, 'BDT');
+        }
+        
+        // Track search event
+        if (searchQuery) {
+          trackSearch(searchQuery);
+        }
       } catch (error) {
         console.error('Error:', error);
       } finally {

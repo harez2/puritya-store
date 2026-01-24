@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
@@ -5,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCart } from '@/contexts/CartContext';
 import { formatPrice } from '@/lib/utils';
+import { trackViewCart, DataLayerProduct } from '@/lib/data-layer';
 
 type CartDrawerProps = {
   open: boolean;
@@ -13,6 +15,23 @@ type CartDrawerProps = {
 
 export default function CartDrawer({ open, onClose }: CartDrawerProps) {
   const { items, loading, subtotal, updateQuantity, removeFromCart } = useCart();
+
+  // Track view_cart when drawer opens with items
+  useEffect(() => {
+    if (open && items.length > 0) {
+      const dataLayerProducts: DataLayerProduct[] = items.map((item, index) => ({
+        item_id: item.product_id,
+        item_name: item.product?.name || 'Unknown',
+        price: Number(item.product?.price) || 0,
+        quantity: item.quantity,
+        item_category: item.product?.category?.name,
+        item_variant: [item.size, item.color].filter(Boolean).join(' / ') || undefined,
+        index,
+      }));
+      
+      trackViewCart(dataLayerProducts, subtotal, 'BDT');
+    }
+  }, [open, items, subtotal]);
 
   return (
     <Sheet open={open} onOpenChange={onClose}>

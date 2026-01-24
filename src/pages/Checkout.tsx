@@ -17,6 +17,13 @@ import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
+import {
+  trackBeginCheckout,
+  trackAddShippingInfo,
+  trackAddPaymentInfo,
+  trackPurchase,
+  DataLayerProduct,
+} from '@/lib/data-layer';
 
 type ShippingForm = {
   full_name: string;
@@ -63,29 +70,67 @@ export default function Checkout() {
   const shippingFee = shippingLocation === 'inside_dhaka' ? 60 : 120;
   const total = subtotal + shippingFee;
 
-  // Track InitiateCheckout when page loads with items
+  // Helper to create data layer products
+  const getDataLayerProducts = (): DataLayerProduct[] => {
+    return items.map((item, index) => ({
+      item_id: item.product_id,
+      item_name: item.product?.name || 'Unknown',
+      price: Number(item.product?.price) || 0,
+      quantity: item.quantity,
+      item_category: item.product?.category?.name,
+      item_variant: [item.size, item.color].filter(Boolean).join(' / ') || undefined,
+      index,
+    }));
+  };
+
+  // Track InitiateCheckout/begin_checkout when page loads with items
   useEffect(() => {
-    if (items.length > 0 && settings.facebook_pixel_id) {
-      trackFacebookEvent(
-        settings.facebook_pixel_id,
-        settings.facebook_capi_enabled,
-        settings.facebook_access_token || '',
-        FacebookEvents.InitiateCheckout,
-        {
-          content_ids: items.map(item => item.product_id),
-          content_type: 'product',
-          contents: items.map(item => ({
-            id: item.product_id,
-            quantity: item.quantity,
-            item_price: Number(item.product?.price) || 0,
-          })),
-          value: subtotal,
-          currency: 'BDT',
-          num_items: items.reduce((sum, item) => sum + item.quantity, 0),
-        }
-      );
+    if (items.length > 0) {
+      // Track begin_checkout in data layer
+      const dataLayerProducts = getDataLayerProducts();
+      trackBeginCheckout(dataLayerProducts, subtotal, 'BDT');
+      
+      // Track Facebook InitiateCheckout
+      if (settings.facebook_pixel_id) {
+        trackFacebookEvent(
+          settings.facebook_pixel_id,
+          settings.facebook_capi_enabled,
+          settings.facebook_access_token || '',
+          FacebookEvents.InitiateCheckout,
+          {
+            content_ids: items.map(item => item.product_id),
+            content_type: 'product',
+            contents: items.map(item => ({
+              id: item.product_id,
+              quantity: item.quantity,
+              item_price: Number(item.product?.price) || 0,
+            })),
+            value: subtotal,
+            currency: 'BDT',
+            num_items: items.reduce((sum, item) => sum + item.quantity, 0),
+          }
+        );
+      }
     }
   }, []); // Only track once on mount
+
+  // Track shipping info when location changes
+  useEffect(() => {
+    if (items.length > 0 && form.address.trim()) {
+      const dataLayerProducts = getDataLayerProducts();
+      const shippingTier = shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+      trackAddShippingInfo(dataLayerProducts, total, shippingTier, 'BDT');
+    }
+  }, [shippingLocation, form.address]);
+
+  // Track payment info when payment method changes
+  useEffect(() => {
+    if (items.length > 0) {
+      const dataLayerProducts = getDataLayerProducts();
+      const paymentType = paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad';
+      trackAddPaymentInfo(dataLayerProducts, total, paymentType, 'BDT');
+    }
+  }, [paymentMethod]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -212,7 +257,18 @@ export default function Checkout() {
       clearUtmParams(); // Clear UTM after order is placed
       setOrderComplete(true);
 
-      // Track Purchase event
+      // Track Purchase event in Data Layer
+      const dataLayerProducts = getDataLayerProducts();
+      trackPurchase(
+        user ? orderNumber : orderNum,
+        dataLayerProducts,
+        total,
+        shippingFee,
+        0, // tax
+        'BDT'
+      );
+
+      // Track Purchase event in Facebook Pixel
       if (settings.facebook_pixel_id) {
         trackFacebookEvent(
           settings.facebook_pixel_id,

@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { useAuth } from './AuthContext';
 import { supabase, WishlistItem, Product } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
-
+import { trackAddToWishlist, DataLayerProduct } from '@/lib/data-layer';
 type WishlistContextType = {
   items: (WishlistItem & { product: Product })[];
   loading: boolean;
@@ -79,12 +79,31 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
           description: "Item has been removed from your wishlist.",
         });
       } else {
+        // Fetch product details for tracking
+        const { data: product } = await supabase
+          .from('products')
+          .select('*, category:categories(*)')
+          .eq('id', productId)
+          .single();
+        
         const { error } = await supabase.from('wishlist').insert({
           user_id: user.id,
           product_id: productId,
         });
 
         if (error) throw error;
+        
+        // Track add to wishlist in data layer
+        if (product) {
+          const dataLayerProduct: DataLayerProduct = {
+            item_id: product.id,
+            item_name: product.name,
+            price: Number(product.price),
+            item_category: product.category?.name,
+          };
+          trackAddToWishlist(dataLayerProduct, 'BDT');
+        }
+        
         toast({
           title: "Added to wishlist",
           description: "Item has been saved to your wishlist.",

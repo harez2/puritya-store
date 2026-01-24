@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, ShoppingBag, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,13 @@ import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
+import {
+  trackBeginCheckout,
+  trackAddShippingInfo,
+  trackAddPaymentInfo,
+  trackPurchase,
+  DataLayerProduct,
+} from '@/lib/data-layer';
 
 interface QuickCheckoutProps {
   open: boolean;
@@ -118,6 +125,38 @@ export default function QuickCheckoutModal({
   const originalShippingFee = selectedShippingOption?.price || 0;
   const hasShippingDiscount = shippingFee < originalShippingFee;
   const total = subtotal + shippingFee;
+
+  // Helper to create data layer product
+  const getDataLayerProduct = (): DataLayerProduct => ({
+    item_id: product.id,
+    item_name: product.name,
+    price: price,
+    quantity,
+    item_category: product.category?.name,
+    item_variant: [size, color].filter(Boolean).join(' / ') || undefined,
+  });
+
+  // Track begin_checkout when modal opens
+  useEffect(() => {
+    if (open) {
+      trackBeginCheckout([getDataLayerProduct()], subtotal, 'BDT');
+    }
+  }, [open]);
+
+  // Track shipping info when shipping option changes
+  useEffect(() => {
+    if (open && selectedShippingOption && form.address.trim()) {
+      trackAddShippingInfo([getDataLayerProduct()], total, selectedShippingOption.name, 'BDT');
+    }
+  }, [selectedShipping, form.address]);
+
+  // Track payment info when payment method changes
+  useEffect(() => {
+    if (open) {
+      const paymentType = paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad';
+      trackAddPaymentInfo([getDataLayerProduct()], total, paymentType, 'BDT');
+    }
+  }, [paymentMethod]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -239,7 +278,17 @@ export default function QuickCheckoutModal({
       clearUtmParams(); // Clear UTM after order is placed
       setStep('success');
 
-      // Track Purchase event
+      // Track Purchase event in Data Layer
+      trackPurchase(
+        savedOrderDetails.orderNumber,
+        [getDataLayerProduct()],
+        total,
+        shippingFee,
+        0, // tax
+        'BDT'
+      );
+
+      // Track Purchase event in Facebook Pixel
       if (settings.facebook_pixel_id) {
         trackFacebookEvent(
           settings.facebook_pixel_id,

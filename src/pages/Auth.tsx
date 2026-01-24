@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { trackLogin, trackSignUp } from '@/lib/data-layer';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -28,6 +29,7 @@ export default function Auth() {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
+      trackLogin('email');
       toast({ title: 'Welcome back!' });
       navigate('/account');
     }
@@ -46,6 +48,7 @@ export default function Auth() {
     if (error) {
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
+      trackSignUp('email');
       toast({ title: 'Account created!', description: 'Welcome to Puritya.' });
       navigate('/account');
     }

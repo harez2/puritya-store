@@ -431,13 +431,25 @@ export default function AdminProducts() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="short_description">Short Description</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="short_description">Short Description</Label>
+                <span className={`text-xs ${
+                  (formData.short_description.replace(/<[^>]*>/g, '').length) > 200 
+                    ? 'text-destructive' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {formData.short_description.replace(/<[^>]*>/g, '').length}/200 characters
+                </span>
+              </div>
               <RichTextEditor
                 content={formData.short_description}
                 onChange={(content) => setFormData({ ...formData, short_description: content })}
                 placeholder="Brief product summary for listings and previews..."
                 compact
               />
+              {formData.short_description.replace(/<[^>]*>/g, '').length > 200 && (
+                <p className="text-xs text-destructive">Short description should be under 200 characters for best display</p>
+              )}
             </div>
 
             <div className="space-y-2">

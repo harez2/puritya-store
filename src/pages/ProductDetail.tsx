@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, ShoppingBag, Zap } from 'lucide-react';
+import { Heart, Minus, Plus, ShoppingBag, Zap, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
@@ -31,6 +31,7 @@ export default function ProductDetail() {
   const [addingToCart, setAddingToCart] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   // Must call useMemo before any early returns to follow Rules of Hooks
   const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
@@ -184,8 +185,43 @@ export default function ProductDetail() {
               )}
             </div>
 
+            {/* Short Description */}
+            {product.short_description && (
+              <div 
+                className="text-muted-foreground mb-6 prose prose-sm max-w-none"
+                dangerouslySetInnerHTML={{ __html: product.short_description }}
+              />
+            )}
+
+            {/* Long Description - Expandable */}
             {product.description && (
-              <p className="text-muted-foreground mb-8">{product.description}</p>
+              <div className="mb-8">
+                <button
+                  onClick={() => setShowFullDescription(!showFullDescription)}
+                  className="flex items-center gap-2 text-sm font-medium text-primary hover:underline mb-3"
+                >
+                  {showFullDescription ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Hide Full Description
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      View Full Description
+                    </>
+                  )}
+                </button>
+                {showFullDescription && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="prose prose-sm max-w-none border-t pt-4"
+                    dangerouslySetInnerHTML={{ __html: product.description }}
+                  />
+                )}
+              </div>
             )}
 
             {/* Size Selection */}

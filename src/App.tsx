@@ -34,6 +34,15 @@ import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminBlogCategories from "./pages/admin/AdminBlogCategories";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
+import Contact from "./pages/Contact";
+import Shipping from "./pages/Shipping";
+import Returns from "./pages/Returns";
+import SizeGuide from "./pages/SizeGuide";
+import FAQs from "./pages/FAQs";
+import About from "./pages/About";
+import Sustainability from "./pages/Sustainability";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +84,16 @@ const App = () => (
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/blog" element={<Blog />} />
                       <Route path="/blog/:slug" element={<BlogDetail />} />
+                      {/* Info Pages */}
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/shipping" element={<Shipping />} />
+                      <Route path="/returns" element={<Returns />} />
+                      <Route path="/size-guide" element={<SizeGuide />} />
+                      <Route path="/faqs" element={<FAQs />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/sustainability" element={<Sustainability />} />
+                      <Route path="/privacy" element={<Privacy />} />
+                      <Route path="/terms" element={<Terms />} />
                       {/* Admin Routes */}
                       <Route path="/admin" element={<AdminDashboard />} />
                       <Route path="/admin/products" element={<AdminProducts />} />

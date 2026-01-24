@@ -1,5 +1,20 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap, X, Filter, RotateCcw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MoreHorizontal, Zap, X, Filter, RotateCcw, GripVertical } from 'lucide-react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -46,6 +61,7 @@ import { ProductBulkActions } from '@/components/admin/ProductBulkActions';
 import { ProductBulkEdit } from '@/components/admin/ProductBulkEdit';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
 import { ProductQuickEdit } from '@/components/admin/ProductQuickEdit';
+import { SortableProductRow } from '@/components/admin/SortableProductRow';
 
 interface Product {
   id: string;
@@ -66,6 +82,7 @@ interface Product {
   stock_quantity: number;
   low_stock_threshold: number;
   created_at: string;
+  display_order: number;
 }
 
 interface Category {
@@ -120,12 +137,23 @@ export default function AdminProducts() {
     fetchCategories();
   }, []);
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   async function fetchProducts() {
     try {
       const { data, error } = await supabase
         .from('products')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('display_order', { ascending: true });
 
       if (error) throw error;
       setProducts(data || []);
@@ -178,13 +206,53 @@ export default function AdminProducts() {
   }, [products, searchQuery, categoryFilter, stockFilter, featuredFilter, newArrivalFilter]);
 
   const hasActiveFilters = categoryFilter !== 'all' || stockFilter !== 'all' || 
-    featuredFilter !== 'all' || newArrivalFilter !== 'all';
+    featuredFilter !== 'all' || newArrivalFilter !== 'all' || searchQuery !== '';
+
+  const canReorder = !hasActiveFilters && searchQuery === '';
 
   const resetFilters = () => {
     setCategoryFilter('all');
     setStockFilter('all');
     setFeaturedFilter('all');
     setNewArrivalFilter('all');
+    setSearchQuery('');
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = products.findIndex(p => p.id === active.id);
+    const newIndex = products.findIndex(p => p.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reorderedProducts = arrayMove(products, oldIndex, newIndex);
+    setProducts(reorderedProducts);
+
+    // Update display_order in database
+    try {
+      const updates = reorderedProducts.map((product, index) => ({
+        id: product.id,
+        display_order: index + 1,
+      }));
+
+      for (const update of updates) {
+        const { error } = await supabase
+          .from('products')
+          .update({ display_order: update.display_order })
+          .eq('id', update.id);
+
+        if (error) throw error;
+      }
+
+      toast.success('Product order updated');
+    } catch (error) {
+      console.error('Error updating product order:', error);
+      toast.error('Failed to update product order');
+      fetchProducts(); // Revert to original order
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -477,136 +545,82 @@ export default function AdminProducts() {
                 {searchQuery ? 'No products found' : 'No products yet. Add your first product!'}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="py-3 px-2 w-10">
-                        <Checkbox
-                          checked={filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedProductIds(filteredProducts.map(p => p.id));
-                            } else {
-                              setSelectedProductIds([]);
-                            }
-                          }}
-                        />
-                      </th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stock</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">Price</th>
-                      <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr key={product.id} className={`border-b last:border-0 hover:bg-muted/50 ${selectedProductIds.includes(product.id) ? 'bg-muted/30' : ''}`}>
-                        <td className="py-3 px-2">
-                          <Checkbox
-                            checked={selectedProductIds.includes(product.id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedProductIds(prev => [...prev, product.id]);
-                              } else {
-                                setSelectedProductIds(prev => prev.filter(id => id !== product.id));
-                              }
-                            }}
-                          />
-                        </td>
-                        <td className="py-3 px-2">
-                          <div className="flex items-center gap-3">
-                            {product.images && product.images[0] ? (
-                              <img
-                                src={product.images[0]}
-                                alt={product.name}
-                                className="h-10 w-10 rounded object-cover bg-muted"
-                              />
-                            ) : (
-                              <div className="h-10 w-10 rounded bg-muted flex items-center justify-center text-muted-foreground text-xs">
-                                No img
-                              </div>
+              <>
+                {!canReorder && (
+                  <div className="mb-4 p-3 bg-muted/50 rounded-lg text-sm text-muted-foreground flex items-center gap-2">
+                    <GripVertical className="h-4 w-4" />
+                    <span>Clear all filters and search to enable drag-and-drop reordering</span>
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="py-3 px-2 w-8">
+                            {canReorder && (
+                              <span className="text-muted-foreground text-xs">⋮⋮</span>
                             )}
-                            <div>
-                              <p className="font-medium">{product.name}</p>
-                              <p className="text-sm text-muted-foreground">{product.slug}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="py-3 px-2">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            product.in_stock 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {product.in_stock ? 'In Stock' : 'Out of Stock'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-2 text-center">
-                          <div className="flex flex-col items-center">
-                            <span className={`font-medium ${
-                              product.stock_quantity <= product.low_stock_threshold
-                                ? 'text-destructive'
-                                : ''
-                            }`}>
-                              {product.stock_quantity}
-                            </span>
-                            {product.stock_quantity <= product.low_stock_threshold && product.stock_quantity > 0 && (
-                              <span className="text-xs text-destructive">Low Stock</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <div>
-                            <p className="font-medium">{formatCurrency(product.price)}</p>
-                            {product.compare_at_price && (
-                              <p className="text-sm text-muted-foreground line-through">
-                                {formatCurrency(product.compare_at_price)}
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="py-3 px-2 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem 
-                                onClick={() => {
-                                  setQuickEditProduct(product);
-                                  setIsQuickEditOpen(true);
-                                }}
-                              >
-                                <Zap className="h-4 w-4 mr-2" />
-                                Quick Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenDialog(product)}>
-                                <Pencil className="h-4 w-4 mr-2" />
-                                Full Edit
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => {
-                                  setDeletingProduct(product);
-                                  setIsDeleteDialogOpen(true);
-                                }}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                          </th>
+                          <th className="py-3 px-2 w-10">
+                            <Checkbox
+                              checked={filteredProducts.length > 0 && selectedProductIds.length === filteredProducts.length}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedProductIds(filteredProducts.map(p => p.id));
+                                } else {
+                                  setSelectedProductIds([]);
+                                }
+                              }}
+                            />
+                          </th>
+                          <th className="text-left py-3 px-2 font-medium text-muted-foreground">Product</th>
+                          <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                          <th className="text-center py-3 px-2 font-medium text-muted-foreground">Stock</th>
+                          <th className="text-right py-3 px-2 font-medium text-muted-foreground">Price</th>
+                          <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
+                        </tr>
+                      </thead>
+                      <SortableContext
+                        items={filteredProducts.map(p => p.id)}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        <tbody>
+                          {filteredProducts.map((product) => (
+                            <SortableProductRow
+                              key={product.id}
+                              product={product}
+                              isSelected={selectedProductIds.includes(product.id)}
+                              onSelect={(checked) => {
+                                if (checked) {
+                                  setSelectedProductIds(prev => [...prev, product.id]);
+                                } else {
+                                  setSelectedProductIds(prev => prev.filter(id => id !== product.id));
+                                }
+                              }}
+                              onQuickEdit={() => {
+                                setQuickEditProduct(product);
+                                setIsQuickEditOpen(true);
+                              }}
+                              onFullEdit={() => handleOpenDialog(product)}
+                              onDelete={() => {
+                                setDeletingProduct(product);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              formatCurrency={formatCurrency}
+                              isDragDisabled={!canReorder}
+                            />
+                          ))}
+                        </tbody>
+                      </SortableContext>
+                    </table>
+                  </DndContext>
+                </div>
+              </>
             )}
           </CardContent>
         </Card>

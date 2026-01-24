@@ -45,8 +45,8 @@ export default function Index() {
     async function fetchData() {
       try {
         const [featuredRes, newRes, blogsRes] = await Promise.all([
-          supabase.from('products').select('*').eq('featured', true).limit(4),
-          supabase.from('products').select('*').eq('new_arrival', true).limit(4),
+          supabase.from('products').select('*').eq('featured', true).order('display_order', { ascending: true }).limit(4),
+          supabase.from('products').select('*').eq('new_arrival', true).order('display_order', { ascending: true }).limit(4),
           supabase.from('blogs').select('id, title, slug, excerpt, featured_image, published_at').eq('published', true).order('published_at', { ascending: false }).limit(3),
         ]);
         setFeaturedProducts(featuredRes.data || []);

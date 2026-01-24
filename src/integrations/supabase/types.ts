@@ -494,6 +494,7 @@ export type Database = {
           compare_at_price: number | null
           created_at: string
           description: string | null
+          display_order: number
           featured: boolean | null
           id: string
           images: string[] | null
@@ -515,6 +516,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           description?: string | null
+          display_order?: number
           featured?: boolean | null
           id?: string
           images?: string[] | null
@@ -536,6 +538,7 @@ export type Database = {
           compare_at_price?: number | null
           created_at?: string
           description?: string | null
+          display_order?: number
           featured?: boolean | null
           id?: string
           images?: string[] | null

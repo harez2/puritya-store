@@ -34,15 +34,8 @@ import AdminBlogs from "./pages/admin/AdminBlogs";
 import AdminBlogCategories from "./pages/admin/AdminBlogCategories";
 import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
-import Contact from "./pages/Contact";
-import Shipping from "./pages/Shipping";
-import Returns from "./pages/Returns";
-import SizeGuide from "./pages/SizeGuide";
-import FAQs from "./pages/FAQs";
-import About from "./pages/About";
-import Sustainability from "./pages/Sustainability";
-import Privacy from "./pages/Privacy";
-import Terms from "./pages/Terms";
+import DynamicPage from "./pages/DynamicPage";
+import AdminPages from "./pages/admin/AdminPages";
 
 const queryClient = new QueryClient();
 
@@ -84,28 +77,22 @@ const App = () => (
                       <Route path="/checkout" element={<Checkout />} />
                       <Route path="/blog" element={<Blog />} />
                       <Route path="/blog/:slug" element={<BlogDetail />} />
-                      {/* Info Pages */}
-                      <Route path="/contact" element={<Contact />} />
-                      <Route path="/shipping" element={<Shipping />} />
-                      <Route path="/returns" element={<Returns />} />
-                      <Route path="/size-guide" element={<SizeGuide />} />
-                      <Route path="/faqs" element={<FAQs />} />
-                      <Route path="/about" element={<About />} />
-                      <Route path="/sustainability" element={<Sustainability />} />
-                      <Route path="/privacy" element={<Privacy />} />
-                      <Route path="/terms" element={<Terms />} />
                       {/* Admin Routes */}
                       <Route path="/admin" element={<AdminDashboard />} />
                       <Route path="/admin/products" element={<AdminProducts />} />
                       <Route path="/admin/orders" element={<AdminOrders />} />
                       <Route path="/admin/customers" element={<AdminCustomers />} />
                       <Route path="/admin/categories" element={<AdminCategories />} />
+                      <Route path="/admin/pages" element={<AdminPages />} />
                       <Route path="/admin/reviews" element={<AdminReviews />} />
                       <Route path="/admin/roles" element={<AdminRoles />} />
                       <Route path="/admin/blogs" element={<AdminBlogs />} />
                       <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
                       <Route path="/admin/customization" element={<AdminCustomization />} />
                       <Route path="/admin/settings" element={<AdminSettings />} />
+                      {/* Dynamic pages - must be last to catch remaining routes */}
+                      <Route path="/:slug" element={<DynamicPage />} />
+                      <Route path="*" element={<NotFound />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </FacebookPixelProvider>

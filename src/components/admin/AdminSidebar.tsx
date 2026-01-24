@@ -5,6 +5,7 @@ import {
   ShoppingCart, 
   Users, 
   Tags,
+  Tag,
   Settings,
   Store,
   LogOut,
@@ -75,7 +76,7 @@ const customizationSubItems = [
   { title: 'CSS', tab: 'custom-css', icon: Code },
   { title: 'Scripts', tab: 'scripts', icon: FileCode2 },
   { title: 'Facebook', tab: 'facebook', icon: Facebook },
-  { title: 'GTM', tab: 'gtm', icon: Code },
+  { title: 'GTM', tab: 'gtm', icon: Tag },
 ];
 
 export function AdminSidebar() {

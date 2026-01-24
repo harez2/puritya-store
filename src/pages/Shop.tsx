@@ -93,6 +93,15 @@ export default function Shop() {
     }
   });
 
+  const currentCategory = useMemo(() => {
+    if (categoryFilter) {
+      return categories.find(c => c.slug === categoryFilter);
+    }
+    return null;
+  }, [categoryFilter, categories]);
+
+  const showCoverPhoto = currentCategory?.show_cover_photo && currentCategory?.image_url;
+
   const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
     const items: BreadcrumbItemType[] = [{ label: 'Shop', href: '/shop' }];
     if (categoryFilter) {
@@ -108,24 +117,61 @@ export default function Shop() {
 
   return (
     <Layout>
+      {/* Category Cover Photo */}
+      {showCoverPhoto && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="relative h-64 md:h-80 lg:h-96 w-full overflow-hidden"
+        >
+          <img
+            src={currentCategory.image_url!}
+            alt={currentCategory.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+          <div className="absolute inset-0 flex items-end justify-center pb-8 md:pb-12">
+            <div className="text-center">
+              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl text-foreground drop-shadow-lg">
+                {currentCategory.name}
+              </h1>
+              {currentCategory.description && (
+                <p className="mt-2 text-foreground/80 max-w-xl mx-auto px-4">
+                  {currentCategory.description}
+                </p>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       <div className="container mx-auto px-4 py-8">
         <PageBreadcrumb items={breadcrumbItems} className="mb-6" />
         
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-12"
-        >
-          <h1 className="font-display text-4xl md:text-5xl mb-4">
-            {categoryFilter ? categories.find(c => c.slug === categoryFilter)?.name || 'Shop' : 
-             filter === 'new' ? 'New Arrivals' : 
-             searchQuery ? `Results for "${searchQuery}"` : 'Shop All'}
-          </h1>
-          <p className="text-muted-foreground">
+        {/* Header - only show if no cover photo */}
+        {!showCoverPhoto && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-12"
+          >
+            <h1 className="font-display text-4xl md:text-5xl mb-4">
+              {categoryFilter ? categories.find(c => c.slug === categoryFilter)?.name || 'Shop' : 
+               filter === 'new' ? 'New Arrivals' : 
+               searchQuery ? `Results for "${searchQuery}"` : 'Shop All'}
+            </h1>
+            <p className="text-muted-foreground">
+              {products.length} products
+            </p>
+          </motion.div>
+        )}
+
+        {/* Product count when cover photo is shown */}
+        {showCoverPhoto && (
+          <p className="text-center text-muted-foreground mb-8">
             {products.length} products
           </p>
-        </motion.div>
+        )}
 
         {/* Toolbar */}
         <div className="flex justify-between items-center mb-8">

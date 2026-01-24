@@ -184,6 +184,7 @@ export type Database = {
           id: string
           image_url: string | null
           name: string
+          show_cover_photo: boolean
           slug: string
         }
         Insert: {
@@ -192,6 +193,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name: string
+          show_cover_photo?: boolean
           slug: string
         }
         Update: {
@@ -200,6 +202,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           name?: string
+          show_cover_photo?: boolean
           slug?: string
         }
         Relationships: []

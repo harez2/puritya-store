@@ -82,6 +82,13 @@ const statusOptions = [
   { value: 'cancelled', label: 'Cancelled' },
 ];
 
+const paymentStatusOptions = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'paid', label: 'Paid' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'refunded', label: 'Refunded' },
+];
+
 export default function AdminOrders() {
   const { user } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -228,6 +235,31 @@ export default function AdminOrders() {
 
   const handleQuickStatusUpdate = (orderId: string, newStatus: string) => {
     openStatusUpdateDialog(orderId, newStatus);
+  };
+
+  const handlePaymentStatusUpdate = async (orderId: string, newPaymentStatus: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ payment_status: newPaymentStatus })
+        .eq('id', orderId);
+
+      if (error) throw error;
+
+      toast.success(`Payment status updated to ${newPaymentStatus}`);
+      
+      // Update local state
+      setOrders(prev => prev.map(o => 
+        o.id === orderId ? { ...o, payment_status: newPaymentStatus } : o
+      ));
+      
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder({ ...selectedOrder, payment_status: newPaymentStatus });
+      }
+    } catch (error: any) {
+      console.error('Error updating payment status:', error);
+      toast.error(error.message || 'Failed to update payment status');
+    }
   };
 
   const toggleOrderSelection = (orderId: string) => {
@@ -507,6 +539,21 @@ export default function AdminOrders() {
     }
   };
 
+  const getPaymentStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'paid':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'failed':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'refunded':
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -710,18 +757,28 @@ export default function AdminOrders() {
                         </td>
                         <td className="py-3 px-2">
                           <div className="flex flex-col gap-1">
-                            <Badge variant="outline" className={`capitalize w-fit ${
-                              order.payment_status === 'paid' 
-                                ? 'bg-green-100 text-green-800 border-green-200' 
-                                : 'bg-yellow-100 text-yellow-800 border-yellow-200'
-                            }`}>
+                            <span className="text-xs font-medium text-muted-foreground capitalize">
                               {order.payment_method || 'N/A'}
-                            </Badge>
-                            {order.payment_status && order.payment_status !== 'paid' && (
-                              <span className="text-xs text-muted-foreground capitalize">
-                                {order.payment_status}
-                              </span>
-                            )}
+                            </span>
+                            <Select
+                              value={order.payment_status || 'pending'}
+                              onValueChange={(value) => handlePaymentStatusUpdate(order.id, value)}
+                            >
+                              <SelectTrigger className={`h-7 w-[100px] text-xs font-medium capitalize ${getPaymentStatusColor(order.payment_status || 'pending')}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {paymentStatusOptions.map((status) => (
+                                  <SelectItem 
+                                    key={status.value} 
+                                    value={status.value}
+                                    className="capitalize"
+                                  >
+                                    {status.label}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
                         </td>
                         <td className="py-3 px-2 text-right font-medium">

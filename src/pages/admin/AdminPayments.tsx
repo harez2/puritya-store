@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Download, RefreshCw, CalendarIcon, X, Filter, CreditCard, DollarSign, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, Download, RefreshCw, CalendarIcon, X, Filter, DollarSign, AlertCircle, CheckCircle, History, Clock } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,7 +36,9 @@ import {
 } from '@/components/ui/table';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { format, startOfDay, endOfDay, isWithinInterval, subDays } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -54,13 +56,14 @@ interface PaymentOrder {
   user_id: string | null;
 }
 
-interface RefundRecord {
+interface PaymentHistoryEntry {
+  id: string;
   order_id: string;
-  order_number: string;
-  amount: number;
-  reason: string;
-  processed_at: string;
-  processed_by: string;
+  old_status: string | null;
+  new_status: string;
+  changed_by: string | null;
+  notes: string | null;
+  changed_at: string;
 }
 
 const paymentStatusOptions = [
@@ -96,6 +99,19 @@ export default function AdminPayments() {
   const [refundAmount, setRefundAmount] = useState('');
   const [refundReason, setRefundReason] = useState('');
   const [processingRefund, setProcessingRefund] = useState(false);
+
+  // Payment history state
+  const [isHistoryDialogOpen, setIsHistoryDialogOpen] = useState(false);
+  const [selectedOrderForHistory, setSelectedOrderForHistory] = useState<PaymentOrder | null>(null);
+  const [paymentHistory, setPaymentHistory] = useState<PaymentHistoryEntry[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Status update with notes
+  const [isStatusUpdateDialogOpen, setIsStatusUpdateDialogOpen] = useState(false);
+  const [pendingStatusUpdate, setPendingStatusUpdate] = useState<{ orderId: string; oldStatus: string | null; newStatus: string } | null>(null);
+  const [statusUpdateNotes, setStatusUpdateNotes] = useState('');
+
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchOrders();
@@ -224,6 +240,8 @@ export default function AdminPayments() {
     setProcessingRefund(true);
     
     try {
+      const oldStatus = selectedOrderForRefund.payment_status;
+
       // Update payment status to refunded
       const { error } = await supabase
         .from('orders')
@@ -231,6 +249,15 @@ export default function AdminPayments() {
         .eq('id', selectedOrderForRefund.id);
 
       if (error) throw error;
+
+      // Log the payment status change
+      await supabase.from('payment_status_history').insert({
+        order_id: selectedOrderForRefund.id,
+        old_status: oldStatus,
+        new_status: 'refunded',
+        changed_by: user?.id || null,
+        notes: `Refund of ${formatCurrency(amount)}: ${refundReason}`,
+      });
 
       toast.success(`Refund of ${formatCurrency(amount)} processed for order ${selectedOrderForRefund.order_number}`);
       
@@ -249,7 +276,17 @@ export default function AdminPayments() {
     }
   };
 
-  const handleUpdatePaymentStatus = async (orderId: string, newStatus: string) => {
+  const handleOpenStatusUpdateDialog = (orderId: string, oldStatus: string | null, newStatus: string) => {
+    setPendingStatusUpdate({ orderId, oldStatus, newStatus });
+    setStatusUpdateNotes('');
+    setIsStatusUpdateDialogOpen(true);
+  };
+
+  const handleConfirmStatusUpdate = async () => {
+    if (!pendingStatusUpdate) return;
+
+    const { orderId, oldStatus, newStatus } = pendingStatusUpdate;
+
     try {
       const { error } = await supabase
         .from('orders')
@@ -258,13 +295,49 @@ export default function AdminPayments() {
 
       if (error) throw error;
 
+      // Log the payment status change
+      await supabase.from('payment_status_history').insert({
+        order_id: orderId,
+        old_status: oldStatus,
+        new_status: newStatus,
+        changed_by: user?.id || null,
+        notes: statusUpdateNotes.trim() || null,
+      });
+
       toast.success(`Payment status updated to ${newStatus}`);
       setOrders(prev => prev.map(o => 
         o.id === orderId ? { ...o, payment_status: newStatus } : o
       ));
+
+      setIsStatusUpdateDialogOpen(false);
+      setPendingStatusUpdate(null);
+      setStatusUpdateNotes('');
     } catch (error: any) {
       console.error('Error updating payment status:', error);
       toast.error(error.message || 'Failed to update payment status');
+    }
+  };
+
+  const handleViewPaymentHistory = async (order: PaymentOrder) => {
+    setSelectedOrderForHistory(order);
+    setIsHistoryDialogOpen(true);
+    setLoadingHistory(true);
+
+    try {
+      const { data, error } = await supabase
+        .from('payment_status_history')
+        .select('*')
+        .eq('order_id', order.id)
+        .order('changed_at', { ascending: false });
+
+      if (error) throw error;
+      setPaymentHistory(data || []);
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
+      toast.error('Failed to load payment history');
+      setPaymentHistory([]);
+    } finally {
+      setLoadingHistory(false);
     }
   };
 
@@ -531,7 +604,7 @@ export default function AdminPayments() {
                         <TableCell>
                           <Select
                             value={order.payment_status || 'pending'}
-                            onValueChange={(value) => handleUpdatePaymentStatus(order.id, value)}
+                            onValueChange={(value) => handleOpenStatusUpdateDialog(order.id, order.payment_status, value)}
                           >
                             <SelectTrigger className="w-32 h-8">
                               <SelectValue>
@@ -550,16 +623,26 @@ export default function AdminPayments() {
                           <Badge variant="outline">{order.status}</Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {order.payment_status === 'paid' && (
+                          <div className="flex items-center justify-end gap-2">
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              onClick={() => handleOpenRefundDialog(order)}
+                              onClick={() => handleViewPaymentHistory(order)}
+                              title="View payment history"
                             >
-                              <RefreshCw className="h-4 w-4 mr-1" />
-                              Refund
+                              <History className="h-4 w-4" />
                             </Button>
-                          )}
+                            {order.payment_status === 'paid' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleOpenRefundDialog(order)}
+                              >
+                                <RefreshCw className="h-4 w-4 mr-1" />
+                                Refund
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -619,6 +702,102 @@ export default function AdminPayments() {
             </Button>
             <Button onClick={handleProcessRefund} disabled={processingRefund}>
               {processingRefund ? 'Processing...' : 'Process Refund'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Status Update Dialog */}
+      <Dialog open={isStatusUpdateDialogOpen} onOpenChange={setIsStatusUpdateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Update Payment Status</DialogTitle>
+            <DialogDescription>
+              Change status from "{pendingStatusUpdate?.oldStatus || 'pending'}" to "{pendingStatusUpdate?.newStatus}"
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="status-notes">Notes (optional)</Label>
+              <Textarea
+                id="status-notes"
+                value={statusUpdateNotes}
+                onChange={(e) => setStatusUpdateNotes(e.target.value)}
+                placeholder="Add any notes about this status change..."
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsStatusUpdateDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleConfirmStatusUpdate}>
+              Update Status
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Payment History Dialog */}
+      <Dialog open={isHistoryDialogOpen} onOpenChange={setIsHistoryDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Payment History
+            </DialogTitle>
+            <DialogDescription>
+              Status change history for order {selectedOrderForHistory?.order_number}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {loadingHistory ? (
+              <div className="text-center py-8 text-muted-foreground">Loading history...</div>
+            ) : paymentHistory.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Clock className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                <p>No payment status changes recorded yet.</p>
+              </div>
+            ) : (
+              <ScrollArea className="h-[400px] pr-4">
+                <div className="space-y-4">
+                  {paymentHistory.map((entry) => (
+                    <div key={entry.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {entry.old_status && (
+                            <>
+                              <Badge variant="outline" className="bg-muted">
+                                {entry.old_status}
+                              </Badge>
+                              <span className="text-muted-foreground">→</span>
+                            </>
+                          )}
+                          {getPaymentStatusBadge(entry.new_status)}
+                        </div>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(entry.changed_at), 'MMM d, yyyy HH:mm')}
+                        </span>
+                      </div>
+                      {entry.notes && (
+                        <p className="text-sm text-muted-foreground bg-muted/50 p-2 rounded">
+                          {entry.notes}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsHistoryDialogOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

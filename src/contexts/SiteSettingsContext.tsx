@@ -458,6 +458,8 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!loading) {
       applyTheme(settings);
+      // Update document title dynamically
+      document.title = settings.store_name || 'Store';
     }
   }, [settings, loading]);
 

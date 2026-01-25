@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -82,12 +83,15 @@ const customizationSubItems = [
 export function AdminSidebar() {
   const { state } = useSidebar();
   const { signOut } = useAuth();
+  const { settings } = useSiteSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const collapsed = state === 'collapsed';
   
   const isCustomizationActive = location.pathname === '/admin/customization';
   const [customizationOpen, setCustomizationOpen] = useState(isCustomizationActive);
+  
+  const storeName = settings.store_name || 'Store';
 
   const handleSignOut = async () => {
     await signOut();
@@ -104,7 +108,7 @@ export function AdminSidebar() {
         <NavLink to="/admin" className="flex items-center gap-2">
           <Store className="h-6 w-6 text-primary" />
           {!collapsed && (
-            <span className="font-display text-xl font-bold">Puritya Admin</span>
+            <span className="font-display text-xl font-bold">{storeName} Admin</span>
           )}
         </NavLink>
       </SidebarHeader>

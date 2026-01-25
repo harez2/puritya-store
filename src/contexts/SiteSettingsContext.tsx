@@ -63,6 +63,25 @@ export interface PaymentGatewayConfig {
   uddoktapay_is_default: boolean;
 }
 
+export interface HeroSlide {
+  id: string;
+  image_url: string;
+  badge: string;
+  title: string;
+  subtitle: string;
+  cta_text: string;
+  cta_link: string;
+  secondary_cta_text: string;
+  secondary_cta_link: string;
+}
+
+export interface HeroSliderSettings {
+  enabled: boolean;
+  autoplay: boolean;
+  autoplay_delay: number; // in seconds
+  slides: HeroSlide[];
+}
+
 export interface SiteSettings {
   // Branding
   store_name: string;
@@ -82,12 +101,15 @@ export interface SiteSettings {
   accent_color: HSLColor;
   background_color: HSLColor;
 
-  // Hero Section
+  // Hero Section (single image fallback)
   hero_title: string;
   hero_subtitle: string;
   hero_badge: string;
   hero_cta_text: string;
   hero_image_url: string;
+
+  // Hero Slider
+  hero_slider: HeroSliderSettings;
 
   // Announcement Bar
   announcement_text: string;
@@ -194,6 +216,12 @@ const defaultSettings: SiteSettings = {
   hero_badge: 'New Collection',
   hero_cta_text: 'Shop Now',
   hero_image_url: '',
+  hero_slider: {
+    enabled: false,
+    autoplay: true,
+    autoplay_delay: 5,
+    slides: [],
+  },
   announcement_text: 'Free shipping on orders over ₦50,000 | Use code PURITYA10 for 10% off',
   announcement_enabled: true,
   cta_title: 'Join the Puritya Family',

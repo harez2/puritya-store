@@ -20,6 +20,7 @@ import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
 import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
 import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup';
+import { HeroSlideEditor } from '@/components/admin/HeroSlideEditor';
 
 interface HSLColor {
   h: number;
@@ -743,62 +744,71 @@ export default function AdminCustomization() {
 
           {/* Hero Tab */}
           <TabsContent value="hero" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hero Section</CardTitle>
-                <CardDescription>Customize your homepage hero banner</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="hero_badge">Badge Text</Label>
-                  <Input
-                    id="hero_badge"
-                    value={localSettings.hero_badge}
-                    onChange={(e) => handleChange('hero_badge', e.target.value)}
-                    placeholder="e.g., New Collection"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hero_title">Hero Title</Label>
-                  <Input
-                    id="hero_title"
-                    value={localSettings.hero_title}
-                    onChange={(e) => handleChange('hero_title', e.target.value)}
-                    placeholder="Your main headline"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
-                  <Textarea
-                    id="hero_subtitle"
-                    value={localSettings.hero_subtitle}
-                    onChange={(e) => handleChange('hero_subtitle', e.target.value)}
-                    placeholder="Supporting text for your headline"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="hero_cta_text">Button Text</Label>
-                  <Input
-                    id="hero_cta_text"
-                    value={localSettings.hero_cta_text}
-                    onChange={(e) => handleChange('hero_cta_text', e.target.value)}
-                    placeholder="e.g., Shop Now"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Hero Background Image</Label>
-                  <SingleImageUpload
-                    image={localSettings.hero_image_url || null}
-                    onImageChange={(url) => handleChange('hero_image_url', url || '')}
-                    folder="hero"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Recommended: 1920x1080 or larger, high quality image
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            {/* Hero Slider Editor */}
+            <HeroSlideEditor
+              settings={localSettings.hero_slider}
+              onChange={(heroSlider) => handleChange('hero_slider', heroSlider)}
+            />
+
+            {/* Single Hero Fallback (shown when slider is disabled) */}
+            {!localSettings.hero_slider?.enabled && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Single Hero Section</CardTitle>
+                  <CardDescription>Customize your homepage hero banner (used when slider is disabled)</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_badge">Badge Text</Label>
+                    <Input
+                      id="hero_badge"
+                      value={localSettings.hero_badge}
+                      onChange={(e) => handleChange('hero_badge', e.target.value)}
+                      placeholder="e.g., New Collection"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_title">Hero Title</Label>
+                    <Input
+                      id="hero_title"
+                      value={localSettings.hero_title}
+                      onChange={(e) => handleChange('hero_title', e.target.value)}
+                      placeholder="Your main headline"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
+                    <Textarea
+                      id="hero_subtitle"
+                      value={localSettings.hero_subtitle}
+                      onChange={(e) => handleChange('hero_subtitle', e.target.value)}
+                      placeholder="Supporting text for your headline"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_cta_text">Button Text</Label>
+                    <Input
+                      id="hero_cta_text"
+                      value={localSettings.hero_cta_text}
+                      onChange={(e) => handleChange('hero_cta_text', e.target.value)}
+                      placeholder="e.g., Shop Now"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Hero Background Image</Label>
+                    <SingleImageUpload
+                      image={localSettings.hero_image_url || null}
+                      onImageChange={(url) => handleChange('hero_image_url', url || '')}
+                      folder="hero"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Recommended: 1920x1080 or larger, high quality image
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* Homepage Tab */}

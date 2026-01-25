@@ -18,6 +18,7 @@ import { supabase, Product } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentGateway } from '@/hooks/usePaymentGateway';
+import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import {
@@ -530,6 +531,7 @@ export default function QuickCheckoutModal({
                     {enabledPaymentMethods.map((method) => (
                       <div key={method.id} className="flex items-center space-x-2">
                         <RadioGroupItem value={method.type} id={`quick_payment_${method.id}`} />
+                        <PaymentMethodIcon type={method.type} />
                         <Label htmlFor={`quick_payment_${method.id}`} className="cursor-pointer">
                           {method.name}
                         </Label>

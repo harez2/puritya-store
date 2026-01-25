@@ -42,7 +42,8 @@ export default function Checkout() {
   const { 
     processing: gatewayProcessing, 
     initiateBkashPayment, 
-    initiateSslcommerzPayment 
+    initiateSslcommerzPayment,
+    initiateUddoktapayPayment,
   } = usePaymentGateway();
   
   // Get enabled payment methods from settings
@@ -218,7 +219,7 @@ export default function Checkout() {
       const utmParams = getUtmParams();
 
       // For non-logged-in users with gateway payments, we need to require login
-      if (!user && (paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz')) {
+      if (!user && (paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz' || paymentMethod === 'uddoktapay')) {
         toast({
           title: "Login Required",
           description: "Please sign in to use online payment gateways.",
@@ -306,6 +307,24 @@ export default function Checkout() {
             return;
           } else {
             throw new Error(result.error || 'Failed to initiate SSLCommerz payment');
+          }
+        }
+
+        if (paymentMethod === 'uddoktapay') {
+          const result = await initiateUddoktapayPayment(
+            order.id,
+            total,
+            form.full_name.trim(),
+            user.email || 'customer@example.com',
+            form.phone.trim()
+          );
+          
+          if (result.success && result.redirectUrl) {
+            // Redirect to UddoktaPay payment page
+            window.location.href = result.redirectUrl;
+            return;
+          } else {
+            throw new Error(result.error || 'Failed to initiate UddoktaPay payment');
           }
         }
       } else {

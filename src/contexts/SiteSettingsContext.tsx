@@ -54,6 +54,13 @@ export interface PaymentGatewayConfig {
   sslcommerz_store_id: string;
   sslcommerz_store_password: string;
   sslcommerz_is_default: boolean;
+
+  // UddoktaPay Gateway
+  uddoktapay_enabled: boolean;
+  uddoktapay_sandbox: boolean;
+  uddoktapay_base_url: string;
+  uddoktapay_api_key: string;
+  uddoktapay_is_default: boolean;
 }
 
 export interface SiteSettings {
@@ -262,6 +269,11 @@ const defaultSettings: SiteSettings = {
     sslcommerz_store_id: '',
     sslcommerz_store_password: '',
     sslcommerz_is_default: false,
+    uddoktapay_enabled: false,
+    uddoktapay_sandbox: true,
+    uddoktapay_base_url: '',
+    uddoktapay_api_key: '',
+    uddoktapay_is_default: false,
   },
   // Global SEO defaults
   seo_title_template: '{page} | {store}',

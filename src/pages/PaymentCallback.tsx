@@ -9,7 +9,7 @@ import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 export default function PaymentCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { executeBkashPayment, validateSslcommerzPayment } = usePaymentGateway();
+  const { executeBkashPayment, validateSslcommerzPayment, verifyUddoktapayPayment } = usePaymentGateway();
   
   const [status, setStatus] = useState<'processing' | 'success' | 'failed'>('processing');
   const [message, setMessage] = useState('Processing your payment...');
@@ -17,6 +17,9 @@ export default function PaymentCallback() {
 
   useEffect(() => {
     const processCallback = async () => {
+      // Check which gateway is being used
+      const gateway = searchParams.get('gateway');
+      
       // Check for bKash callback
       const paymentID = searchParams.get('paymentID');
       const bkashStatus = searchParams.get('status');
@@ -26,7 +29,33 @@ export default function PaymentCallback() {
       const sslStatus = searchParams.get('status');
       const tranId = searchParams.get('tran_id');
 
-      if (paymentID) {
+      // Check for UddoktaPay callback
+      const invoiceId = searchParams.get('invoice_id');
+      const uddoktaStatus = searchParams.get('status');
+
+      if (gateway === 'uddoktapay') {
+        // UddoktaPay callback
+        if (uddoktaStatus === 'cancelled') {
+          setStatus('failed');
+          setMessage('Payment was cancelled.');
+          return;
+        }
+        
+        if (invoiceId) {
+          const result = await verifyUddoktapayPayment(invoiceId);
+          if (result.success) {
+            setStatus('success');
+            setMessage('Payment successful! Your order has been confirmed.');
+            setTransactionId(result.transactionId || null);
+          } else {
+            setStatus('failed');
+            setMessage(result.error || 'Payment verification failed.');
+          }
+        } else {
+          setStatus('failed');
+          setMessage('Invalid payment callback - missing invoice ID.');
+        }
+      } else if (paymentID) {
         // bKash callback
         if (bkashStatus === 'success') {
           const result = await executeBkashPayment(paymentID);

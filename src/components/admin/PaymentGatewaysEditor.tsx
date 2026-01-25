@@ -16,6 +16,7 @@ export default function PaymentGatewaysEditor() {
   const [saving, setSaving] = useState(false);
   const [showBkashSecret, setShowBkashSecret] = useState(false);
   const [showSslPassword, setShowSslPassword] = useState(false);
+  const [showUddoktaKey, setShowUddoktaKey] = useState(false);
 
   const gateways: PaymentGatewayConfig = settings.payment_gateways || {
     bkash_enabled: false,
@@ -28,6 +29,11 @@ export default function PaymentGatewaysEditor() {
     sslcommerz_store_id: '',
     sslcommerz_store_password: '',
     sslcommerz_is_default: false,
+    uddoktapay_enabled: false,
+    uddoktapay_sandbox: true,
+    uddoktapay_base_url: '',
+    uddoktapay_api_key: '',
+    uddoktapay_is_default: false,
   };
 
   const handleUpdateGateway = async (key: keyof PaymentGatewayConfig, value: boolean | string) => {
@@ -38,8 +44,13 @@ export default function PaymentGatewaysEditor() {
       // Handle default gateway logic - only one can be default
       if (key === 'bkash_is_default' && value === true) {
         updatedGateways.sslcommerz_is_default = false;
+        updatedGateways.uddoktapay_is_default = false;
       } else if (key === 'sslcommerz_is_default' && value === true) {
         updatedGateways.bkash_is_default = false;
+        updatedGateways.uddoktapay_is_default = false;
+      } else if (key === 'uddoktapay_is_default' && value === true) {
+        updatedGateways.bkash_is_default = false;
+        updatedGateways.sslcommerz_is_default = false;
       }
 
       await updateSetting('payment_gateways', updatedGateways);
@@ -293,6 +304,124 @@ export default function PaymentGatewaysEditor() {
                       className="text-primary hover:underline inline-flex items-center gap-1"
                     >
                       SSLCommerz Developer Portal <ExternalLink className="h-3 w-3" />
+                    </a>
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* UddoktaPay Gateway */}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <span className="text-blue-600 font-bold text-xs">UP</span>
+              </div>
+              <div>
+                <h3 className="font-semibold flex items-center gap-2">
+                  UddoktaPay Gateway
+                  {gateways.uddoktapay_is_default && (
+                    <Badge variant="secondary" className="text-xs">Default</Badge>
+                  )}
+                </h3>
+                <p className="text-sm text-muted-foreground">Accept bKash, Nagad, Rocket & more</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={gateways.uddoktapay_enabled}
+                  onCheckedChange={(checked) => handleUpdateGateway('uddoktapay_enabled', checked)}
+                  disabled={saving}
+                />
+                <span className="text-sm text-muted-foreground">
+                  {gateways.uddoktapay_enabled ? 'Active' : 'Disabled'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {gateways.uddoktapay_enabled && (
+            <>
+              <Separator />
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="uddoktapay_base_url">Base URL</Label>
+                  <Input
+                    id="uddoktapay_base_url"
+                    value={gateways.uddoktapay_base_url}
+                    onChange={(e) => handleUpdateGateway('uddoktapay_base_url', e.target.value)}
+                    placeholder="https://pay.your-domain.com"
+                    disabled={saving}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your UddoktaPay installation URL (e.g., https://sandbox.uddoktapay.com)
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="uddoktapay_api_key">API Key</Label>
+                  <div className="relative">
+                    <Input
+                      id="uddoktapay_api_key"
+                      type={showUddoktaKey ? 'text' : 'password'}
+                      value={gateways.uddoktapay_api_key}
+                      onChange={(e) => handleUpdateGateway('uddoktapay_api_key', e.target.value)}
+                      placeholder="Enter your API Key"
+                      disabled={saving}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                      onClick={() => setShowUddoktaKey(!showUddoktaKey)}
+                    >
+                      {showUddoktaKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={gateways.uddoktapay_sandbox}
+                      onCheckedChange={(checked) => handleUpdateGateway('uddoktapay_sandbox', checked)}
+                      disabled={saving}
+                    />
+                    <Label className="text-sm">Sandbox Mode</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={gateways.uddoktapay_is_default}
+                      onCheckedChange={(checked) => handleUpdateGateway('uddoktapay_is_default', checked)}
+                      disabled={saving || !gateways.uddoktapay_base_url || !gateways.uddoktapay_api_key}
+                    />
+                    <Label className="text-sm">Set as Default</Label>
+                  </div>
+                </div>
+                {gateways.uddoktapay_sandbox && (
+                  <Badge variant="outline" className="text-yellow-600 border-yellow-300 bg-yellow-50">
+                    Test Mode
+                  </Badge>
+                )}
+              </div>
+
+              {(!gateways.uddoktapay_base_url || !gateways.uddoktapay_api_key) && (
+                <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
+                  <Shield className="h-4 w-4 text-muted-foreground mt-0.5" />
+                  <p className="text-sm text-muted-foreground">
+                    Get your credentials from{' '}
+                    <a 
+                      href="https://docs.uddoktapay.com/" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      UddoktaPay Documentation <ExternalLink className="h-3 w-3" />
                     </a>
                   </p>
                 </div>

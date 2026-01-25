@@ -5,6 +5,7 @@ import { ArrowRight, Truck, RefreshCw, Shield, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
+import { HeroSlider } from '@/components/HeroSlider';
 import { supabase, Product } from '@/lib/supabase';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import heroImage from '@/assets/hero-image.jpg';
@@ -62,56 +63,66 @@ export default function Index() {
   }, []);
 
   const heroImageUrl = settings.hero_image_url || heroImage;
+  const useSlider = settings.hero_slider?.enabled && settings.hero_slider?.slides?.length > 0;
 
   return (
     <Layout>
       {/* Hero Section */}
-      <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
-        <img
-          src={heroImageUrl}
-          alt={settings.store_name}
-          className="absolute inset-0 w-full h-full object-cover"
+      {useSlider ? (
+        <HeroSlider
+          slides={settings.hero_slider.slides}
+          autoplay={settings.hero_slider.autoplay}
+          autoplayDelay={settings.hero_slider.autoplay_delay}
+          storeName={settings.store_name}
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
-        <div className="relative container mx-auto px-4 h-full flex items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="max-w-xl"
-          >
-            <span className="text-primary font-medium tracking-widest uppercase text-sm">
-              {settings.hero_badge}
-            </span>
-            <h1 className="font-display text-5xl md:text-7xl mt-4 mb-6 leading-tight">
-              {settings.hero_title.split(' ').map((word, i, arr) => (
-                <span key={i}>
-                  {i === Math.floor(arr.length / 2) ? (
-                    <span className="text-primary">{word}</span>
-                  ) : (
-                    word
-                  )}
-                  {i < arr.length - 1 && ' '}
-                  {i === Math.floor(arr.length / 2) && <br />}
-                </span>
-              ))}
-            </h1>
-            <p className="text-lg text-muted-foreground mb-8 max-w-md">
-              {settings.hero_subtitle}
-            </p>
-            <div className="flex gap-4">
-              <Button size="lg" asChild>
-                <Link to="/shop">
-                  {settings.hero_cta_text} <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button variant="outline" size="lg" asChild>
-                <Link to="/shop?filter=new">New Arrivals</Link>
-              </Button>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      ) : (
+        <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
+          <img
+            src={heroImageUrl}
+            alt={settings.store_name}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
+          <div className="relative container mx-auto px-4 h-full flex items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              className="max-w-xl"
+            >
+              <span className="text-primary font-medium tracking-widest uppercase text-sm">
+                {settings.hero_badge}
+              </span>
+              <h1 className="font-display text-5xl md:text-7xl mt-4 mb-6 leading-tight">
+                {settings.hero_title.split(' ').map((word, i, arr) => (
+                  <span key={i}>
+                    {i === Math.floor(arr.length / 2) ? (
+                      <span className="text-primary">{word}</span>
+                    ) : (
+                      word
+                    )}
+                    {i < arr.length - 1 && ' '}
+                    {i === Math.floor(arr.length / 2) && <br />}
+                  </span>
+                ))}
+              </h1>
+              <p className="text-lg text-muted-foreground mb-8 max-w-md">
+                {settings.hero_subtitle}
+              </p>
+              <div className="flex gap-4">
+                <Button size="lg" asChild>
+                  <Link to="/shop">
+                    {settings.hero_cta_text} <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <Link to="/shop?filter=new">New Arrivals</Link>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+      )}
 
       {/* Features */}
       <section className="py-12 border-b border-border">

@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.sslcommerz-payment]
 verify_jwt = false
+
+[functions.uddoktapay-payment]
+verify_jwt = false

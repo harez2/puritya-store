@@ -19,12 +19,15 @@ export function usePaymentGateway() {
 
   const isBkashEnabled = gateways?.bkash_enabled && gateways?.bkash_app_key && gateways?.bkash_app_secret;
   const isSslcommerzEnabled = gateways?.sslcommerz_enabled && gateways?.sslcommerz_store_id && gateways?.sslcommerz_store_password;
+  const isUddoktapayEnabled = gateways?.uddoktapay_enabled && gateways?.uddoktapay_base_url && gateways?.uddoktapay_api_key;
 
-  const getDefaultGateway = (): 'bkash' | 'sslcommerz' | null => {
+  const getDefaultGateway = (): 'bkash' | 'sslcommerz' | 'uddoktapay' | null => {
     if (gateways?.bkash_is_default && isBkashEnabled) return 'bkash';
     if (gateways?.sslcommerz_is_default && isSslcommerzEnabled) return 'sslcommerz';
+    if (gateways?.uddoktapay_is_default && isUddoktapayEnabled) return 'uddoktapay';
     if (isBkashEnabled) return 'bkash';
     if (isSslcommerzEnabled) return 'sslcommerz';
+    if (isUddoktapayEnabled) return 'uddoktapay';
     return null;
   };
 
@@ -175,14 +178,100 @@ export function usePaymentGateway() {
     }
   };
 
+  const initiateUddoktapayPayment = async (
+    orderId: string,
+    amount: number,
+    customerName: string,
+    customerEmail: string,
+    customerPhone?: string
+  ): Promise<PaymentResult> => {
+    try {
+      setProcessing(true);
+      
+      const { data, error } = await supabase.functions.invoke('uddoktapay-payment', {
+        body: {
+          action: 'initiate',
+          order_id: orderId,
+          amount,
+          customer_name: customerName,
+          customer_email: customerEmail,
+          customer_phone: customerPhone,
+          base_url: gateways?.uddoktapay_base_url,
+          api_key: gateways?.uddoktapay_api_key,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.success && data?.payment_url) {
+        return {
+          success: true,
+          redirectUrl: data.payment_url,
+        };
+      }
+
+      return {
+        success: false,
+        error: data?.message || 'Failed to initiate UddoktaPay payment',
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Payment initiation failed';
+      toast({
+        title: 'Payment Error',
+        description: message,
+        variant: 'destructive',
+      });
+      return { success: false, error: message };
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const verifyUddoktapayPayment = async (invoiceId: string): Promise<PaymentResult> => {
+    try {
+      setProcessing(true);
+      
+      const { data, error } = await supabase.functions.invoke('uddoktapay-payment', {
+        body: {
+          action: 'verify',
+          invoice_id: invoiceId,
+          base_url: gateways?.uddoktapay_base_url,
+          api_key: gateways?.uddoktapay_api_key,
+        },
+      });
+
+      if (error) throw error;
+      
+      if (data?.success && data?.status === 'COMPLETED') {
+        return {
+          success: true,
+          transactionId: data.transaction_id,
+        };
+      }
+
+      return {
+        success: false,
+        error: data?.message || 'Payment verification failed',
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Payment verification failed';
+      return { success: false, error: message };
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   return {
     processing,
     isBkashEnabled,
     isSslcommerzEnabled,
+    isUddoktapayEnabled,
     getDefaultGateway,
     initiateBkashPayment,
     executeBkashPayment,
     initiateSslcommerzPayment,
     validateSslcommerzPayment,
+    initiateUddoktapayPayment,
+    verifyUddoktapayPayment,
   };
 }

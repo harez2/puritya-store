@@ -23,7 +23,8 @@ import {
   Star,
   UserCog,
   FileText,
-  FilePlus2
+  FilePlus2,
+  CreditCard
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -57,6 +58,7 @@ const mainNavItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
   { title: 'Products', url: '/admin/products', icon: Package },
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
+  { title: 'Payments', url: '/admin/payments', icon: CreditCard },
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
   { title: 'Pages', url: '/admin/pages', icon: FilePlus2 },

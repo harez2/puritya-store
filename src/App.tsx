@@ -26,6 +26,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminSettings from "./pages/admin/AdminSettings";
@@ -85,6 +86,7 @@ const App = () => (
                         <Route path="/admin" element={<AdminDashboard />} />
                         <Route path="/admin/products" element={<AdminProducts />} />
                         <Route path="/admin/orders" element={<AdminOrders />} />
+                        <Route path="/admin/payments" element={<AdminPayments />} />
                         <Route path="/admin/customers" element={<AdminCustomers />} />
                         <Route path="/admin/categories" element={<AdminCategories />} />
                         <Route path="/admin/pages" element={<AdminPages />} />

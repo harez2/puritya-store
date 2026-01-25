@@ -458,6 +458,7 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     if (!loading) {
       applyTheme(settings);
+      
       // Update document title dynamically
       document.title = settings.store_name || 'Store';
       
@@ -472,6 +473,43 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
         }
         faviconLink.href = faviconUrl;
         faviconLink.type = faviconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+      }
+      
+      // Update OG meta tags dynamically
+      const updateMetaTag = (selector: string, attribute: string, value: string) => {
+        let meta = document.querySelector(selector) as HTMLMetaElement;
+        if (!meta && value) {
+          meta = document.createElement('meta');
+          const [attrName, attrValue] = selector.match(/\[([^=]+)="([^"]+)"\]/)?.slice(1) || [];
+          if (attrName && attrValue) {
+            meta.setAttribute(attrName, attrValue);
+          }
+          document.head.appendChild(meta);
+        }
+        if (meta && value) {
+          meta.setAttribute(attribute, value);
+        }
+      };
+      
+      // Update OG and Twitter image tags
+      if (settings.seo_og_image) {
+        updateMetaTag('meta[property="og:image"]', 'content', settings.seo_og_image);
+        updateMetaTag('meta[name="twitter:image"]', 'content', settings.seo_og_image);
+      }
+      
+      // Update OG title and description
+      const storeName = settings.store_name || 'Store';
+      const storeDescription = settings.seo_default_description || settings.store_tagline || '';
+      
+      updateMetaTag('meta[property="og:title"]', 'content', storeName);
+      updateMetaTag('meta[name="twitter:title"]', 'content', storeName);
+      updateMetaTag('meta[property="og:description"]', 'content', storeDescription);
+      updateMetaTag('meta[name="twitter:description"]', 'content', storeDescription);
+      updateMetaTag('meta[name="description"]', 'content', storeDescription);
+      
+      // Update Twitter handle if set
+      if (settings.seo_twitter_handle) {
+        updateMetaTag('meta[name="twitter:site"]', 'content', settings.seo_twitter_handle);
       }
     }
   }, [settings, loading]);

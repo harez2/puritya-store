@@ -76,7 +76,6 @@ const paymentStatusOptions = [
 
 const paymentMethodOptions = [
   { value: 'all', label: 'All Methods' },
-  { value: 'cod', label: 'Cash on Delivery' },
   { value: 'bkash', label: 'bKash (Manual)' },
   { value: 'bkash_gateway', label: 'bKash (Gateway)' },
   { value: 'nagad', label: 'Nagad' },
@@ -136,6 +135,9 @@ export default function AdminPayments() {
   }
 
   const filteredOrders = orders.filter(order => {
+    // Exclude Cash on Delivery orders from the payment report
+    if (order.payment_method === 'cod') return false;
+    
     const matchesSearch = order.order_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesPaymentStatus = paymentStatusFilter === 'all' || order.payment_status === paymentStatusFilter;
     const matchesPaymentMethod = paymentMethodFilter === 'all' || order.payment_method === paymentMethodFilter;

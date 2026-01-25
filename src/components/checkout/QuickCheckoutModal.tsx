@@ -39,6 +39,7 @@ interface QuickCheckoutProps {
 
 type ShippingForm = {
   full_name: string;
+  email: string;
   phone: string;
   address: string;
   notes: string;
@@ -103,6 +104,7 @@ export default function QuickCheckoutModal({
 
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
+    email: '',
     phone: '',
     address: '',
     notes: '',
@@ -188,6 +190,19 @@ export default function QuickCheckoutModal({
       return false;
     }
 
+    // Validate email for gateway payments (required for guest checkout with gateways)
+    if (paymentMethod === 'uddoktapay' && !user) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
+        toast({
+          title: "Email Required",
+          description: "Please enter a valid email address for UddoktaPay payment.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
+
     const phoneRegex = /^(\+880|880|0)?1[3-9]\d{8}$/;
     if (!phoneRegex.test(form.phone.replace(/\s/g, ''))) {
       toast({
@@ -203,16 +218,6 @@ export default function QuickCheckoutModal({
 
   const handleSubmitOrder = async () => {
     if (!validateForm()) return;
-
-    // UddoktaPay requires user to be logged in
-    if (paymentMethod === 'uddoktapay' && !user) {
-      toast({
-        title: "Login Required",
-        description: "Please sign in to use UddoktaPay payment.",
-        variant: "destructive",
-      });
-      return;
-    }
 
     setIsSubmitting(true);
 
@@ -309,13 +314,14 @@ export default function QuickCheckoutModal({
 
       savedOrderDetails.orderNumber = order.order_number;
 
-      // Handle UddoktaPay payment gateway
-      if (paymentMethod === 'uddoktapay' && user) {
+      // Handle UddoktaPay payment gateway (works for both logged-in and guest users)
+      if (paymentMethod === 'uddoktapay') {
+        const customerEmail = user?.email || form.email.trim();
         const result = await initiateUddoktapayPayment(
           order.id,
           total,
           form.full_name.trim(),
-          user.email || '',
+          customerEmail,
           form.phone.trim()
         );
 
@@ -390,7 +396,7 @@ export default function QuickCheckoutModal({
     // Reset state after animation
     setTimeout(() => {
       setStep('form');
-      setForm({ full_name: '', phone: '', address: '', notes: '' });
+      setForm({ full_name: '', email: '', phone: '', address: '', notes: '' });
       setOrderDetails(null);
       setSelectedShipping(shippingOptions[0]?.id || '');
     }, 300);
@@ -463,6 +469,23 @@ export default function QuickCheckoutModal({
                     maxLength={15}
                   />
                 </div>
+
+                {/* Email field for UddoktaPay when not logged in */}
+                {!user && paymentMethod === 'uddoktapay' && (
+                  <div>
+                    <Label htmlFor="quick_email">Email Address *</Label>
+                    <Input
+                      id="quick_email"
+                      name="email"
+                      type="email"
+                      value={form.email}
+                      onChange={handleInputChange}
+                      placeholder="your@email.com"
+                      maxLength={100}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Required for payment confirmation</p>
+                  </div>
+                )}
 
                 <div>
                   <Label htmlFor="quick_address">Delivery Address *</Label>

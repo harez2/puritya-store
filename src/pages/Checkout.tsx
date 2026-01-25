@@ -28,6 +28,7 @@ import {
 
 type ShippingForm = {
   full_name: string;
+  email: string;
   phone: string;
   address: string;
   notes: string;
@@ -72,6 +73,7 @@ export default function Checkout() {
   
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
+    email: '',
     phone: '',
     address: '',
     notes: '',
@@ -156,6 +158,19 @@ export default function Checkout() {
       });
       return false;
     }
+
+    // Validate email for gateway payments (required for guest checkout with gateways)
+    if ((paymentMethod === 'uddoktapay' || paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz') && !user) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
+        toast({
+          title: "Email Required",
+          description: "Please enter a valid email address for online payment.",
+          variant: "destructive",
+        });
+        return false;
+      }
+    }
     
     // Validate Bangladesh phone number
     const phoneRegex = /^(\+880|880|0)?1[3-9]\d{8}$/;
@@ -218,118 +233,104 @@ export default function Checkout() {
       // Get UTM params
       const utmParams = getUtmParams();
 
-      // For non-logged-in users with gateway payments, we need to require login
-      if (!user && (paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz' || paymentMethod === 'uddoktapay')) {
-        toast({
-          title: "Login Required",
-          description: "Please sign in to use online payment gateways.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+      // Get email for payment gateways (from user or form)
+      const customerEmail = user?.email || form.email.trim();
 
       let orderId: string | null = null;
+      let savedOrderNumber = orderNum;
 
-      if (user) {
-        // Logged-in user: save to database
-        const { data: order, error: orderError } = await supabase
-          .from('orders')
-          .insert({
-            user_id: user.id,
-            order_number: orderNum,
-            status: 'pending',
-            subtotal,
-            shipping_fee: shippingFee,
-            total,
-            shipping_address: shippingAddress,
-            payment_method: paymentMethod,
-            payment_status: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
-            notes: form.notes.trim() || null,
-            order_source: 'cart',
-            utm_source: utmParams.utm_source,
-            utm_medium: utmParams.utm_medium,
-            utm_campaign: utmParams.utm_campaign,
-          })
-          .select()
-          .single();
+      // Save order to database for both logged-in and guest users
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: user?.id || null,
+          order_number: orderNum,
+          status: 'pending',
+          subtotal,
+          shipping_fee: shippingFee,
+          total,
+          shipping_address: shippingAddress,
+          payment_method: paymentMethod,
+          payment_status: paymentMethod === 'cod' ? 'pending' : 'awaiting_payment',
+          notes: form.notes.trim() || null,
+          order_source: 'cart',
+          utm_source: utmParams.utm_source,
+          utm_medium: utmParams.utm_medium,
+          utm_campaign: utmParams.utm_campaign,
+        })
+        .select()
+        .single();
 
-        if (orderError) throw orderError;
+      if (orderError) throw orderError;
 
-        orderId = order.id;
+      orderId = order.id;
+      savedOrderNumber = order.order_number;
 
-        // Add order items
-        const orderItems = items.map(item => ({
-          order_id: order.id,
-          product_id: item.product_id,
-          product_name: item.product?.name || 'Unknown Product',
-          product_image: item.product?.images?.[0] || null,
-          quantity: item.quantity,
-          size: item.size,
-          color: item.color,
-          price: Number(item.product?.price) || 0,
-        }));
+      // Add order items
+      const orderItems = items.map(item => ({
+        order_id: order.id,
+        product_id: item.product_id,
+        product_name: item.product?.name || 'Unknown Product',
+        product_image: item.product?.images?.[0] || null,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        price: Number(item.product?.price) || 0,
+      }));
 
-        const { error: itemsError } = await supabase
-          .from('order_items')
-          .insert(orderItems);
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
 
-        if (itemsError) throw itemsError;
+      if (itemsError) throw itemsError;
 
-        setOrderNumber(order.order_number);
+      setOrderNumber(savedOrderNumber);
 
-        // Handle gateway payments - redirect to payment provider
-        if (paymentMethod === 'bkash_gateway') {
-          const callbackUrl = `${window.location.origin}/payment/callback`;
-          const result = await initiateBkashPayment(order.id, callbackUrl);
-          
-          if (result.success && result.redirectUrl) {
-            // Redirect to bKash payment page
-            window.location.href = result.redirectUrl;
-            return;
-          } else {
-            throw new Error(result.error || 'Failed to initiate bKash payment');
-          }
+      // Handle gateway payments - redirect to payment provider
+      if (paymentMethod === 'bkash_gateway') {
+        const callbackUrl = `${window.location.origin}/payment/callback`;
+        const result = await initiateBkashPayment(order.id, callbackUrl);
+        
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+          return;
+        } else {
+          throw new Error(result.error || 'Failed to initiate bKash payment');
         }
+      }
 
-        if (paymentMethod === 'sslcommerz') {
-          const baseUrl = window.location.origin;
-          const result = await initiateSslcommerzPayment(
-            order.id,
-            `${baseUrl}/payment/callback?status=VALID`,
-            `${baseUrl}/payment/callback?status=FAILED`,
-            `${baseUrl}/payment/callback?status=CANCELLED`
-          );
-          
-          if (result.success && result.redirectUrl) {
-            // Redirect to SSLCommerz payment page
-            window.location.href = result.redirectUrl;
-            return;
-          } else {
-            throw new Error(result.error || 'Failed to initiate SSLCommerz payment');
-          }
+      if (paymentMethod === 'sslcommerz') {
+        const baseUrl = window.location.origin;
+        const result = await initiateSslcommerzPayment(
+          order.id,
+          `${baseUrl}/payment/callback?status=VALID`,
+          `${baseUrl}/payment/callback?status=FAILED`,
+          `${baseUrl}/payment/callback?status=CANCELLED`
+        );
+        
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+          return;
+        } else {
+          throw new Error(result.error || 'Failed to initiate SSLCommerz payment');
         }
+      }
 
-        if (paymentMethod === 'uddoktapay') {
-          const result = await initiateUddoktapayPayment(
-            order.id,
-            total,
-            form.full_name.trim(),
-            user.email || 'customer@example.com',
-            form.phone.trim()
-          );
-          
-          if (result.success && result.redirectUrl) {
-            // Redirect to UddoktaPay payment page
-            window.location.href = result.redirectUrl;
-            return;
-          } else {
-            throw new Error(result.error || 'Failed to initiate UddoktaPay payment');
-          }
+      if (paymentMethod === 'uddoktapay') {
+        const result = await initiateUddoktapayPayment(
+          order.id,
+          total,
+          form.full_name.trim(),
+          customerEmail,
+          form.phone.trim()
+        );
+        
+        if (result.success && result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+          return;
+        } else {
+          throw new Error(result.error || 'Failed to initiate UddoktaPay payment');
         }
-      } else {
-        // Guest checkout: just show confirmation
-        setOrderNumber(orderNum);
       }
 
       // For non-gateway payments, complete the order immediately
@@ -341,7 +342,7 @@ export default function Checkout() {
       // Track Purchase event in Data Layer
       const dataLayerProducts = getDataLayerProducts();
       trackPurchase(
-        user ? orderNumber : orderNum,
+        savedOrderNumber,
         dataLayerProducts,
         total,
         shippingFee,
@@ -601,6 +602,22 @@ export default function Checkout() {
                       maxLength={15}
                     />
                   </div>
+                  {/* Email field for gateway payments when not logged in */}
+                  {!user && (paymentMethod === 'uddoktapay' || paymentMethod === 'bkash_gateway' || paymentMethod === 'sslcommerz') && (
+                    <div>
+                      <Label htmlFor="email">Email Address *</Label>
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        value={form.email}
+                        onChange={handleInputChange}
+                        placeholder="your@email.com"
+                        maxLength={100}
+                      />
+                      <p className="text-xs text-muted-foreground mt-1">Required for online payment confirmation</p>
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="address">Delivery Address *</Label>
                     <Textarea

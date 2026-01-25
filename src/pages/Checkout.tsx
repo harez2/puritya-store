@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import { usePaymentGateway } from '@/hooks/usePaymentGateway';
+import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -680,6 +681,7 @@ export default function Checkout() {
                         className={`flex items-center space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${index > 0 ? 'mt-3' : ''} ${paymentMethod === method.type ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}
                       >
                         <RadioGroupItem value={method.type} id={`payment_${method.id}`} />
+                        <PaymentMethodIcon type={method.type} />
                         <Label htmlFor={`payment_${method.id}`} className="flex-1 cursor-pointer">
                           <span className="font-medium flex items-center gap-2">
                             {method.name}

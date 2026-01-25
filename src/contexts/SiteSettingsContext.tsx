@@ -460,6 +460,19 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
       applyTheme(settings);
       // Update document title dynamically
       document.title = settings.store_name || 'Store';
+      
+      // Update favicon dynamically
+      const faviconUrl = settings.favicon_url;
+      if (faviconUrl) {
+        let faviconLink = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+        if (!faviconLink) {
+          faviconLink = document.createElement('link');
+          faviconLink.rel = 'icon';
+          document.head.appendChild(faviconLink);
+        }
+        faviconLink.href = faviconUrl;
+        faviconLink.type = faviconUrl.endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+      }
     }
   }, [settings, loading]);
 

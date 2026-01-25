@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Check, ShoppingBag, Printer } from 'lucide-react';
+import { X, Check, ShoppingBag, Printer, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,7 @@ import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { supabase, Product } from '@/lib/supabase';
 import { formatPrice } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import {
@@ -75,6 +76,11 @@ export default function QuickCheckoutModal({
   const { user } = useAuth();
   const { settings } = useSiteSettings();
   const { toast } = useToast();
+  const { 
+    isUddoktapayEnabled, 
+    initiateUddoktapayPayment, 
+    processing: paymentProcessing 
+  } = usePaymentGateway();
 
   const [step, setStep] = useState<'form' | 'success'>('form');
   const [paymentMethod, setPaymentMethod] = useState('cod');
@@ -85,9 +91,15 @@ export default function QuickCheckoutModal({
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
   const [selectedShipping, setSelectedShipping] = useState(shippingOptions[0]?.id || '');
 
-  // Get enabled payment methods from settings
-  const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
+  // Get enabled payment methods from settings - include uddoktapay if enabled
+  const basePaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
+  const enabledPaymentMethods = isUddoktapayEnabled 
+    ? [...basePaymentMethods, { id: 'uddoktapay', name: 'UddoktaPay', type: 'uddoktapay', enabled: true, instructions: 'Pay securely via bKash, Nagad, Rocket, or Cards' }]
+    : basePaymentMethods;
   const selectedPaymentMethod = enabledPaymentMethods.find(m => m.type === paymentMethod);
+
+  // Check if selected payment is a gateway that requires redirect
+  const isGatewayPayment = paymentMethod === 'uddoktapay';
 
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
@@ -153,7 +165,11 @@ export default function QuickCheckoutModal({
   // Track payment info when payment method changes
   useEffect(() => {
     if (open) {
-      const paymentType = paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad';
+      const paymentType = paymentMethod === 'cod' ? 'Cash on Delivery' 
+        : paymentMethod === 'bkash' ? 'bKash' 
+        : paymentMethod === 'nagad' ? 'Nagad'
+        : paymentMethod === 'uddoktapay' ? 'UddoktaPay'
+        : paymentMethod;
       trackAddPaymentInfo([getDataLayerProduct()], total, paymentType, 'BDT');
     }
   }, [paymentMethod]);
@@ -188,6 +204,16 @@ export default function QuickCheckoutModal({
   const handleSubmitOrder = async () => {
     if (!validateForm()) return;
 
+    // UddoktaPay requires user to be logged in
+    if (paymentMethod === 'uddoktapay' && !user) {
+      toast({
+        title: "Login Required",
+        description: "Please sign in to use UddoktaPay payment.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -203,6 +229,16 @@ export default function QuickCheckoutModal({
       };
 
       const orderNum = 'PUR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+
+      const getPaymentMethodLabel = () => {
+        switch (paymentMethod) {
+          case 'cod': return 'Cash on Delivery';
+          case 'bkash': return 'bKash';
+          case 'nagad': return 'Nagad';
+          case 'uddoktapay': return 'UddoktaPay';
+          default: return paymentMethod;
+        }
+      };
 
       const savedOrderDetails: OrderDetails = {
         orderNumber: orderNum,
@@ -221,7 +257,7 @@ export default function QuickCheckoutModal({
           address: form.address.trim(),
           location: selectedShippingOption?.name || 'Standard',
         },
-        paymentMethod: paymentMethod === 'cod' ? 'Cash on Delivery' : paymentMethod === 'bkash' ? 'bKash' : 'Nagad',
+        paymentMethod: getPaymentMethodLabel(),
         orderDate: new Date().toLocaleString('en-BD', {
           dateStyle: 'long',
           timeStyle: 'short',
@@ -273,6 +309,26 @@ export default function QuickCheckoutModal({
 
       savedOrderDetails.orderNumber = order.order_number;
 
+      // Handle UddoktaPay payment gateway
+      if (paymentMethod === 'uddoktapay' && user) {
+        const result = await initiateUddoktapayPayment(
+          order.id,
+          total,
+          form.full_name.trim(),
+          user.email || '',
+          form.phone.trim()
+        );
+
+        if (result.success && result.redirectUrl) {
+          // Redirect to UddoktaPay payment page
+          window.location.href = result.redirectUrl;
+          return;
+        } else {
+          throw new Error(result.error || 'Failed to initiate UddoktaPay payment');
+        }
+      }
+
+      // For non-gateway payments, show success immediately
       setOrderDetails(savedOrderDetails);
       clearUtmParams(); // Clear UTM after order is placed
       setStep('success');
@@ -515,12 +571,27 @@ export default function QuickCheckoutModal({
                 className="w-full mt-6"
                 size="lg"
                 onClick={handleSubmitOrder}
-                disabled={isSubmitting}
+                disabled={isSubmitting || paymentProcessing}
               >
-                {isSubmitting ? 'Placing Order...' : `Place Order • ${formatPrice(total)}`}
+                {isSubmitting || paymentProcessing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    {paymentProcessing ? 'Redirecting to Payment...' : 'Placing Order...'}
+                  </>
+                ) : isGatewayPayment ? (
+                  `Pay with UddoktaPay • ${formatPrice(total)}`
+                ) : (
+                  `Place Order • ${formatPrice(total)}`
+                )}
               </Button>
 
-              {!user && (
+              {!user && isGatewayPayment && (
+                <p className="text-xs text-center text-amber-600 mt-3">
+                  ⚠️ Sign in required for UddoktaPay payment
+                </p>
+              )}
+
+              {!user && !isGatewayPayment && (
                 <p className="text-xs text-center text-muted-foreground mt-3">
                   Checking out as guest. Sign in for faster checkout next time.
                 </p>

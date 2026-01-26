@@ -511,6 +511,60 @@ export type Database = {
         }
         Relationships: []
       }
+      popups: {
+        Row: {
+          auto_close_seconds: number | null
+          background_color: string | null
+          content: string | null
+          created_at: string
+          cta_enabled: boolean
+          cta_link: string | null
+          cta_text: string | null
+          display_delay_seconds: number | null
+          id: string
+          is_active: boolean
+          show_close_button: boolean
+          show_once_per_session: boolean | null
+          text_color: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          auto_close_seconds?: number | null
+          background_color?: string | null
+          content?: string | null
+          created_at?: string
+          cta_enabled?: boolean
+          cta_link?: string | null
+          cta_text?: string | null
+          display_delay_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          show_close_button?: boolean
+          show_once_per_session?: boolean | null
+          text_color?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          auto_close_seconds?: number | null
+          background_color?: string | null
+          content?: string | null
+          created_at?: string
+          cta_enabled?: boolean
+          cta_link?: string | null
+          cta_text?: string | null
+          display_delay_seconds?: number | null
+          id?: string
+          is_active?: boolean
+          show_close_button?: boolean
+          show_once_per_session?: boolean | null
+          text_color?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       product_reviews: {
         Row: {
           approved: boolean

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download } from 'lucide-react';
+import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon } from 'lucide-react';
+import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,10 +20,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface Profile {
   id: string;
@@ -51,6 +65,10 @@ export default function AdminCustomers() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerWithRole | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [orderCountFilter, setOrderCountFilter] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<Date | undefined>(undefined);
+  const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     fetchCustomers();
@@ -135,10 +153,47 @@ export default function AdminCustomers() {
     }
   };
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone?.includes(searchQuery)
-  );
+  const filteredCustomers = customers.filter(customer => {
+    // Search filter
+    const matchesSearch = 
+      customer.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone?.includes(searchQuery);
+    
+    // Role filter
+    const matchesRole = roleFilter === 'all' || 
+      (roleFilter === 'admin' && customer.isAdmin) ||
+      (roleFilter === 'customer' && !customer.isAdmin);
+    
+    // Order count filter
+    let matchesOrderCount = true;
+    if (orderCountFilter === '0') {
+      matchesOrderCount = customer.orderCount === 0;
+    } else if (orderCountFilter === '1-5') {
+      matchesOrderCount = customer.orderCount >= 1 && customer.orderCount <= 5;
+    } else if (orderCountFilter === '6-10') {
+      matchesOrderCount = customer.orderCount >= 6 && customer.orderCount <= 10;
+    } else if (orderCountFilter === '10+') {
+      matchesOrderCount = customer.orderCount > 10;
+    }
+    
+    // Date range filter
+    const customerDate = new Date(customer.created_at);
+    const matchesDateFrom = !dateFrom || isAfter(customerDate, startOfDay(dateFrom)) || 
+      customerDate.toDateString() === dateFrom.toDateString();
+    const matchesDateTo = !dateTo || isBefore(customerDate, endOfDay(dateTo)) ||
+      customerDate.toDateString() === dateTo.toDateString();
+    
+    return matchesSearch && matchesRole && matchesOrderCount && matchesDateFrom && matchesDateTo;
+  });
+
+  const hasActiveFilters = roleFilter !== 'all' || orderCountFilter !== 'all' || dateFrom || dateTo;
+
+  const resetFilters = () => {
+    setRoleFilter('all');
+    setOrderCountFilter('all');
+    setDateFrom(undefined);
+    setDateTo(undefined);
+  };
 
   const exportCustomers = () => {
     const csv = [
@@ -192,15 +247,96 @@ export default function AdminCustomers() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1 max-w-sm">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search by name or phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center gap-4">
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name or phone..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                
+                <Select value={roleFilter} onValueChange={setRoleFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Roles</SelectItem>
+                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="customer">Customer</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select value={orderCountFilter} onValueChange={setOrderCountFilter}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="Orders" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Orders</SelectItem>
+                    <SelectItem value="0">No orders</SelectItem>
+                    <SelectItem value="1-5">1-5 orders</SelectItem>
+                    <SelectItem value="6-10">6-10 orders</SelectItem>
+                    <SelectItem value="10+">10+ orders</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dateFrom && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateFrom ? format(dateFrom, "PP") : "From"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateFrom}
+                      onSelect={setDateFrom}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-[140px] justify-start text-left font-normal",
+                        !dateTo && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dateTo ? format(dateTo, "PP") : "To"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={dateTo}
+                      onSelect={setDateTo}
+                      initialFocus
+                      className="pointer-events-auto"
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={resetFilters}>
+                    <X className="h-4 w-4 mr-1" />
+                    Reset
+                  </Button>
+                )}
               </div>
             </div>
           </CardHeader>

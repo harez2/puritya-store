@@ -45,6 +45,9 @@ import DynamicPage from "./pages/DynamicPage";
 import AdminPages from "./pages/admin/AdminPages";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
 import AdminPopups from "./pages/admin/AdminPopups";
+import AdminLandingPages from "./pages/admin/AdminLandingPages";
+import AdminLandingPageEditor from "./pages/admin/AdminLandingPageEditor";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -108,7 +111,11 @@ const App = () => (
                         <Route path="/admin/customization" element={<AdminCustomization />} />
                         <Route path="/admin/newsletter" element={<AdminNewsletter />} />
                         <Route path="/admin/popups" element={<AdminPopups />} />
+                        <Route path="/admin/landing-pages" element={<AdminLandingPages />} />
+                        <Route path="/admin/landing-pages/:id/edit" element={<AdminLandingPageEditor />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
+                        {/* Landing pages - public facing */}
+                        <Route path="/lp/:slug" element={<LandingPage />} />
                         {/* Dynamic pages - must be last to catch remaining routes */}
                         <Route path="/:slug" element={<DynamicPage />} />
                         <Route path="*" element={<NotFound />} />

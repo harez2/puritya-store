@@ -26,7 +26,8 @@ import {
   UserCog,
   FileText,
   FilePlus2,
-  CreditCard
+  CreditCard,
+  Rocket
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,6 +65,7 @@ const mainNavItems = [
   { title: 'Customers', url: '/admin/customers', icon: Users },
   { title: 'Categories', url: '/admin/categories', icon: Tags },
   { title: 'Pages', url: '/admin/pages', icon: FilePlus2 },
+  { title: 'Landing Pages', url: '/admin/landing-pages', icon: Rocket },
   { title: 'Blog Posts', url: '/admin/blogs', icon: FileText },
   { title: 'Blog Categories', url: '/admin/blog-categories', icon: Tags },
   { title: 'Newsletter', url: '/admin/newsletter', icon: Mail },

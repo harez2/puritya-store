@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface Popup {
   id: string;
@@ -20,9 +22,29 @@ interface Popup {
   display_delay_seconds: number | null;
   show_once_per_session: boolean | null;
   image_url: string | null;
+  target_pages: string[] | null;
+  target_login_status: string | null;
+  target_device_types: string[] | null;
 }
+
+// Detect device type
+function useDeviceType() {
+  const isMobile = useIsMobile();
+  
+  return useMemo(() => {
+    if (typeof window === 'undefined') return 'desktop';
+    
+    const width = window.innerWidth;
+    if (width < 768) return 'mobile';
+    if (width < 1024) return 'tablet';
+    return 'desktop';
+  }, [isMobile]);
+}
+
 export function SitePopup() {
   const location = useLocation();
+  const { user } = useAuth();
+  const deviceType = useDeviceType();
   const [visiblePopup, setVisiblePopup] = useState<Popup | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [dismissedPopups, setDismissedPopups] = useState<Set<string>>(() => {
@@ -48,18 +70,45 @@ export function SitePopup() {
     enabled: !isAdminArea,
   });
 
+  // Check if popup should be shown based on targeting rules
+  const shouldShowPopup = (popup: Popup): boolean => {
+    // Check page targeting
+    if (popup.target_pages && popup.target_pages.length > 0) {
+      const currentPath = location.pathname;
+      const matchesPage = popup.target_pages.some(targetPage => {
+        // Exact match or starts with (for sub-paths)
+        return currentPath === targetPage || currentPath.startsWith(targetPage + '/');
+      });
+      if (!matchesPage) return false;
+    }
+
+    // Check login status targeting
+    if (popup.target_login_status && popup.target_login_status !== 'any') {
+      const isLoggedIn = !!user;
+      if (popup.target_login_status === 'logged_in' && !isLoggedIn) return false;
+      if (popup.target_login_status === 'logged_out' && isLoggedIn) return false;
+    }
+
+    // Check device type targeting
+    if (popup.target_device_types && popup.target_device_types.length > 0) {
+      if (!popup.target_device_types.includes(deviceType)) return false;
+    }
+
+    return true;
+  };
+
   useEffect(() => {
     if (isAdminArea || popups.length === 0) {
       setVisiblePopup(null);
       return;
     }
 
-    // Find the first popup that hasn't been dismissed (if show_once_per_session)
+    // Find the first popup that passes all targeting rules and hasn't been dismissed
     const availablePopup = popups.find(popup => {
       if (popup.show_once_per_session && dismissedPopups.has(popup.id)) {
         return false;
       }
-      return true;
+      return shouldShowPopup(popup);
     });
 
     if (!availablePopup) {
@@ -75,7 +124,7 @@ export function SitePopup() {
     }, delay);
 
     return () => clearTimeout(showTimer);
-  }, [popups, isAdminArea, dismissedPopups]);
+  }, [popups, isAdminArea, dismissedPopups, location.pathname, user, deviceType]);
 
   // Handle auto-close
   useEffect(() => {

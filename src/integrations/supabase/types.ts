@@ -526,6 +526,9 @@ export type Database = {
           is_active: boolean
           show_close_button: boolean
           show_once_per_session: boolean | null
+          target_device_types: string[] | null
+          target_login_status: string | null
+          target_pages: string[] | null
           text_color: string | null
           title: string
           updated_at: string
@@ -544,6 +547,9 @@ export type Database = {
           is_active?: boolean
           show_close_button?: boolean
           show_once_per_session?: boolean | null
+          target_device_types?: string[] | null
+          target_login_status?: string | null
+          target_pages?: string[] | null
           text_color?: string | null
           title: string
           updated_at?: string
@@ -562,6 +568,9 @@ export type Database = {
           is_active?: boolean
           show_close_button?: boolean
           show_once_per_session?: boolean | null
+          target_device_types?: string[] | null
+          target_login_status?: string | null
+          target_pages?: string[] | null
           text_color?: string | null
           title?: string
           updated_at?: string

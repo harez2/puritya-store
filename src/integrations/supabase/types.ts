@@ -210,6 +210,62 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_page_analytics: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          event_type: string
+          id: string
+          landing_page_id: string
+          product_id: string | null
+          referrer: string | null
+          section_id: string | null
+          session_id: string | null
+          user_id: string | null
+          utm_campaign: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          event_type: string
+          id?: string
+          landing_page_id: string
+          product_id?: string | null
+          referrer?: string | null
+          section_id?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          event_type?: string
+          id?: string
+          landing_page_id?: string
+          product_id?: string | null
+          referrer?: string | null
+          section_id?: string | null
+          session_id?: string | null
+          user_id?: string | null
+          utm_campaign?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "landing_page_analytics_landing_page_id_fkey"
+            columns: ["landing_page_id"]
+            isOneToOne: false
+            referencedRelation: "landing_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_pages: {
         Row: {
           created_at: string

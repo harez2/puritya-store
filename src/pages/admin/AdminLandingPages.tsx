@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Copy, Rocket } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, ExternalLink, Copy, Rocket, BarChart3, MousePointerClick, ShoppingCart, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -31,6 +31,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface LandingPage {
   id: string;
@@ -40,6 +46,11 @@ interface LandingPage {
   sections: any[];
   created_at: string;
   updated_at: string;
+}
+
+interface AnalyticsEvent {
+  landing_page_id: string;
+  event_type: string;
 }
 
 export default function AdminLandingPages() {
@@ -61,6 +72,37 @@ export default function AdminLandingPages() {
       return data as LandingPage[];
     },
   });
+
+  // Fetch analytics data
+  const { data: analyticsData = [] } = useQuery({
+    queryKey: ['landing-page-analytics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('landing_page_analytics')
+        .select('landing_page_id, event_type');
+      
+      if (error) throw error;
+      return data as AnalyticsEvent[];
+    },
+  });
+
+  // Calculate analytics per page
+  const pageAnalytics = useMemo(() => {
+    const analytics: Record<string, { views: number; clicks: number; checkouts: number; purchases: number }> = {};
+    
+    analyticsData.forEach((event) => {
+      if (!analytics[event.landing_page_id]) {
+        analytics[event.landing_page_id] = { views: 0, clicks: 0, checkouts: 0, purchases: 0 };
+      }
+      
+      if (event.event_type === 'view') analytics[event.landing_page_id].views++;
+      else if (event.event_type === 'click') analytics[event.landing_page_id].clicks++;
+      else if (event.event_type === 'checkout') analytics[event.landing_page_id].checkouts++;
+      else if (event.event_type === 'purchase') analytics[event.landing_page_id].purchases++;
+    });
+    
+    return analytics;
+  }, [analyticsData]);
 
   const createMutation = useMutation({
     mutationFn: async ({ title, slug }: { title: string; slug: string }) => {
@@ -194,100 +236,144 @@ export default function AdminLandingPages() {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>URL</TableHead>
-                    <TableHead>Sections</TableHead>
+                    <TableHead>Analytics</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Updated</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {landingPages.map((page) => (
-                    <TableRow key={page.id}>
-                      <TableCell className="font-medium">{page.title}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <code className="text-xs bg-muted px-2 py-1 rounded">/lp/{page.slug}</code>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-6 w-6"
-                            onClick={() => copyUrl(page.slug)}
-                          >
-                            <Copy className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {page.sections?.length || 0} sections
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => toggleStatusMutation.mutate({ 
-                            id: page.id, 
-                            status: page.status === 'published' ? 'draft' : 'published' 
-                          })}
-                          className={page.status === 'published' ? 'text-green-600' : 'text-muted-foreground'}
-                        >
-                          {page.status === 'published' ? (
-                            <><Eye className="h-4 w-4 mr-1" /> Published</>
-                          ) : (
-                            <><EyeOff className="h-4 w-4 mr-1" /> Draft</>
-                          )}
-                        </Button>
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-sm">
-                        {format(new Date(page.updated_at), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {page.status === 'published' && (
+                  {landingPages.map((page) => {
+                    const stats = pageAnalytics[page.id] || { views: 0, clicks: 0, checkouts: 0, purchases: 0 };
+                    const conversionRate = stats.views > 0 
+                      ? ((stats.checkouts / stats.views) * 100).toFixed(1) 
+                      : '0.0';
+                    
+                    return (
+                      <TableRow key={page.id}>
+                        <TableCell className="font-medium">{page.title}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <code className="text-xs bg-muted px-2 py-1 rounded">/lp/{page.slug}</code>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => window.open(`/lp/${page.slug}`, '_blank')}
+                              className="h-6 w-6"
+                              onClick={() => copyUrl(page.slug)}
                             >
-                              <ExternalLink className="h-4 w-4" />
+                              <Copy className="h-3 w-3" />
                             </Button>
-                          )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <TooltipProvider>
+                            <div className="flex items-center gap-3">
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>{stats.views}</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>Page Views</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <MousePointerClick className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>{stats.clicks}</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>CTA Clicks</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex items-center gap-1 text-sm">
+                                    <ShoppingCart className="h-3.5 w-3.5 text-muted-foreground" />
+                                    <span>{stats.checkouts}</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent>Checkouts</TooltipContent>
+                              </Tooltip>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge variant={Number(conversionRate) > 0 ? 'default' : 'secondary'} className="text-xs">
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                    {conversionRate}%
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>Conversion Rate (Checkouts / Views)</TooltipContent>
+                              </Tooltip>
+                            </div>
+                          </TooltipProvider>
+                        </TableCell>
+                        <TableCell>
                           <Button
                             variant="ghost"
-                            size="icon"
-                            onClick={() => navigate(`/admin/landing-pages/${page.id}/edit`)}
+                            size="sm"
+                            onClick={() => toggleStatusMutation.mutate({ 
+                              id: page.id, 
+                              status: page.status === 'published' ? 'draft' : 'published' 
+                            })}
+                            className={page.status === 'published' ? 'text-green-600' : 'text-muted-foreground'}
                           >
-                            <Pencil className="h-4 w-4" />
+                            {page.status === 'published' ? (
+                              <><Eye className="h-4 w-4 mr-1" /> Published</>
+                            ) : (
+                              <><EyeOff className="h-4 w-4 mr-1" /> Draft</>
+                            )}
                           </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="icon" className="text-destructive">
-                                <Trash2 className="h-4 w-4" />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(page.updated_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            {page.status === 'published' && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => window.open(`/lp/${page.slug}`, '_blank')}
+                              >
+                                <ExternalLink className="h-4 w-4" />
                               </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Landing Page</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  Are you sure you want to delete "{page.title}"? This action cannot be undone.
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                  onClick={() => deleteMutation.mutate(page.id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                  Delete
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => navigate(`/admin/landing-pages/${page.id}/edit`)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete Landing Page</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Are you sure you want to delete "{page.title}"? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => deleteMutation.mutate(page.id)}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  >
+                                    Delete
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

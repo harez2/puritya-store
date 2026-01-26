@@ -220,15 +220,17 @@ export default function Account() {
               </Card>
             </Link>
 
-            <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center gap-4">
-                <Package className="h-8 w-8 text-primary" />
-                <div>
-                  <CardTitle>Orders</CardTitle>
-                  <p className="text-sm text-muted-foreground">Track your orders</p>
-                </div>
-              </CardHeader>
-            </Card>
+            <Link to="/account/orders">
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <Package className="h-8 w-8 text-primary" />
+                  <div>
+                    <CardTitle>Orders</CardTitle>
+                    <p className="text-sm text-muted-foreground">Track your orders</p>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
           </div>
 
           <Button variant="outline" className="mt-8" onClick={handleSignOut}>

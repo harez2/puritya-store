@@ -357,16 +357,35 @@ export default function AdminCustomization() {
                       Recommended: PNG or SVG with transparent background
                     </p>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Favicon</Label>
-                    <SingleImageUpload
-                      image={localSettings.favicon_url || null}
-                      onImageChange={(url) => handleChange('favicon_url', url || '')}
-                      folder="branding"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Recommended: 32x32 or 64x64 PNG
-                    </p>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Logo Size</Label>
+                      <div className="flex items-center gap-4">
+                        <Slider
+                          value={[localSettings.logo_size || 56]}
+                          min={32}
+                          max={80}
+                          step={4}
+                          onValueChange={([size]) => handleChange('logo_size', size)}
+                          className="flex-1"
+                        />
+                        <span className="text-sm text-muted-foreground w-12">{localSettings.logo_size || 56}px</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Height of the logo in the header (32-80px)
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Favicon</Label>
+                      <SingleImageUpload
+                        image={localSettings.favicon_url || null}
+                        onImageChange={(url) => handleChange('favicon_url', url || '')}
+                        folder="branding"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Recommended: 32x32 or 64x64 PNG
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

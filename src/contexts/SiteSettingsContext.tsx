@@ -93,6 +93,7 @@ export interface SiteSettings {
   store_name: string;
   store_tagline: string;
   logo_url: string;
+  logo_size: number; // 32 to 80px (height)
   favicon_url: string;
 
   // Typography
@@ -208,6 +209,7 @@ const defaultSettings: SiteSettings = {
   store_name: 'Puritya',
   store_tagline: 'Curated feminine fashion imported from around the world',
   logo_url: '',
+  logo_size: 56, // default 56px height
   favicon_url: '',
   heading_font: 'Cormorant Garamond',
   body_font: 'Outfit',

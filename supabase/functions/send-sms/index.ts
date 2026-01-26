@@ -8,6 +8,8 @@ const corsHeaders = {
 interface SMSRequest {
   phone: string;
   message: string;
+  customApiKey?: string;
+  customSenderId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -17,15 +19,16 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const apiKey = Deno.env.get("BULKSMS_API_KEY");
-    const senderId = Deno.env.get("BULKSMS_SENDER_ID");
+    const { phone, message, customApiKey, customSenderId }: SMSRequest = await req.json();
+
+    // Use custom API credentials if provided, otherwise fall back to environment variables
+    const apiKey = customApiKey || Deno.env.get("BULKSMS_API_KEY");
+    const senderId = customSenderId || Deno.env.get("BULKSMS_SENDER_ID");
 
     if (!apiKey || !senderId) {
       console.error("Missing SMS API credentials");
-      throw new Error("SMS API credentials not configured");
+      throw new Error("SMS API credentials not configured. Please add API key and Sender ID in Settings.");
     }
-
-    const { phone, message }: SMSRequest = await req.json();
 
     if (!phone || !message) {
       throw new Error("Phone number and message are required");

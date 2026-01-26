@@ -1,16 +1,14 @@
 import { useState } from 'react';
-import { Plus, Trash2, GripVertical, ChevronUp, ChevronDown, Image as ImageIcon } from 'lucide-react';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { Plus, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
+import { Label } from '@/components/ui/label';
 import { HeroSlide, HeroSliderSettings } from '@/contexts/SiteSettingsContext';
-import { cn } from '@/lib/utils';
+import { SortableHeroSlide } from './SortableHeroSlide';
 
 interface HeroSlideEditorProps {
   settings: HeroSliderSettings;
@@ -19,6 +17,17 @@ interface HeroSlideEditorProps {
 
 export function HeroSlideEditor({ settings, onChange }: HeroSlideEditorProps) {
   const [expandedSlides, setExpandedSlides] = useState<Set<string>>(new Set());
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const toggleSlideExpanded = (id: string) => {
     setExpandedSlides((prev) => {
@@ -67,13 +76,18 @@ export function HeroSlideEditor({ settings, onChange }: HeroSlideEditorProps) {
     });
   };
 
-  const moveSlide = (index: number, direction: 'up' | 'down') => {
-    const newIndex = direction === 'up' ? index - 1 : index + 1;
-    if (newIndex < 0 || newIndex >= settings.slides.length) return;
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
 
-    const newSlides = [...settings.slides];
-    [newSlides[index], newSlides[newIndex]] = [newSlides[newIndex], newSlides[index]];
-    onChange({ ...settings, slides: newSlides });
+    if (over && active.id !== over.id) {
+      const oldIndex = settings.slides.findIndex((slide) => slide.id === active.id);
+      const newIndex = settings.slides.findIndex((slide) => slide.id === over.id);
+
+      onChange({
+        ...settings,
+        slides: arrayMove(settings.slides, oldIndex, newIndex),
+      });
+    }
   };
 
   return (
@@ -153,178 +167,30 @@ export function HeroSlideEditor({ settings, onChange }: HeroSlideEditorProps) {
                 <p>No slides yet. Add your first slide to get started.</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {settings.slides.map((slide, index) => (
-                  <Collapsible
-                    key={slide.id}
-                    open={expandedSlides.has(slide.id)}
-                    onOpenChange={() => toggleSlideExpanded(slide.id)}
-                  >
-                    <div className="border rounded-lg overflow-hidden">
-                      <CollapsibleTrigger asChild>
-                        <div className="flex items-center gap-3 p-4 cursor-pointer hover:bg-muted/50 transition-colors">
-                          <GripVertical className="h-4 w-4 text-muted-foreground" />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">
-                              {slide.title || `Slide ${index + 1}`}
-                            </p>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {slide.badge || 'No badge'}
-                            </p>
-                          </div>
-                          {slide.image_url && (
-                            <img
-                              src={slide.image_url}
-                              alt=""
-                              className="h-10 w-16 object-cover rounded"
-                            />
-                          )}
-                          <div className="flex items-center gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveSlide(index, 'up');
-                              }}
-                              disabled={index === 0}
-                            >
-                              <ChevronUp className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                moveSlide(index, 'down');
-                              }}
-                              disabled={index === settings.slides.length - 1}
-                            >
-                              <ChevronDown className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeSlide(slide.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CollapsibleTrigger>
-
-                      <CollapsibleContent>
-                        <div className="border-t p-4 space-y-4 bg-muted/30">
-                          <div className="space-y-2">
-                            <Label>Background Image</Label>
-                            <SingleImageUpload
-                              image={slide.image_url || null}
-                              onImageChange={(url) =>
-                                updateSlide(slide.id, { image_url: url || '' })
-                              }
-                              folder="hero"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                              Recommended: 1920x1080 or larger
-                            </p>
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Badge Text</Label>
-                              <Input
-                                value={slide.badge}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, { badge: e.target.value })
-                                }
-                                placeholder="e.g., New Collection"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Title</Label>
-                              <Input
-                                value={slide.title}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, { title: e.target.value })
-                                }
-                                placeholder="Slide headline"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Subtitle</Label>
-                            <Textarea
-                              value={slide.subtitle}
-                              onChange={(e) =>
-                                updateSlide(slide.id, { subtitle: e.target.value })
-                              }
-                              placeholder="Supporting text"
-                              rows={2}
-                            />
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Primary Button Text</Label>
-                              <Input
-                                value={slide.cta_text}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, { cta_text: e.target.value })
-                                }
-                                placeholder="e.g., Shop Now"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Primary Button Link</Label>
-                              <Input
-                                value={slide.cta_link}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, { cta_link: e.target.value })
-                                }
-                                placeholder="/shop"
-                              />
-                            </div>
-                          </div>
-
-                          <div className="grid gap-4 md:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Secondary Button Text</Label>
-                              <Input
-                                value={slide.secondary_cta_text}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, {
-                                    secondary_cta_text: e.target.value,
-                                  })
-                                }
-                                placeholder="e.g., Learn More"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Secondary Button Link</Label>
-                              <Input
-                                value={slide.secondary_cta_link}
-                                onChange={(e) =>
-                                  updateSlide(slide.id, {
-                                    secondary_cta_link: e.target.value,
-                                  })
-                                }
-                                placeholder="/about"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </CollapsibleContent>
-                    </div>
-                  </Collapsible>
-                ))}
-              </div>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={settings.slides.map((slide) => slide.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {settings.slides.map((slide, index) => (
+                      <SortableHeroSlide
+                        key={slide.id}
+                        slide={slide}
+                        index={index}
+                        isExpanded={expandedSlides.has(slide.id)}
+                        onToggleExpanded={() => toggleSlideExpanded(slide.id)}
+                        onUpdate={(updates) => updateSlide(slide.id, updates)}
+                        onRemove={() => removeSlide(slide.id)}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </CardContent>
         </Card>

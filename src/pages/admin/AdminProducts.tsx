@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Search, X, Filter, RotateCcw, GripVertical } from 'lucide-react';
+import { Plus, Trash2, Search, X, Filter, RotateCcw, GripVertical, Copy, Loader2 } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -85,6 +85,7 @@ export default function AdminProducts() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [isBulkDeleteDialogOpen, setIsBulkDeleteDialogOpen] = useState(false);
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [bulkDuplicating, setBulkDuplicating] = useState(false);
   
   // Filter states
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -294,6 +295,44 @@ export default function AdminProducts() {
     }
   };
 
+  const handleBulkDuplicate = async () => {
+    if (selectedProductIds.length === 0) return;
+
+    setBulkDuplicating(true);
+    try {
+      const { data: originalProducts, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .in('id', selectedProductIds);
+
+      if (fetchError) throw fetchError;
+
+      const duplicatedProducts = originalProducts.map(product => {
+        const { id, created_at, updated_at, display_order, ...productData } = product;
+        return {
+          ...productData,
+          name: `${productData.name} (Copy)`,
+          slug: `${productData.slug}-copy-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        };
+      });
+
+      const { error: insertError } = await supabase
+        .from('products')
+        .insert(duplicatedProducts);
+
+      if (insertError) throw insertError;
+
+      toast.success(`Duplicated ${selectedProductIds.length} product(s)`);
+      setSelectedProductIds([]);
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Error bulk duplicating products:', error);
+      toast.error(error.message || 'Failed to duplicate products');
+    } finally {
+      setBulkDuplicating(false);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -328,6 +367,19 @@ export default function AdminProducts() {
               {selectedProductIds.length} product(s) selected
             </span>
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleBulkDuplicate}
+                disabled={bulkDuplicating}
+              >
+                {bulkDuplicating ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Copy className="h-4 w-4 mr-1" />
+                )}
+                Duplicate Selected
+              </Button>
               <Button
                 variant="destructive"
                 size="sm"

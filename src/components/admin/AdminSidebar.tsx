@@ -19,6 +19,7 @@ import {
   Code,
   FileCode2,
   Facebook,
+  Mail,
   ChevronDown,
   Star,
   UserCog,
@@ -64,6 +65,7 @@ const mainNavItems = [
   { title: 'Pages', url: '/admin/pages', icon: FilePlus2 },
   { title: 'Blog Posts', url: '/admin/blogs', icon: FileText },
   { title: 'Blog Categories', url: '/admin/blog-categories', icon: Tags },
+  { title: 'Newsletter', url: '/admin/newsletter', icon: Mail },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];

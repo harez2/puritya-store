@@ -3,6 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Instagram, Facebook, Twitter } from 'lucide-react';
 import { useSiteSettings, MenuItem } from '@/contexts/SiteSettingsContext';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { useState } from 'react';
 
 function FooterLink({ item }: { item: MenuItem }) {
   if (item.type === 'external') {
@@ -30,6 +33,36 @@ function FooterLink({ item }: { item: MenuItem }) {
 
 export default function Footer() {
   const { settings } = useSiteSettings();
+  const [email, setEmail] = useState('');
+  const [subscribing, setSubscribing] = useState(false);
+
+  const handleSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+
+    setSubscribing(true);
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .insert({ email: email.trim().toLowerCase(), source: 'footer' });
+
+      if (error) {
+        if (error.code === '23505') {
+          toast.info('You are already subscribed!');
+        } else {
+          throw error;
+        }
+      } else {
+        toast.success('Successfully subscribed to newsletter!');
+        setEmail('');
+      }
+    } catch (error) {
+      console.error('Subscription error:', error);
+      toast.error('Failed to subscribe. Please try again.');
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   return (
     <footer className="bg-secondary border-t border-border">
@@ -53,14 +86,17 @@ export default function Footer() {
             </p>
             <div className="mb-6">
               <h4 className="font-display text-lg mb-3">Subscribe to our newsletter</h4>
-              <form className="flex gap-2">
+              <form onSubmit={handleSubscribe} className="flex gap-2">
                 <Input
                   type="email"
                   placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="bg-background border-border"
+                  required
                 />
-                <Button className="bg-primary hover:bg-primary/90">
-                  Subscribe
+                <Button type="submit" disabled={subscribing} className="bg-primary hover:bg-primary/90">
+                  {subscribing ? 'Subscribing...' : 'Subscribe'}
                 </Button>
               </form>
             </div>

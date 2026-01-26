@@ -4,11 +4,79 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Store, Bell, Shield } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Store, Shield, Package } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
+
+interface ProductSettings {
+  sizesEnabled: boolean;
+  colorsEnabled: boolean;
+}
+
+const defaultProductSettings: ProductSettings = {
+  sizesEnabled: true,
+  colorsEnabled: true,
+};
+
 export default function AdminSettings() {
+  const [productSettings, setProductSettings] = useState<ProductSettings>(defaultProductSettings);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchProductSettings();
+  }, []);
+
+  const fetchProductSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'product_options')
+        .eq('category', 'products')
+        .maybeSingle();
+
+      if (error) throw error;
+      
+      if (data?.value) {
+        setProductSettings({ ...defaultProductSettings, ...(data.value as unknown as ProductSettings) });
+      }
+    } catch (error) {
+      console.error('Error fetching product settings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProductSetting = async (key: keyof ProductSettings, value: boolean) => {
+    const updatedSettings = { ...productSettings, [key]: value };
+    setProductSettings(updatedSettings);
+
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'product_options',
+          category: 'products',
+          value: updatedSettings,
+          updated_at: new Date().toISOString(),
+        }, {
+          onConflict: 'key'
+        });
+
+      if (error) throw error;
+      toast.success('Product settings updated');
+    } catch (error) {
+      console.error('Error updating product settings:', error);
+      toast.error('Failed to update settings');
+      setProductSettings(productSettings);
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -50,6 +118,50 @@ export default function AdminSettings() {
               </div>
               <Separator />
               <Button>Save Changes</Button>
+            </CardContent>
+          </Card>
+
+          {/* Product Options */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                <CardTitle>Product Options</CardTitle>
+              </div>
+              <CardDescription>
+                Configure which product options are available
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="sizesEnabled">Product Sizes</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow products to have size variants (S, M, L, XL, etc.)
+                  </p>
+                </div>
+                <Switch
+                  id="sizesEnabled"
+                  checked={productSettings.sizesEnabled}
+                  onCheckedChange={(checked) => updateProductSetting('sizesEnabled', checked)}
+                  disabled={loading}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="colorsEnabled">Product Colors</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow products to have color variants
+                  </p>
+                </div>
+                <Switch
+                  id="colorsEnabled"
+                  checked={productSettings.colorsEnabled}
+                  onCheckedChange={(checked) => updateProductSetting('colorsEnabled', checked)}
+                  disabled={loading}
+                />
+              </div>
             </CardContent>
           </Card>
 

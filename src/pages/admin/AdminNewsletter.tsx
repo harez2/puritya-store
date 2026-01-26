@@ -4,12 +4,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Search, Trash2, Download, Users } from 'lucide-react';
+import { Mail, Search, Trash2, Download, Users, AlertCircle } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { DomainWhitelist } from '@/components/admin/DomainWhitelist';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+interface DomainWhitelistSettings {
+  enabled: boolean;
+  domains: string[];
+}
 
 interface Subscriber {
   id: string;
@@ -23,10 +30,22 @@ export default function AdminNewsletter() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [whitelistSettings, setWhitelistSettings] = useState<DomainWhitelistSettings>({
+    enabled: false,
+    domains: []
+  });
 
   useEffect(() => {
     fetchSubscribers();
   }, []);
+
+  const isWhitelisted = (email: string) => {
+    if (!whitelistSettings.enabled || whitelistSettings.domains.length === 0) {
+      return true;
+    }
+    const domain = email.split('@')[1]?.toLowerCase();
+    return whitelistSettings.domains.includes(domain);
+  };
 
   const fetchSubscribers = async () => {
     try {
@@ -153,6 +172,9 @@ export default function AdminNewsletter() {
           </Card>
         </div>
 
+        {/* Domain Whitelist */}
+        <DomainWhitelist onSettingsChange={setWhitelistSettings} />
+
         {/* Subscribers List */}
         <Card>
           <CardHeader>
@@ -191,49 +213,68 @@ export default function AdminNewsletter() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSubscribers.map((subscriber) => (
-                    <TableRow key={subscriber.id}>
-                      <TableCell className="font-medium">{subscriber.email}</TableCell>
-                      <TableCell>
-                        {format(new Date(subscriber.subscribed_at), 'MMM d, yyyy')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{subscriber.source || 'footer'}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={subscriber.is_active ? 'default' : 'secondary'}
-                          className="cursor-pointer"
-                          onClick={() => toggleSubscriberStatus(subscriber.id, subscriber.is_active)}
+                  {filteredSubscribers.map((subscriber) => {
+                    const whitelisted = isWhitelisted(subscriber.email);
+                    return (
+                      <TableRow key={subscriber.id} className={!whitelisted ? 'bg-destructive/5' : ''}>
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {subscriber.email}
+                            {!whitelisted && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <AlertCircle className="h-4 w-4 text-destructive" />
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Domain not in whitelist</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {format(new Date(subscriber.subscribed_at), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{subscriber.source || 'footer'}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={subscriber.is_active ? 'default' : 'secondary'}
+                            className="cursor-pointer"
+                            onClick={() => toggleSubscriberStatus(subscriber.id, subscriber.is_active)}
                         >
                           {subscriber.is_active ? 'Active' : 'Inactive'}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete subscriber?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                This will permanently remove {subscriber.email} from your newsletter list.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => deleteSubscriber(subscriber.id)}>
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell className="text-right">
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="icon">
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete subscriber?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  This will permanently remove {subscriber.email} from your newsletter list.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => deleteSubscriber(subscriber.id)}>
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             )}

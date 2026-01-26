@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -36,7 +36,7 @@ const defaultSettings: SmsSettings = {
   orderDeliveredTemplate: 'Dear {customer_name}, your order #{order_number} has been delivered! Thank you for shopping with Puritya!',
 };
 
-export default function SmsSettingsEditor() {
+const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(_, ref) {
   const [settings, setSettings] = useState<SmsSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -265,7 +265,7 @@ export default function SmsSettingsEditor() {
   }
 
   return (
-    <Card>
+    <Card ref={ref}>
       <CardHeader>
         <div className="flex items-center gap-2">
           <MessageSquare className="h-5 w-5 text-primary" />
@@ -485,4 +485,6 @@ export default function SmsSettingsEditor() {
       </CardContent>
     </Card>
   );
-}
+});
+
+export default SmsSettingsEditor;

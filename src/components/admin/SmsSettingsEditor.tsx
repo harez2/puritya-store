@@ -11,6 +11,9 @@ import { useToast } from '@/hooks/use-toast';
 
 interface SmsSettings {
   enabled: boolean;
+  apiKey: string;
+  senderId: string;
+  useCustomApi: boolean;
   orderConfirmationTemplate: string;
   orderShippedTemplate: string;
   orderDeliveredTemplate: string;
@@ -18,6 +21,9 @@ interface SmsSettings {
 
 const defaultSettings: SmsSettings = {
   enabled: true,
+  apiKey: '',
+  senderId: '',
+  useCustomApi: false,
   orderConfirmationTemplate: 'Dear {customer_name}, your order #{order_number} has been confirmed! Total: ৳{total}. Thank you for shopping with Puritya!',
   orderShippedTemplate: 'Dear {customer_name}, your order #{order_number} has been shipped! Track your delivery. - Puritya',
   orderDeliveredTemplate: 'Dear {customer_name}, your order #{order_number} has been delivered! Thank you for shopping with Puritya!',
@@ -48,6 +54,9 @@ export default function SmsSettingsEditor() {
         const value = data.value as Record<string, unknown>;
         setSettings({
           enabled: typeof value.enabled === 'boolean' ? value.enabled : defaultSettings.enabled,
+          apiKey: typeof value.apiKey === 'string' ? value.apiKey : defaultSettings.apiKey,
+          senderId: typeof value.senderId === 'string' ? value.senderId : defaultSettings.senderId,
+          useCustomApi: typeof value.useCustomApi === 'boolean' ? value.useCustomApi : defaultSettings.useCustomApi,
           orderConfirmationTemplate: typeof value.orderConfirmationTemplate === 'string' 
             ? value.orderConfirmationTemplate 
             : defaultSettings.orderConfirmationTemplate,
@@ -77,6 +86,9 @@ export default function SmsSettingsEditor() {
 
       const settingsValue = {
         enabled: settings.enabled,
+        apiKey: settings.apiKey,
+        senderId: settings.senderId,
+        useCustomApi: settings.useCustomApi,
         orderConfirmationTemplate: settings.orderConfirmationTemplate,
         orderShippedTemplate: settings.orderShippedTemplate,
         orderDeliveredTemplate: settings.orderDeliveredTemplate,
@@ -138,8 +150,24 @@ export default function SmsSettingsEditor() {
         .replace('{order_number}', 'TEST-001')
         .replace('{total}', '1,500');
 
+      // Prepare request body with custom API credentials if configured
+      const requestBody: { 
+        phone: string; 
+        message: string; 
+        customApiKey?: string; 
+        customSenderId?: string; 
+      } = { 
+        phone: testPhone, 
+        message: testMessage 
+      };
+
+      if (settings.useCustomApi && settings.apiKey && settings.senderId) {
+        requestBody.customApiKey = settings.apiKey;
+        requestBody.customSenderId = settings.senderId;
+      }
+
       const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: { phone: testPhone, message: testMessage },
+        body: requestBody,
       });
 
       if (error) throw error;
@@ -203,6 +231,46 @@ export default function SmsSettingsEditor() {
 
         {settings.enabled && (
           <>
+            {/* SMS API Configuration */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Custom API Configuration</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Use custom BulkSMSBD API credentials (overrides environment variables)
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.useCustomApi}
+                  onCheckedChange={(checked) => setSettings({ ...settings, useCustomApi: checked })}
+                />
+              </div>
+
+              {settings.useCustomApi && (
+                <div className="grid gap-4 md:grid-cols-2 pt-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="apiKey">API Key</Label>
+                    <Input
+                      id="apiKey"
+                      type="password"
+                      value={settings.apiKey}
+                      onChange={(e) => setSettings({ ...settings, apiKey: e.target.value })}
+                      placeholder="Enter your BulkSMSBD API key"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="senderId">Sender ID</Label>
+                    <Input
+                      id="senderId"
+                      value={settings.senderId}
+                      onChange={(e) => setSettings({ ...settings, senderId: e.target.value })}
+                      placeholder="Enter your sender ID (e.g., 8809648904894)"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Order Confirmation Template */}
             <div className="space-y-2">
               <Label>Order Confirmation Message</Label>

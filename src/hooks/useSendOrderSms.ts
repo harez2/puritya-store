@@ -21,6 +21,9 @@ export function useSendOrderSms() {
 
       const settings = settingsData?.value as {
         enabled?: boolean;
+        apiKey?: string;
+        senderId?: string;
+        useCustomApi?: boolean;
         orderConfirmationTemplate?: string;
         orderShippedTemplate?: string;
         orderDeliveredTemplate?: string;
@@ -55,9 +58,25 @@ export function useSendOrderSms() {
         .replace('{order_number}', order.orderNumber)
         .replace('{total}', order.total.toLocaleString());
 
+      // Prepare request body with custom API credentials if configured
+      const requestBody: { 
+        phone: string; 
+        message: string; 
+        customApiKey?: string; 
+        customSenderId?: string; 
+      } = { 
+        phone: order.phone, 
+        message 
+      };
+
+      if (settings.useCustomApi && settings.apiKey && settings.senderId) {
+        requestBody.customApiKey = settings.apiKey;
+        requestBody.customSenderId = settings.senderId;
+      }
+
       // Send SMS via edge function
       const { data, error } = await supabase.functions.invoke('send-sms', {
-        body: { phone: order.phone, message },
+        body: requestBody,
       });
 
       if (error) {

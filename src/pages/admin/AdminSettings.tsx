@@ -6,10 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Store, Bell, Shield } from 'lucide-react';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
-import PaymentMethodsEditor from '@/components/admin/PaymentMethodsEditor';
-import PaymentGatewaysEditor from '@/components/admin/PaymentGatewaysEditor';
+import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
-
 export default function AdminSettings() {
   return (
     <AdminLayout>
@@ -58,11 +56,8 @@ export default function AdminSettings() {
           {/* Shipping Options */}
           <ShippingOptionsEditor />
 
-          {/* Payment Methods */}
-          <PaymentMethodsEditor />
-
-          {/* Payment Gateways */}
-          <PaymentGatewaysEditor />
+          {/* Payment Settings (Methods + Gateways) */}
+          <PaymentSettingsEditor />
 
           {/* SMS Notifications */}
           <SmsSettingsEditor />

@@ -11,6 +11,7 @@ import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
 import { GoogleTagManagerProvider } from "@/components/GoogleTagManagerProvider";
+import { SitePopup } from "@/components/SitePopup";
 import { captureUtmParams } from "@/hooks/useUtmTracking";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import Index from "./pages/Index";
@@ -43,6 +44,7 @@ import BlogDetail from "./pages/BlogDetail";
 import DynamicPage from "./pages/DynamicPage";
 import AdminPages from "./pages/admin/AdminPages";
 import AdminNewsletter from "./pages/admin/AdminNewsletter";
+import AdminPopups from "./pages/admin/AdminPopups";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +77,7 @@ const App = () => (
                 <DataLayerProvider>
                   <GoogleTagManagerProvider>
                     <FacebookPixelProvider>
+                      <SitePopup />
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/shop" element={<Shop />} />
@@ -104,6 +107,7 @@ const App = () => (
                         <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
                         <Route path="/admin/customization" element={<AdminCustomization />} />
                         <Route path="/admin/newsletter" element={<AdminNewsletter />} />
+                        <Route path="/admin/popups" element={<AdminPopups />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
                         {/* Dynamic pages - must be last to catch remaining routes */}
                         <Route path="/:slug" element={<DynamicPage />} />

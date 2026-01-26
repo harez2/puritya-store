@@ -19,6 +19,7 @@ import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
+import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -47,6 +48,7 @@ export default function Checkout() {
     initiateSslcommerzPayment,
     initiateUddoktapayPayment,
   } = usePaymentGateway();
+  const { sendOrderSms } = useSendOrderSms();
   
   // Get enabled payment methods from settings
   const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
@@ -339,6 +341,16 @@ export default function Checkout() {
       await clearCart();
       clearUtmParams(); // Clear UTM after order is placed
       setOrderComplete(true);
+
+      // Send SMS confirmation (non-blocking)
+      sendOrderSms({
+        orderNumber: savedOrderNumber,
+        customerName: form.full_name.trim(),
+        phone: form.phone.trim(),
+        total,
+      }, 'confirmation').catch(err => {
+        console.log('SMS sending failed (non-blocking):', err);
+      });
 
       // Track Purchase event in Data Layer
       const dataLayerProducts = getDataLayerProducts();

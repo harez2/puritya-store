@@ -8,6 +8,7 @@ import { Store, Bell, Shield } from 'lucide-react';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentMethodsEditor from '@/components/admin/PaymentMethodsEditor';
 import PaymentGatewaysEditor from '@/components/admin/PaymentGatewaysEditor';
+import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
 
 export default function AdminSettings() {
   return (
@@ -63,23 +64,8 @@ export default function AdminSettings() {
           {/* Payment Gateways */}
           <PaymentGatewaysEditor />
 
-          {/* Notification Settings */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-primary" />
-                <CardTitle>Notifications</CardTitle>
-              </div>
-              <CardDescription>
-                Configure how you receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Notification settings coming soon...
-              </p>
-            </CardContent>
-          </Card>
+          {/* SMS Notifications */}
+          <SmsSettingsEditor />
 
           {/* Security Settings */}
           <Card>

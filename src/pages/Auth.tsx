@@ -10,6 +10,7 @@ import Layout from '@/components/layout/Layout';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { trackLogin, trackSignUp } from '@/lib/data-layer';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -17,21 +18,55 @@ export default function Auth() {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
+  const checkUserRoleAndRedirect = async (userId: string) => {
+    // Check if user is admin or moderator
+    const { data: isAdmin } = await supabase.rpc('has_role', { 
+      _user_id: userId, 
+      _role: 'admin' 
+    });
+    
+    if (isAdmin) {
+      navigate('/admin');
+      return;
+    }
+
+    const { data: isModerator } = await supabase.rpc('has_role', { 
+      _user_id: userId, 
+      _role: 'moderator' 
+    });
+    
+    if (isModerator) {
+      navigate('/admin');
+      return;
+    }
+
+    // Regular user - go to account
+    navigate('/account');
+  };
+
   const handleSignIn = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
-    const { error } = await signIn(
+    const { error, data } = await signIn(
       formData.get('email') as string,
       formData.get('password') as string
     );
-    setLoading(false);
+    
     if (error) {
+      setLoading(false);
       toast({ title: 'Error', description: error.message, variant: 'destructive' });
     } else {
       trackLogin('email');
       toast({ title: 'Welcome back!' });
-      navigate('/account');
+      
+      // Check role and redirect accordingly
+      if (data?.user?.id) {
+        await checkUserRoleAndRedirect(data.user.id);
+      } else {
+        navigate('/account');
+      }
+      setLoading(false);
     }
   };
 

@@ -19,8 +19,8 @@ interface Popup {
   text_color: string | null;
   display_delay_seconds: number | null;
   show_once_per_session: boolean | null;
+  image_url: string | null;
 }
-
 export function SitePopup() {
   const location = useLocation();
   const [visiblePopup, setVisiblePopup] = useState<Popup | null>(null);
@@ -142,12 +142,23 @@ export function SitePopup() {
         {visiblePopup.show_close_button && (
           <button
             onClick={handleClose}
-            className="absolute top-3 right-3 p-1 rounded-full hover:bg-black/10 transition-colors"
-            style={{ color: visiblePopup.text_color || '#000000' }}
+            className="absolute top-3 right-3 p-1 rounded-full hover:bg-black/10 transition-colors z-10"
+            style={{ color: visiblePopup.image_url ? '#ffffff' : (visiblePopup.text_color || '#000000') }}
             aria-label="Close popup"
           >
             <X className="h-5 w-5" />
           </button>
+        )}
+
+        {/* Banner Image */}
+        {visiblePopup.image_url && (
+          <div className="w-full aspect-[16/9] overflow-hidden rounded-t-lg">
+            <img 
+              src={visiblePopup.image_url} 
+              alt="" 
+              className="w-full h-full object-cover"
+            />
+          </div>
         )}
 
         <div className="p-6">

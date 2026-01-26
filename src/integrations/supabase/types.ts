@@ -522,6 +522,7 @@ export type Database = {
           cta_text: string | null
           display_delay_seconds: number | null
           id: string
+          image_url: string | null
           is_active: boolean
           show_close_button: boolean
           show_once_per_session: boolean | null
@@ -539,6 +540,7 @@ export type Database = {
           cta_text?: string | null
           display_delay_seconds?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           show_close_button?: boolean
           show_once_per_session?: boolean | null
@@ -556,6 +558,7 @@ export type Database = {
           cta_text?: string | null
           display_delay_seconds?: number | null
           id?: string
+          image_url?: string | null
           is_active?: boolean
           show_close_button?: boolean
           show_once_per_session?: boolean | null

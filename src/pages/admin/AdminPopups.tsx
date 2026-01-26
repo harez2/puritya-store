@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { PopupImageUpload } from '@/components/admin/PopupImageUpload';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
 
 interface Popup {
   id: string;
@@ -28,12 +29,14 @@ interface Popup {
   text_color: string | null;
   display_delay_seconds: number | null;
   show_once_per_session: boolean | null;
+  image_url: string | null;
   created_at: string;
   updated_at: string;
 }
 
 interface PopupFormData {
   title: string;
+  image_url: string | null;
   content: string;
   cta_text: string;
   cta_link: string;
@@ -60,6 +63,7 @@ const defaultFormData: PopupFormData = {
   text_color: '#000000',
   display_delay_seconds: 0,
   show_once_per_session: true,
+  image_url: null,
 };
 
 export default function AdminPopups() {
@@ -161,6 +165,7 @@ export default function AdminPopups() {
       text_color: popup.text_color || '#000000',
       display_delay_seconds: popup.display_delay_seconds || 0,
       show_once_per_session: popup.show_once_per_session ?? true,
+      image_url: popup.image_url || null,
     });
     setIsDialogOpen(true);
   };
@@ -212,6 +217,15 @@ export default function AdminPopups() {
                       onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                       placeholder="Popup title"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Banner Image</Label>
+                    <PopupImageUpload
+                      image={formData.image_url}
+                      onImageChange={(url) => setFormData({ ...formData, image_url: url })}
+                    />
+                    <p className="text-xs text-muted-foreground">Optional banner displayed at top of popup</p>
                   </div>
 
                   <div className="space-y-2">
@@ -386,6 +400,7 @@ export default function AdminPopups() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
+                    <TableHead>Image</TableHead>
                     <TableHead>CTA</TableHead>
                     <TableHead>Auto Close</TableHead>
                     <TableHead>Status</TableHead>
@@ -396,6 +411,17 @@ export default function AdminPopups() {
                   {popups.map((popup) => (
                     <TableRow key={popup.id}>
                       <TableCell className="font-medium">{popup.title}</TableCell>
+                      <TableCell>
+                        {popup.image_url ? (
+                          <div className="w-12 h-8 rounded overflow-hidden bg-muted">
+                            <img src={popup.image_url} alt="" className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm flex items-center gap-1">
+                            <ImageIcon className="h-3 w-3" /> None
+                          </span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {popup.cta_enabled ? (
                           <span className="text-sm">{popup.cta_text || 'No text'}</span>

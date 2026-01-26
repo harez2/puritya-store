@@ -38,6 +38,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 
 interface Order {
   id: string;
@@ -91,6 +92,7 @@ const paymentStatusOptions = [
 
 export default function AdminOrders() {
   const { user } = useAuth();
+  const { sendOrderSms } = useSendOrderSms();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -217,6 +219,24 @@ export default function AdminOrders() {
 
       if (historyError) {
         console.error('Error recording status history:', historyError);
+      }
+
+      // Send SMS for shipped/delivered status changes
+      if (order && (statusUpdateNewStatus === 'shipped' || statusUpdateNewStatus === 'delivered')) {
+        const shippingAddress = order.shipping_address || {};
+        const customerName = shippingAddress.full_name || 'Customer';
+        const phone = shippingAddress.phone || '';
+        
+        if (phone) {
+          sendOrderSms({
+            orderNumber: order.order_number,
+            customerName,
+            phone,
+            total: order.total,
+          }, statusUpdateNewStatus as 'shipped' | 'delivered').catch(err => {
+            console.log('SMS sending failed (non-blocking):', err);
+          });
+        }
       }
 
       toast.success('Order status updated');

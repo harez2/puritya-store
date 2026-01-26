@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Package, Heart, LogOut, Camera, Save, Loader2 } from 'lucide-react';
+import { User, Package, Heart, LogOut, MapPin, Save, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -207,7 +207,7 @@ export default function Account() {
             </CardContent>
           </Card>
 
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className="grid md:grid-cols-3 gap-6">
             <Link to="/wishlist">
               <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
                 <CardHeader className="flex flex-row items-center gap-4">
@@ -227,6 +227,18 @@ export default function Account() {
                   <div>
                     <CardTitle>Orders</CardTitle>
                     <p className="text-sm text-muted-foreground">Track your orders</p>
+                  </div>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link to="/account/addresses">
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
+                <CardHeader className="flex flex-row items-center gap-4">
+                  <MapPin className="h-8 w-8 text-primary" />
+                  <div>
+                    <CardTitle>Addresses</CardTitle>
+                    <p className="text-sm text-muted-foreground">Manage shipping addresses</p>
                   </div>
                 </CardHeader>
               </Card>

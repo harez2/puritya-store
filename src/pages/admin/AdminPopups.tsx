@@ -12,8 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Image as ImageIcon } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Image as ImageIcon, Target } from 'lucide-react';
 
 interface Popup {
   id: string;
@@ -30,6 +33,9 @@ interface Popup {
   display_delay_seconds: number | null;
   show_once_per_session: boolean | null;
   image_url: string | null;
+  target_pages: string[] | null;
+  target_login_status: string | null;
+  target_device_types: string[] | null;
   created_at: string;
   updated_at: string;
 }
@@ -48,6 +54,9 @@ interface PopupFormData {
   text_color: string;
   display_delay_seconds: number;
   show_once_per_session: boolean;
+  target_pages: string[];
+  target_login_status: string;
+  target_device_types: string[];
 }
 
 const defaultFormData: PopupFormData = {
@@ -64,7 +73,16 @@ const defaultFormData: PopupFormData = {
   display_delay_seconds: 0,
   show_once_per_session: true,
   image_url: null,
+  target_pages: [],
+  target_login_status: 'any',
+  target_device_types: [],
 };
+
+const DEVICE_TYPES = [
+  { id: 'desktop', label: 'Desktop' },
+  { id: 'tablet', label: 'Tablet' },
+  { id: 'mobile', label: 'Mobile' },
+];
 
 export default function AdminPopups() {
   const queryClient = useQueryClient();
@@ -166,6 +184,9 @@ export default function AdminPopups() {
       display_delay_seconds: popup.display_delay_seconds || 0,
       show_once_per_session: popup.show_once_per_session ?? true,
       image_url: popup.image_url || null,
+      target_pages: popup.target_pages || [],
+      target_login_status: popup.target_login_status || 'any',
+      target_device_types: popup.target_device_types || [],
     });
     setIsDialogOpen(true);
   };
@@ -323,6 +344,71 @@ export default function AdminPopups() {
                     </div>
                   </div>
 
+                  {/* Targeting Options */}
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center gap-2">
+                      <Target className="h-4 w-4 text-muted-foreground" />
+                      <Label className="text-base font-semibold">Targeting Options</Label>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="target_pages">Target Pages</Label>
+                      <Textarea
+                        id="target_pages"
+                        value={formData.target_pages.join('\n')}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          target_pages: e.target.value.split('\n').filter(p => p.trim()) 
+                        })}
+                        placeholder="/shop&#10;/products&#10;/category/dresses"
+                        rows={3}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        One path per line. Leave empty to show on all pages. Paths should start with /
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>User Login Status</Label>
+                      <Select
+                        value={formData.target_login_status}
+                        onValueChange={(value) => setFormData({ ...formData, target_login_status: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="any">All Users</SelectItem>
+                          <SelectItem value="logged_in">Logged In Only</SelectItem>
+                          <SelectItem value="logged_out">Logged Out Only</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Device Types</Label>
+                      <div className="flex flex-wrap gap-4">
+                        {DEVICE_TYPES.map((device) => (
+                          <label key={device.id} className="flex items-center gap-2 cursor-pointer">
+                            <Checkbox
+                              checked={formData.target_device_types.includes(device.id)}
+                              onCheckedChange={(checked) => {
+                                const newDevices = checked
+                                  ? [...formData.target_device_types, device.id]
+                                  : formData.target_device_types.filter(d => d !== device.id);
+                                setFormData({ ...formData, target_device_types: newDevices });
+                              }}
+                            />
+                            <span className="text-sm">{device.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Leave all unchecked to show on all devices
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="space-y-4 pt-2">
                     <div className="flex items-center justify-between">
                       <div>
@@ -401,8 +487,8 @@ export default function AdminPopups() {
                   <TableRow>
                     <TableHead>Title</TableHead>
                     <TableHead>Image</TableHead>
+                    <TableHead>Targeting</TableHead>
                     <TableHead>CTA</TableHead>
-                    <TableHead>Auto Close</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -423,14 +509,35 @@ export default function AdminPopups() {
                         )}
                       </TableCell>
                       <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {popup.target_pages && popup.target_pages.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {popup.target_pages.length} page{popup.target_pages.length > 1 ? 's' : ''}
+                            </Badge>
+                          )}
+                          {popup.target_login_status && popup.target_login_status !== 'any' && (
+                            <Badge variant="outline" className="text-xs">
+                              {popup.target_login_status === 'logged_in' ? 'Logged in' : 'Logged out'}
+                            </Badge>
+                          )}
+                          {popup.target_device_types && popup.target_device_types.length > 0 && (
+                            <Badge variant="outline" className="text-xs">
+                              {popup.target_device_types.join(', ')}
+                            </Badge>
+                          )}
+                          {(!popup.target_pages || popup.target_pages.length === 0) && 
+                           (!popup.target_login_status || popup.target_login_status === 'any') && 
+                           (!popup.target_device_types || popup.target_device_types.length === 0) && (
+                            <span className="text-muted-foreground text-xs">All</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
                         {popup.cta_enabled ? (
                           <span className="text-sm">{popup.cta_text || 'No text'}</span>
                         ) : (
                           <span className="text-muted-foreground text-sm">Disabled</span>
                         )}
-                      </TableCell>
-                      <TableCell>
-                        {popup.auto_close_seconds ? `${popup.auto_close_seconds}s` : 'Never'}
                       </TableCell>
                       <TableCell>
                         <Button

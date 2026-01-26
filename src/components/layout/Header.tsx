@@ -70,7 +70,7 @@ export default function Header() {
   const { user } = useAuth();
   const { itemCount } = useCart();
   const { items: wishlistItems } = useWishlist();
-  const { settings } = useSiteSettings();
+  const { settings, loading } = useSiteSettings();
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -119,7 +119,9 @@ export default function Header() {
 
             {/* Logo */}
             <Link to="/" className="flex items-center">
-              {settings.logo_url ? (
+              {loading ? (
+                <div className="h-8 md:h-10 w-24 md:w-32 bg-muted animate-pulse rounded" />
+              ) : settings.logo_url ? (
                 <img 
                   src={settings.logo_url} 
                   alt={settings.store_name} 

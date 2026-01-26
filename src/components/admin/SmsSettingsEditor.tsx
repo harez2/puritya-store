@@ -14,8 +14,11 @@ interface SmsSettings {
   apiKey: string;
   senderId: string;
   useCustomApi: boolean;
+  orderConfirmationEnabled: boolean;
   orderConfirmationTemplate: string;
+  orderShippedEnabled: boolean;
   orderShippedTemplate: string;
+  orderDeliveredEnabled: boolean;
   orderDeliveredTemplate: string;
 }
 
@@ -24,8 +27,11 @@ const defaultSettings: SmsSettings = {
   apiKey: '',
   senderId: '',
   useCustomApi: false,
+  orderConfirmationEnabled: true,
   orderConfirmationTemplate: 'Dear {customer_name}, your order #{order_number} has been confirmed! Total: ৳{total}. Thank you for shopping with Puritya!',
+  orderShippedEnabled: true,
   orderShippedTemplate: 'Dear {customer_name}, your order #{order_number} has been shipped! Track your delivery. - Puritya',
+  orderDeliveredEnabled: true,
   orderDeliveredTemplate: 'Dear {customer_name}, your order #{order_number} has been delivered! Thank you for shopping with Puritya!',
 };
 
@@ -57,12 +63,21 @@ export default function SmsSettingsEditor() {
           apiKey: typeof value.apiKey === 'string' ? value.apiKey : defaultSettings.apiKey,
           senderId: typeof value.senderId === 'string' ? value.senderId : defaultSettings.senderId,
           useCustomApi: typeof value.useCustomApi === 'boolean' ? value.useCustomApi : defaultSettings.useCustomApi,
+          orderConfirmationEnabled: typeof value.orderConfirmationEnabled === 'boolean' 
+            ? value.orderConfirmationEnabled 
+            : defaultSettings.orderConfirmationEnabled,
           orderConfirmationTemplate: typeof value.orderConfirmationTemplate === 'string' 
             ? value.orderConfirmationTemplate 
             : defaultSettings.orderConfirmationTemplate,
+          orderShippedEnabled: typeof value.orderShippedEnabled === 'boolean' 
+            ? value.orderShippedEnabled 
+            : defaultSettings.orderShippedEnabled,
           orderShippedTemplate: typeof value.orderShippedTemplate === 'string' 
             ? value.orderShippedTemplate 
             : defaultSettings.orderShippedTemplate,
+          orderDeliveredEnabled: typeof value.orderDeliveredEnabled === 'boolean' 
+            ? value.orderDeliveredEnabled 
+            : defaultSettings.orderDeliveredEnabled,
           orderDeliveredTemplate: typeof value.orderDeliveredTemplate === 'string' 
             ? value.orderDeliveredTemplate 
             : defaultSettings.orderDeliveredTemplate,
@@ -89,8 +104,11 @@ export default function SmsSettingsEditor() {
         apiKey: settings.apiKey,
         senderId: settings.senderId,
         useCustomApi: settings.useCustomApi,
+        orderConfirmationEnabled: settings.orderConfirmationEnabled,
         orderConfirmationTemplate: settings.orderConfirmationTemplate,
+        orderShippedEnabled: settings.orderShippedEnabled,
         orderShippedTemplate: settings.orderShippedTemplate,
+        orderDeliveredEnabled: settings.orderDeliveredEnabled,
         orderDeliveredTemplate: settings.orderDeliveredTemplate,
       };
 
@@ -272,39 +290,90 @@ export default function SmsSettingsEditor() {
             </div>
 
             {/* Order Confirmation Template */}
-            <div className="space-y-2">
-              <Label>Order Confirmation Message</Label>
-              <Textarea
-                value={settings.orderConfirmationTemplate}
-                onChange={(e) => setSettings({ ...settings, orderConfirmationTemplate: e.target.value })}
-                placeholder="Enter order confirmation SMS template..."
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                Available placeholders: {'{customer_name}'}, {'{order_number}'}, {'{total}'}
-              </p>
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Order Confirmation Message</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Sent when a new order is placed
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.orderConfirmationEnabled}
+                  onCheckedChange={(checked) => setSettings({ ...settings, orderConfirmationEnabled: checked })}
+                />
+              </div>
+              {settings.orderConfirmationEnabled && (
+                <div className="space-y-2 pt-2">
+                  <Textarea
+                    value={settings.orderConfirmationTemplate}
+                    onChange={(e) => setSettings({ ...settings, orderConfirmationTemplate: e.target.value })}
+                    placeholder="Enter order confirmation SMS template..."
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Available placeholders: {'{customer_name}'}, {'{order_number}'}, {'{total}'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Order Shipped Template */}
-            <div className="space-y-2">
-              <Label>Order Shipped Message</Label>
-              <Textarea
-                value={settings.orderShippedTemplate}
-                onChange={(e) => setSettings({ ...settings, orderShippedTemplate: e.target.value })}
-                placeholder="Enter order shipped SMS template..."
-                rows={3}
-              />
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Order Shipped Message</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Sent when order status changes to shipped
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.orderShippedEnabled}
+                  onCheckedChange={(checked) => setSettings({ ...settings, orderShippedEnabled: checked })}
+                />
+              </div>
+              {settings.orderShippedEnabled && (
+                <div className="space-y-2 pt-2">
+                  <Textarea
+                    value={settings.orderShippedTemplate}
+                    onChange={(e) => setSettings({ ...settings, orderShippedTemplate: e.target.value })}
+                    placeholder="Enter order shipped SMS template..."
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Available placeholders: {'{customer_name}'}, {'{order_number}'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Order Delivered Template */}
-            <div className="space-y-2">
-              <Label>Order Delivered Message</Label>
-              <Textarea
-                value={settings.orderDeliveredTemplate}
-                onChange={(e) => setSettings({ ...settings, orderDeliveredTemplate: e.target.value })}
-                placeholder="Enter order delivered SMS template..."
-                rows={3}
-              />
+            <div className="space-y-3 p-4 border rounded-lg">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Order Delivered Message</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Sent when order status changes to delivered
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.orderDeliveredEnabled}
+                  onCheckedChange={(checked) => setSettings({ ...settings, orderDeliveredEnabled: checked })}
+                />
+              </div>
+              {settings.orderDeliveredEnabled && (
+                <div className="space-y-2 pt-2">
+                  <Textarea
+                    value={settings.orderDeliveredTemplate}
+                    onChange={(e) => setSettings({ ...settings, orderDeliveredTemplate: e.target.value })}
+                    placeholder="Enter order delivered SMS template..."
+                    rows={3}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Available placeholders: {'{customer_name}'}, {'{order_number}'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Test SMS */}

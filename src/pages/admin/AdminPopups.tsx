@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { AdminLayout } from '@/components/admin/AdminLayout';
@@ -15,8 +15,23 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from '@/hooks/use-toast';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Image as ImageIcon, Target } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Image as ImageIcon, Target, BarChart3, MousePointerClick, TrendingUp } from 'lucide-react';
+
+interface PopupAnalyticsEvent {
+  id: string;
+  popup_id: string;
+  event_type: 'view' | 'click' | 'close';
+  created_at: string;
+}
+
+interface PopupAnalyticsSummary {
+  views: number;
+  clicks: number;
+  closes: number;
+  conversionRate: number;
+}
 
 interface Popup {
   id: string;
@@ -102,6 +117,44 @@ export default function AdminPopups() {
       return data as Popup[];
     },
   });
+
+  // Fetch analytics data for all popups
+  const { data: analyticsData = [] } = useQuery({
+    queryKey: ['popup-analytics'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('popup_analytics')
+        .select('id, popup_id, event_type, created_at');
+      
+      if (error) throw error;
+      return data as PopupAnalyticsEvent[];
+    },
+  });
+
+  // Calculate analytics summary per popup
+  const analyticsMap = useMemo(() => {
+    const map = new Map<string, PopupAnalyticsSummary>();
+    
+    analyticsData.forEach((event) => {
+      const existing = map.get(event.popup_id) || { views: 0, clicks: 0, closes: 0, conversionRate: 0 };
+      
+      if (event.event_type === 'view') existing.views++;
+      else if (event.event_type === 'click') existing.clicks++;
+      else if (event.event_type === 'close') existing.closes++;
+      
+      map.set(event.popup_id, existing);
+    });
+    
+    // Calculate conversion rates
+    map.forEach((summary, popupId) => {
+      summary.conversionRate = summary.views > 0 
+        ? Math.round((summary.clicks / summary.views) * 100 * 10) / 10 
+        : 0;
+      map.set(popupId, summary);
+    });
+    
+    return map;
+  }, [analyticsData]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: PopupFormData) => {
@@ -488,6 +541,7 @@ export default function AdminPopups() {
                     <TableHead>Title</TableHead>
                     <TableHead>Image</TableHead>
                     <TableHead>Targeting</TableHead>
+                    <TableHead>Analytics</TableHead>
                     <TableHead>CTA</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -531,6 +585,41 @@ export default function AdminPopups() {
                             <span className="text-muted-foreground text-xs">All</span>
                           )}
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <TooltipProvider>
+                          <div className="flex items-center gap-2">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 text-sm">
+                                  <Eye className="h-3 w-3 text-muted-foreground" />
+                                  <span>{analyticsMap.get(popup.id)?.views || 0}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>Views</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <div className="flex items-center gap-1 text-sm">
+                                  <MousePointerClick className="h-3 w-3 text-muted-foreground" />
+                                  <span>{analyticsMap.get(popup.id)?.clicks || 0}</span>
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>CTA Clicks</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant={
+                                  (analyticsMap.get(popup.id)?.conversionRate || 0) >= 10 ? 'default' :
+                                  (analyticsMap.get(popup.id)?.conversionRate || 0) >= 5 ? 'secondary' : 'outline'
+                                } className="text-xs">
+                                  {analyticsMap.get(popup.id)?.conversionRate || 0}%
+                                </Badge>
+                              </TooltipTrigger>
+                              <TooltipContent>Conversion Rate (Clicks / Views)</TooltipContent>
+                            </Tooltip>
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                       <TableCell>
                         {popup.cta_enabled ? (

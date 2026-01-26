@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { X } from 'lucide-react';
@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { usePopupAnalytics } from '@/hooks/usePopupAnalytics';
 
 interface Popup {
   id: string;
@@ -45,12 +46,14 @@ export function SitePopup() {
   const location = useLocation();
   const { user } = useAuth();
   const deviceType = useDeviceType();
+  const { trackView, trackClick, trackClose } = usePopupAnalytics();
   const [visiblePopup, setVisiblePopup] = useState<Popup | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [dismissedPopups, setDismissedPopups] = useState<Set<string>>(() => {
     const stored = sessionStorage.getItem('dismissed_popups');
     return stored ? new Set(JSON.parse(stored)) : new Set();
   });
+  const trackedViewRef = useRef<string | null>(null);
 
   // Don't show popups in admin area
   const isAdminArea = location.pathname.startsWith('/admin');
@@ -121,10 +124,16 @@ export function SitePopup() {
     const showTimer = setTimeout(() => {
       setVisiblePopup(availablePopup);
       setIsVisible(true);
+      
+      // Track view event (only once per popup per page load)
+      if (trackedViewRef.current !== availablePopup.id) {
+        trackView(availablePopup.id, location.pathname);
+        trackedViewRef.current = availablePopup.id;
+      }
     }, delay);
 
     return () => clearTimeout(showTimer);
-  }, [popups, isAdminArea, dismissedPopups, location.pathname, user, deviceType]);
+  }, [popups, isAdminArea, dismissedPopups, location.pathname, user, deviceType, trackView]);
 
   // Handle auto-close
   useEffect(() => {
@@ -143,6 +152,9 @@ export function SitePopup() {
   const handleClose = () => {
     if (!visiblePopup) return;
 
+    // Track close event
+    trackClose(visiblePopup.id, location.pathname);
+    
     setIsVisible(false);
     
     if (visiblePopup.show_once_per_session) {
@@ -153,11 +165,19 @@ export function SitePopup() {
     }
 
     // Clear popup after animation
-    setTimeout(() => setVisiblePopup(null), 300);
+    setTimeout(() => {
+      setVisiblePopup(null);
+      trackedViewRef.current = null;
+    }, 300);
   };
 
   const handleCtaClick = () => {
-    if (visiblePopup?.cta_link) {
+    if (!visiblePopup) return;
+    
+    // Track click event
+    trackClick(visiblePopup.id, location.pathname);
+    
+    if (visiblePopup.cta_link) {
       window.open(visiblePopup.cta_link, '_blank', 'noopener,noreferrer');
     }
     handleClose();

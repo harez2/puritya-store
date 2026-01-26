@@ -120,12 +120,12 @@ export default function Header() {
             {/* Logo */}
             <Link to="/" className="flex items-center">
               {loading ? (
-                <div className="h-8 md:h-10 w-24 md:w-32 bg-muted animate-pulse rounded" />
+                <div className="h-10 md:h-14 w-28 md:w-40 bg-muted animate-pulse rounded" />
               ) : settings.logo_url ? (
                 <img 
                   src={settings.logo_url} 
                   alt={settings.store_name} 
-                  className="h-8 md:h-10 w-auto"
+                  className="h-10 md:h-14 w-auto"
                 />
               ) : (
                 <h1 className="text-2xl md:text-3xl font-display font-semibold tracking-wide text-foreground">

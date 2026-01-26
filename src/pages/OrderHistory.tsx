@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Package, ChevronDown, ChevronUp, Calendar, CreditCard, Truck } from 'lucide-react';
+import { Package, ChevronDown, ChevronUp, Calendar, CreditCard, Truck, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import Layout from '@/components/layout/Layout';
+import { toast } from 'sonner';
 import PageBreadcrumb from '@/components/layout/PageBreadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
@@ -66,6 +68,7 @@ export default function OrderHistory() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  const [cancellingOrderId, setCancellingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -125,6 +128,46 @@ export default function OrderHistory() {
       }
       return newSet;
     });
+  };
+
+  const handleCancelOrder = async (orderId: string) => {
+    if (!user) return;
+    
+    setCancellingOrderId(orderId);
+    try {
+      // Get the current order to record old status
+      const order = orders.find(o => o.id === orderId);
+      if (!order) throw new Error('Order not found');
+
+      // Update the order status to cancelled
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' })
+        .eq('id', orderId);
+
+      if (updateError) throw updateError;
+
+      // Record the status change in history
+      const { error: historyError } = await supabase
+        .from('order_status_history')
+        .insert({
+          order_id: orderId,
+          old_status: order.status,
+          new_status: 'cancelled',
+          changed_by: user.id,
+          notes: 'Cancelled by customer'
+        });
+
+      if (historyError) console.error('Failed to record status history:', historyError);
+
+      toast.success('Order cancelled successfully');
+      fetchOrders();
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error('Failed to cancel order');
+    } finally {
+      setCancellingOrderId(null);
+    }
   };
 
   if (loading || !user) {
@@ -264,6 +307,41 @@ export default function OrderHistory() {
                               </div>
                             </div>
                           </div>
+
+                          {/* Cancel Order Button - only for pending orders */}
+                          {order.status === 'pending' && (
+                            <div className="mt-6 pt-4 border-t">
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button 
+                                    variant="destructive" 
+                                    size="sm"
+                                    disabled={cancellingOrderId === order.id}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-2" />
+                                    {cancellingOrderId === order.id ? 'Cancelling...' : 'Cancel Order'}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Cancel Order?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to cancel order {order.order_number}? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Keep Order</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleCancelOrder(order.id)}
+                                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                    >
+                                      Yes, Cancel Order
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          )}
                         </CardContent>
                       </CollapsibleContent>
                     </Card>

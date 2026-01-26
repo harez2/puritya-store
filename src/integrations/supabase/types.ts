@@ -511,6 +511,47 @@ export type Database = {
         }
         Relationships: []
       }
+      popup_analytics: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          event_type: string
+          id: string
+          page_path: string | null
+          popup_id: string
+          session_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          event_type: string
+          id?: string
+          page_path?: string | null
+          popup_id: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          event_type?: string
+          id?: string
+          page_path?: string | null
+          popup_id?: string
+          session_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "popup_analytics_popup_id_fkey"
+            columns: ["popup_id"]
+            isOneToOne: false
+            referencedRelation: "popups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       popups: {
         Row: {
           auto_close_seconds: number | null

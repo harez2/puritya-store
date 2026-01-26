@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, MoreHorizontal, Pencil, Trash2, Zap } from 'lucide-react';
+import { GripVertical, MoreHorizontal, Pencil, Trash2, Zap, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -29,6 +29,7 @@ interface SortableProductRowProps {
   onSelect: (checked: boolean) => void;
   onQuickEdit: () => void;
   onFullEdit: () => void;
+  onDuplicate: () => void;
   onDelete: () => void;
   formatCurrency: (amount: number) => string;
   isDragDisabled?: boolean;
@@ -40,6 +41,7 @@ export function SortableProductRow({
   onSelect,
   onQuickEdit,
   onFullEdit,
+  onDuplicate,
   onDelete,
   formatCurrency,
   isDragDisabled = false,
@@ -152,6 +154,10 @@ export function SortableProductRow({
             <DropdownMenuItem onClick={onFullEdit}>
               <Pencil className="h-4 w-4 mr-2" />
               Full Edit
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDuplicate}>
+              <Copy className="h-4 w-4 mr-2" />
+              Duplicate
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="text-destructive" onClick={onDelete}>

@@ -217,6 +217,38 @@ export default function AdminProducts() {
     }).format(amount);
   };
 
+  const handleDuplicate = async (product: Product) => {
+    try {
+      const { data: originalProduct, error: fetchError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', product.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { id, created_at, updated_at, display_order, ...productData } = originalProduct;
+      
+      const duplicatedProduct = {
+        ...productData,
+        name: `${productData.name} (Copy)`,
+        slug: `${productData.slug}-copy-${Date.now()}`,
+      };
+
+      const { error: insertError } = await supabase
+        .from('products')
+        .insert(duplicatedProduct);
+
+      if (insertError) throw insertError;
+
+      toast.success('Product duplicated successfully');
+      fetchProducts();
+    } catch (error: any) {
+      console.error('Error duplicating product:', error);
+      toast.error(error.message || 'Failed to duplicate product');
+    }
+  };
+
   const handleDelete = async () => {
     if (!deletingProduct) return;
 
@@ -469,6 +501,7 @@ export default function AdminProducts() {
                                 setIsQuickEditOpen(true);
                               }}
                               onFullEdit={() => navigate(`/admin/products/${product.id}/edit`)}
+                              onDuplicate={() => handleDuplicate(product)}
                               onDelete={() => {
                                 setDeletingProduct(product);
                                 setIsDeleteDialogOpen(true);

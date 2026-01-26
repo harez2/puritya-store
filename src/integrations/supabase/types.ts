@@ -210,6 +210,54 @@ export type Database = {
         }
         Relationships: []
       }
+      landing_pages: {
+        Row: {
+          created_at: string
+          custom_css: string | null
+          footer_visible: boolean
+          header_visible: boolean
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          og_image: string | null
+          sections: Json
+          slug: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_css?: string | null
+          footer_visible?: boolean
+          header_visible?: boolean
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image?: string | null
+          sections?: Json
+          slug: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_css?: string | null
+          footer_visible?: boolean
+          header_visible?: boolean
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          og_image?: string | null
+          sections?: Json
+          slug?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       newsletter_subscribers: {
         Row: {
           email: string

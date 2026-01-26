@@ -24,29 +24,44 @@ export function useSendOrderSms() {
         apiKey?: string;
         senderId?: string;
         useCustomApi?: boolean;
+        orderConfirmationEnabled?: boolean;
         orderConfirmationTemplate?: string;
+        orderShippedEnabled?: boolean;
         orderShippedTemplate?: string;
+        orderDeliveredEnabled?: boolean;
         orderDeliveredTemplate?: string;
       } | null;
 
-      // Check if SMS is enabled
+      // Check if SMS is enabled globally
       if (!settings?.enabled) {
         console.log('SMS notifications are disabled');
         return { success: false, reason: 'disabled' };
       }
 
-      // Get the appropriate template
+      // Check if the specific message type is enabled
       let template = '';
       switch (type) {
         case 'confirmation':
+          if (settings.orderConfirmationEnabled === false) {
+            console.log('Order confirmation SMS is disabled');
+            return { success: false, reason: 'type_disabled' };
+          }
           template = settings.orderConfirmationTemplate || 
             'Dear {customer_name}, your order #{order_number} has been confirmed! Total: ৳{total}. Thank you for shopping with Puritya!';
           break;
         case 'shipped':
+          if (settings.orderShippedEnabled === false) {
+            console.log('Order shipped SMS is disabled');
+            return { success: false, reason: 'type_disabled' };
+          }
           template = settings.orderShippedTemplate || 
             'Dear {customer_name}, your order #{order_number} has been shipped! Track your delivery. - Puritya';
           break;
         case 'delivered':
+          if (settings.orderDeliveredEnabled === false) {
+            console.log('Order delivered SMS is disabled');
+            return { success: false, reason: 'type_disabled' };
+          }
           template = settings.orderDeliveredTemplate || 
             'Dear {customer_name}, your order #{order_number} has been delivered! Thank you for shopping with Puritya!';
           break;

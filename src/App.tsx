@@ -25,6 +25,7 @@ import NotFound from "./pages/NotFound";
 import ScrollToTop from "./components/ScrollToTop";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
+import AdminProductEditor from "./pages/admin/AdminProductEditor";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminPayments from "./pages/admin/AdminPayments";
 import AdminCustomers from "./pages/admin/AdminCustomers";
@@ -85,6 +86,8 @@ const App = () => (
                         {/* Admin Routes */}
                         <Route path="/admin" element={<AdminDashboard />} />
                         <Route path="/admin/products" element={<AdminProducts />} />
+                        <Route path="/admin/products/new" element={<AdminProductEditor />} />
+                        <Route path="/admin/products/:id/edit" element={<AdminProductEditor />} />
                         <Route path="/admin/orders" element={<AdminOrders />} />
                         <Route path="/admin/payments" element={<AdminPayments />} />
                         <Route path="/admin/customers" element={<AdminCustomers />} />

@@ -18,6 +18,7 @@ import Shop from "./pages/Shop";
 import ProductDetail from "./pages/ProductDetail";
 import Auth from "./pages/Auth";
 import Account from "./pages/Account";
+import OrderHistory from "./pages/OrderHistory";
 import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
 import PaymentCallback from "./pages/PaymentCallback";
@@ -78,6 +79,7 @@ const App = () => (
                         <Route path="/product/:slug" element={<ProductDetail />} />
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/account" element={<Account />} />
+                        <Route path="/account/orders" element={<OrderHistory />} />
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/checkout" element={<Checkout />} />
                         <Route path="/payment/callback" element={<PaymentCallback />} />

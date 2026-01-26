@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff } from 'lucide-react';
+import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -140,6 +140,29 @@ export default function AdminCustomers() {
     customer.phone?.includes(searchQuery)
   );
 
+  const exportCustomers = () => {
+    const csv = [
+      ['Name', 'Phone', 'Role', 'Orders', 'Total Spent (BDT)', 'Joined'],
+      ...filteredCustomers.map(c => [
+        c.full_name || 'Unnamed',
+        c.phone || '',
+        c.isAdmin ? 'Admin' : 'Customer',
+        c.orderCount.toString(),
+        c.totalSpent.toString(),
+        format(new Date(c.created_at), 'yyyy-MM-dd')
+      ])
+    ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `customers-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Customers exported');
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-BD', {
       style: 'currency',
@@ -156,9 +179,15 @@ export default function AdminCustomers() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Customers</h1>
-          <p className="text-muted-foreground">Manage your customer base</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Customers</h1>
+            <p className="text-muted-foreground">Manage your customer base</p>
+          </div>
+          <Button onClick={exportCustomers} disabled={customers.length === 0}>
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
         </div>
 
         <Card>

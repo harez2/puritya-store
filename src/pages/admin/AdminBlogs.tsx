@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Pencil, Trash2, Eye, EyeOff, Search } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, EyeOff, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
   SelectContent,
@@ -53,6 +55,14 @@ type BlogCategory = {
   slug: string;
 };
 
+type Product = {
+  id: string;
+  name: string;
+  slug: string;
+  price: number;
+  images: string[] | null;
+};
+
 type Blog = {
   id: string;
   title: string;
@@ -67,6 +77,7 @@ type Blog = {
   updated_at: string;
   category_id: string | null;
   meta_description: string | null;
+  related_products: string[] | null;
   blog_categories: BlogCategory | null;
 };
 
@@ -81,9 +92,11 @@ export default function AdminBlogs() {
   const { user } = useAuth();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [productSearchQuery, setProductSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedBlog, setSelectedBlog] = useState<Blog | null>(null);
@@ -98,6 +111,7 @@ export default function AdminBlogs() {
     published: false,
     category_id: '',
     meta_description: '',
+    related_products: [] as string[],
   });
 
   useEffect(() => {
@@ -105,7 +119,7 @@ export default function AdminBlogs() {
   }, []);
 
   async function fetchData() {
-    const [blogsRes, categoriesRes] = await Promise.all([
+    const [blogsRes, categoriesRes, productsRes] = await Promise.all([
       supabase
         .from('blogs')
         .select('*, blog_categories(id, name, slug)')
@@ -114,6 +128,10 @@ export default function AdminBlogs() {
         .from('blog_categories')
         .select('id, name, slug')
         .order('name', { ascending: true }),
+      supabase
+        .from('products')
+        .select('id, name, slug, price, images')
+        .order('name', { ascending: true }),
     ]);
 
     if (!blogsRes.error && blogsRes.data) {
@@ -121,6 +139,9 @@ export default function AdminBlogs() {
     }
     if (!categoriesRes.error && categoriesRes.data) {
       setCategories(categoriesRes.data);
+    }
+    if (!productsRes.error && productsRes.data) {
+      setProducts(productsRes.data);
     }
     setLoading(false);
   }
@@ -150,7 +171,9 @@ export default function AdminBlogs() {
       published: false,
       category_id: '',
       meta_description: '',
+      related_products: [],
     });
+    setProductSearchQuery('');
     setIsDialogOpen(true);
   };
 
@@ -165,9 +188,31 @@ export default function AdminBlogs() {
       published: blog.published,
       category_id: blog.category_id || '',
       meta_description: blog.meta_description || '',
+      related_products: blog.related_products || [],
     });
+    setProductSearchQuery('');
     setIsDialogOpen(true);
   };
+
+  const toggleProductSelection = (productId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      related_products: prev.related_products.includes(productId)
+        ? prev.related_products.filter(id => id !== productId)
+        : [...prev.related_products, productId],
+    }));
+  };
+
+  const removeProduct = (productId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      related_products: prev.related_products.filter(id => id !== productId),
+    }));
+  };
+
+  const filteredProducts = products.filter(product =>
+    product.name.toLowerCase().includes(productSearchQuery.toLowerCase())
+  );
 
   const openDeleteDialog = (blog: Blog) => {
     setSelectedBlog(blog);
@@ -194,6 +239,7 @@ export default function AdminBlogs() {
         author_id: user?.id,
         category_id: formData.category_id || null,
         meta_description: formData.meta_description || null,
+        related_products: formData.related_products.length > 0 ? formData.related_products : null,
       };
 
       if (selectedBlog) {
@@ -487,6 +533,88 @@ export default function AdminBlogs() {
                 onChange={(content) => setFormData(prev => ({ ...prev, content }))}
                 placeholder="Write your blog content here..."
               />
+            </div>
+
+            {/* Related Products Section */}
+            <div className="space-y-2">
+              <Label>Related Products</Label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Select products to show as recommendations at the bottom of this blog post
+              </p>
+              
+              {/* Selected Products */}
+              {formData.related_products.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {formData.related_products.map(productId => {
+                    const product = products.find(p => p.id === productId);
+                    if (!product) return null;
+                    return (
+                      <div
+                        key={productId}
+                        className="flex items-center gap-2 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full text-sm"
+                      >
+                        {product.images?.[0] && (
+                          <img
+                            src={product.images[0]}
+                            alt=""
+                            className="w-5 h-5 rounded object-cover"
+                          />
+                        )}
+                        <span className="max-w-32 truncate">{product.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => removeProduct(productId)}
+                          className="hover:text-destructive"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Product Search */}
+              <Input
+                placeholder="Search products..."
+                value={productSearchQuery}
+                onChange={(e) => setProductSearchQuery(e.target.value)}
+                className="mb-2"
+              />
+
+              {/* Product List */}
+              <ScrollArea className="h-48 border rounded-md p-2">
+                <div className="space-y-1">
+                  {filteredProducts.map(product => (
+                    <div
+                      key={product.id}
+                      className="flex items-center gap-3 p-2 hover:bg-muted rounded-md cursor-pointer"
+                      onClick={() => toggleProductSelection(product.id)}
+                    >
+                      <Checkbox
+                        checked={formData.related_products.includes(product.id)}
+                        onCheckedChange={() => toggleProductSelection(product.id)}
+                      />
+                      {product.images?.[0] && (
+                        <img
+                          src={product.images[0]}
+                          alt=""
+                          className="w-10 h-10 rounded object-cover"
+                        />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-sm truncate">{product.name}</div>
+                        <div className="text-xs text-muted-foreground">৳{product.price.toLocaleString()}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">
+                      No products found
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
             </div>
 
             <div className="flex items-center gap-2">

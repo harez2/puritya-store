@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin, Clock } from 'lucide-react';
+import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin, Clock, ShoppingBag } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import PageBreadcrumb, { BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
-import { supabase } from '@/lib/supabase';
+import { supabase, Product } from '@/lib/supabase';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import ProductCard from '@/components/products/ProductCard';
 
 const SITE_URL = 'https://puritya-store.lovable.app';
 
@@ -22,6 +23,7 @@ type Blog = {
   created_at: string;
   category_id: string | null;
   meta_description: string | null;
+  related_products: string[] | null;
 };
 
 type RelatedPost = {
@@ -38,6 +40,7 @@ export default function BlogDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Must call useMemo before any early returns
@@ -62,6 +65,18 @@ export default function BlogDetail() {
 
       if (!error && data) {
         setBlog(data);
+        
+        // Fetch related products if specified
+        if (data.related_products && data.related_products.length > 0) {
+          const { data: productsData } = await supabase
+            .from('products')
+            .select('*')
+            .in('id', data.related_products);
+          
+          if (productsData) {
+            setRelatedProducts(productsData);
+          }
+        }
         
         // Fetch related posts from same category
         if (data.category_id) {
@@ -284,6 +299,21 @@ export default function BlogDetail() {
             </Link>
           </Button>
         </div>
+
+        {/* Related Products Section */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16 pt-8 border-t border-border">
+            <div className="flex items-center gap-2 mb-8">
+              <ShoppingBag className="h-5 w-5 text-primary" />
+              <h2 className="text-2xl font-display font-bold">Shop the Look</h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Related Posts Section */}
         {relatedPosts.length > 0 && (

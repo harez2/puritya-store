@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { HeroSlide } from '@/contexts/SiteSettingsContext';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 
 interface HeroSliderProps {
@@ -16,14 +17,30 @@ interface HeroSliderProps {
 export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeName }: HeroSliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Filter slides based on mobile visibility
+  const visibleSlides = useMemo(() => {
+    if (isMobile) {
+      return slides.filter((slide) => !slide.hide_on_mobile);
+    }
+    return slides;
+  }, [slides, isMobile]);
+
+  // Reset index if it's out of bounds after filtering
+  useEffect(() => {
+    if (currentIndex >= visibleSlides.length) {
+      setCurrentIndex(0);
+    }
+  }, [visibleSlides.length, currentIndex]);
 
   const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % slides.length);
-  }, [slides.length]);
+    setCurrentIndex((prev) => (prev + 1) % visibleSlides.length);
+  }, [visibleSlides.length]);
 
   const goToPrevious = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + slides.length) % slides.length);
-  }, [slides.length]);
+    setCurrentIndex((prev) => (prev - 1 + visibleSlides.length) % visibleSlides.length);
+  }, [visibleSlides.length]);
 
   const goToSlide = useCallback((index: number) => {
     setCurrentIndex(index);
@@ -31,22 +48,41 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
 
   // Autoplay effect
   useEffect(() => {
-    if (!autoplay || isPaused || slides.length <= 1) return;
+    if (!autoplay || isPaused || visibleSlides.length <= 1) return;
 
     const interval = setInterval(() => {
       goToNext();
     }, autoplayDelay * 1000);
 
     return () => clearInterval(interval);
-  }, [autoplay, autoplayDelay, isPaused, goToNext, slides.length]);
+  }, [autoplay, autoplayDelay, isPaused, goToNext, visibleSlides.length]);
 
-  if (slides.length === 0) return null;
+  if (visibleSlides.length === 0) return null;
 
-  const currentSlide = slides[currentIndex];
+  const currentSlide = visibleSlides[currentIndex];
+
+  // Get content with mobile overrides
+  const getContent = (slide: HeroSlide) => {
+    if (isMobile) {
+      return {
+        image_url: slide.mobile_image_url || slide.image_url,
+        title: slide.mobile_title || slide.title,
+        subtitle: slide.mobile_subtitle || slide.subtitle,
+        badge: slide.mobile_badge || slide.badge,
+        cta_text: slide.cta_text,
+        cta_link: slide.cta_link,
+        secondary_cta_text: slide.secondary_cta_text,
+        secondary_cta_link: slide.secondary_cta_link,
+      };
+    }
+    return slide;
+  };
+
+  const content = getContent(currentSlide);
 
   return (
     <section 
-      className="relative h-[80vh] min-h-[600px] overflow-hidden"
+      className="relative h-[80vh] min-h-[500px] md:min-h-[600px] overflow-hidden"
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
@@ -60,15 +96,23 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
           className="absolute inset-0"
         >
           <img
-            src={currentSlide.image_url}
-            alt={currentSlide.title || storeName}
+            src={content.image_url}
+            alt={content.title || storeName}
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
+          <div className={cn(
+            "absolute inset-0",
+            isMobile 
+              ? "bg-gradient-to-t from-background/90 via-background/50 to-transparent"
+              : "bg-gradient-to-r from-background/80 via-background/40 to-transparent"
+          )} />
         </motion.div>
       </AnimatePresence>
 
-      <div className="relative container mx-auto px-4 h-full flex items-center">
+      <div className={cn(
+        "relative container mx-auto px-4 h-full flex",
+        isMobile ? "items-end pb-16" : "items-center"
+      )}>
         <AnimatePresence mode="wait">
           <motion.div
             key={currentIndex}
@@ -76,15 +120,20 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -30 }}
             transition={{ duration: 0.5 }}
-            className="max-w-xl"
+            className={cn(
+              isMobile ? "max-w-full text-center" : "max-w-xl"
+            )}
           >
-            {currentSlide.badge && (
+            {content.badge && (
               <span className="text-primary font-medium tracking-widest uppercase text-sm">
-                {currentSlide.badge}
+                {content.badge}
               </span>
             )}
-            <h1 className="font-display text-5xl md:text-7xl mt-4 mb-6 leading-tight">
-              {currentSlide.title.split(' ').map((word, i, arr) => (
+            <h1 className={cn(
+              "font-display mt-4 mb-4 md:mb-6 leading-tight",
+              isMobile ? "text-3xl" : "text-5xl md:text-7xl"
+            )}>
+              {content.title.split(' ').map((word, i, arr) => (
                 <span key={i}>
                   {i === Math.floor(arr.length / 2) ? (
                     <span className="text-primary">{word}</span>
@@ -92,27 +141,33 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
                     word
                   )}
                   {i < arr.length - 1 && ' '}
-                  {i === Math.floor(arr.length / 2) && <br />}
+                  {!isMobile && i === Math.floor(arr.length / 2) && <br />}
                 </span>
               ))}
             </h1>
-            {currentSlide.subtitle && (
-              <p className="text-lg text-muted-foreground mb-8 max-w-md">
-                {currentSlide.subtitle}
+            {content.subtitle && (
+              <p className={cn(
+                "text-muted-foreground mb-6 md:mb-8",
+                isMobile ? "text-sm max-w-xs mx-auto" : "text-lg max-w-md"
+              )}>
+                {content.subtitle}
               </p>
             )}
-            <div className="flex gap-4">
-              {currentSlide.cta_text && currentSlide.cta_link && (
-                <Button size="lg" asChild>
-                  <Link to={currentSlide.cta_link}>
-                    {currentSlide.cta_text} <ArrowRight className="ml-2 h-4 w-4" />
+            <div className={cn(
+              "flex gap-3 md:gap-4",
+              isMobile && "justify-center flex-wrap"
+            )}>
+              {content.cta_text && content.cta_link && (
+                <Button size={isMobile ? "default" : "lg"} asChild>
+                  <Link to={content.cta_link}>
+                    {content.cta_text} <ArrowRight className="ml-2 h-4 w-4" />
                   </Link>
                 </Button>
               )}
-              {currentSlide.secondary_cta_text && currentSlide.secondary_cta_link && (
-                <Button variant="outline" size="lg" asChild>
-                  <Link to={currentSlide.secondary_cta_link}>
-                    {currentSlide.secondary_cta_text}
+              {content.secondary_cta_text && content.secondary_cta_link && (
+                <Button variant="outline" size={isMobile ? "default" : "lg"} asChild>
+                  <Link to={content.secondary_cta_link}>
+                    {content.secondary_cta_text}
                   </Link>
                 </Button>
               )}
@@ -121,8 +176,8 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
         </AnimatePresence>
       </div>
 
-      {/* Navigation Arrows */}
-      {slides.length > 1 && (
+      {/* Navigation Arrows - Hidden on mobile for cleaner UX */}
+      {visibleSlides.length > 1 && !isMobile && (
         <>
           <button
             onClick={goToPrevious}
@@ -142,17 +197,20 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
       )}
 
       {/* Pagination Dots */}
-      {slides.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex gap-2">
-          {slides.map((_, index) => (
+      {visibleSlides.length > 1 && (
+        <div className={cn(
+          "absolute left-1/2 -translate-x-1/2 flex gap-2",
+          isMobile ? "bottom-4" : "bottom-8"
+        )}>
+          {visibleSlides.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
               className={cn(
-                "w-3 h-3 rounded-full transition-all duration-300",
+                "h-2 md:h-3 rounded-full transition-all duration-300",
                 index === currentIndex
-                  ? "bg-primary w-8"
-                  : "bg-foreground/30 hover:bg-foreground/50"
+                  ? "bg-primary w-6 md:w-8"
+                  : "bg-foreground/30 hover:bg-foreground/50 w-2 md:w-3"
               )}
               aria-label={`Go to slide ${index + 1}`}
             />

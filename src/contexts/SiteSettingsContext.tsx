@@ -73,6 +73,12 @@ export interface HeroSlide {
   cta_link: string;
   secondary_cta_text: string;
   secondary_cta_link: string;
+  // Mobile-specific overrides
+  mobile_image_url?: string;
+  mobile_title?: string;
+  mobile_subtitle?: string;
+  mobile_badge?: string;
+  hide_on_mobile?: boolean;
 }
 
 export interface HeroSliderSettings {

@@ -95,6 +95,7 @@ export type Database = {
           meta_description: string | null
           published: boolean
           published_at: string | null
+          related_products: string[] | null
           slug: string
           title: string
           updated_at: string
@@ -110,6 +111,7 @@ export type Database = {
           meta_description?: string | null
           published?: boolean
           published_at?: string | null
+          related_products?: string[] | null
           slug: string
           title: string
           updated_at?: string
@@ -125,6 +127,7 @@ export type Database = {
           meta_description?: string | null
           published?: boolean
           published_at?: string | null
+          related_products?: string[] | null
           slug?: string
           title?: string
           updated_at?: string

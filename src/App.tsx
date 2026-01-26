@@ -42,6 +42,7 @@ import Blog from "./pages/Blog";
 import BlogDetail from "./pages/BlogDetail";
 import DynamicPage from "./pages/DynamicPage";
 import AdminPages from "./pages/admin/AdminPages";
+import AdminNewsletter from "./pages/admin/AdminNewsletter";
 
 const queryClient = new QueryClient();
 
@@ -102,6 +103,7 @@ const App = () => (
                         <Route path="/admin/blogs" element={<AdminBlogs />} />
                         <Route path="/admin/blog-categories" element={<AdminBlogCategories />} />
                         <Route path="/admin/customization" element={<AdminCustomization />} />
+                        <Route path="/admin/newsletter" element={<AdminNewsletter />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
                         {/* Dynamic pages - must be last to catch remaining routes */}
                         <Route path="/:slug" element={<DynamicPage />} />

@@ -5,7 +5,8 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MessageSquare, Send, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { MessageSquare, Send, Loader2, RefreshCw, Wallet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,11 +42,53 @@ export default function SmsSettingsEditor() {
   const [saving, setSaving] = useState(false);
   const [testPhone, setTestPhone] = useState('');
   const [sendingTest, setSendingTest] = useState(false);
+  const [balance, setBalance] = useState<string | null>(null);
+  const [balanceLoading, setBalanceLoading] = useState(false);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchSettings();
   }, []);
+
+  // Fetch balance when settings load or when custom API is toggled
+  useEffect(() => {
+    if (!loading && settings.enabled) {
+      fetchBalance();
+    }
+  }, [loading, settings.enabled, settings.useCustomApi, settings.apiKey]);
+
+  const fetchBalance = async () => {
+    setBalanceLoading(true);
+    setBalanceError(null);
+    try {
+      const requestBody: { customApiKey?: string } = {};
+      
+      if (settings.useCustomApi && settings.apiKey) {
+        requestBody.customApiKey = settings.apiKey;
+      }
+
+      const { data, error } = await supabase.functions.invoke('sms-balance', {
+        body: requestBody,
+      });
+
+      if (error) throw error;
+
+      if (data?.success) {
+        setBalance(data.balance);
+      } else {
+        setBalanceError(data?.error || 'Failed to fetch balance');
+        setBalance(null);
+      }
+    } catch (error: unknown) {
+      console.error('Error fetching SMS balance:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch balance';
+      setBalanceError(errorMessage);
+      setBalance(null);
+    } finally {
+      setBalanceLoading(false);
+    }
+  };
 
   const fetchSettings = async () => {
     try {
@@ -249,6 +292,39 @@ export default function SmsSettingsEditor() {
 
         {settings.enabled && (
           <>
+            {/* SMS Balance Display */}
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+              <div className="flex items-center gap-3">
+                <Wallet className="h-5 w-5 text-primary" />
+                <div>
+                  <Label className="text-base font-medium">SMS Balance</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Your remaining SMS credits
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {balanceLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : balance !== null ? (
+                  <Badge variant="secondary" className="text-lg px-3 py-1">
+                    ৳{parseFloat(balance).toLocaleString()}
+                  </Badge>
+                ) : balanceError ? (
+                  <span className="text-sm text-destructive">{balanceError}</span>
+                ) : null}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={fetchBalance}
+                  disabled={balanceLoading}
+                  title="Refresh balance"
+                >
+                  <RefreshCw className={`h-4 w-4 ${balanceLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+
             {/* SMS API Configuration */}
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <div className="flex items-center justify-between">

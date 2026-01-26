@@ -15,6 +15,8 @@ interface SectionProps {
     type: string;
     content: Record<string, any>;
   };
+  onSectionClick?: (sectionId: string) => void;
+  onCheckout?: (productId: string) => void;
 }
 
 const ICONS: Record<string, React.ElementType> = {
@@ -26,12 +28,16 @@ const ICONS: Record<string, React.ElementType> = {
   check: Check,
 };
 
-export function LandingPageSection({ section }: SectionProps) {
+export function LandingPageSection({ section, onSectionClick, onCheckout }: SectionProps) {
   const { type, content } = section;
+
+  const handleClick = () => {
+    onSectionClick?.(section.id);
+  };
 
   switch (type) {
     case 'hero':
-      return <HeroSection content={content} />;
+      return <HeroSection content={content} sectionId={section.id} onClick={handleClick} />;
     case 'text':
       return <TextSection content={content} />;
     case 'features':
@@ -39,9 +45,9 @@ export function LandingPageSection({ section }: SectionProps) {
     case 'testimonials':
       return <TestimonialsSection content={content} />;
     case 'cta':
-      return <CTASection content={content} />;
+      return <CTASection content={content} sectionId={section.id} onClick={handleClick} />;
     case 'products':
-      return <ProductsSection content={content} />;
+      return <ProductsSection content={content} onCheckout={onCheckout} />;
     case 'image':
       return <ImageSection content={content} />;
     default:
@@ -49,7 +55,7 @@ export function LandingPageSection({ section }: SectionProps) {
   }
 }
 
-function HeroSection({ content }: { content: any }) {
+function HeroSection({ content, sectionId, onClick }: { content: any; sectionId?: string; onClick?: () => void }) {
   const backgroundStyle = content.backgroundImage
     ? { backgroundImage: `url(${content.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' }
     : { backgroundColor: content.backgroundColor || '#1a1a2e' };
@@ -72,7 +78,7 @@ function HeroSection({ content }: { content: any }) {
           </p>
         )}
         {content.ctaText && (
-          <Button asChild size="lg" className="text-lg px-8 py-6">
+          <Button asChild size="lg" className="text-lg px-8 py-6" onClick={onClick}>
             <Link to={content.ctaLink || '/shop'}>{content.ctaText}</Link>
           </Button>
         )}
@@ -169,7 +175,7 @@ function TestimonialsSection({ content }: { content: any }) {
   );
 }
 
-function CTASection({ content }: { content: any }) {
+function CTASection({ content, sectionId, onClick }: { content: any; sectionId?: string; onClick?: () => void }) {
   return (
     <section
       className="py-20 px-4"
@@ -193,6 +199,7 @@ function CTASection({ content }: { content: any }) {
             size="lg" 
             variant="secondary"
             className="text-lg px-8"
+            onClick={onClick}
           >
             <Link to={content.ctaLink || '/shop'}>{content.ctaText}</Link>
           </Button>
@@ -202,7 +209,7 @@ function CTASection({ content }: { content: any }) {
   );
 }
 
-function ProductsSection({ content }: { content: any }) {
+function ProductsSection({ content, onCheckout }: { content: any; onCheckout?: (productId: string) => void }) {
   const productIds = content.productIds || [];
   const columns = content.columns || 4;
   const enableQuickCheckout = content.enableQuickCheckout ?? false;
@@ -234,6 +241,7 @@ function ProductsSection({ content }: { content: any }) {
   const handleBuyNow = (product: Product) => {
     setSelectedProduct(product);
     setQuickCheckoutOpen(true);
+    onCheckout?.(product.id);
   };
 
   return (

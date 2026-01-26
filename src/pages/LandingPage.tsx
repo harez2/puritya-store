@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -5,6 +6,7 @@ import { Helmet } from 'react-helmet-async';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { LandingPageSection } from '@/components/landing/LandingPageSection';
+import { useLandingPageAnalytics } from '@/hooks/useLandingPageAnalytics';
 import NotFound from './NotFound';
 
 interface LandingPageData {
@@ -23,6 +25,7 @@ interface LandingPageData {
 
 export default function LandingPage() {
   const { slug } = useParams<{ slug: string }>();
+  const viewTrackedRef = useRef(false);
 
   const { data: page, isLoading, error } = useQuery({
     queryKey: ['landing-page-public', slug],
@@ -39,6 +42,17 @@ export default function LandingPage() {
     },
     enabled: !!slug,
   });
+
+  // Analytics tracking
+  const { trackView, trackClick, trackCheckout } = useLandingPageAnalytics(page?.id || '');
+
+  // Track page view once on mount
+  useEffect(() => {
+    if (page?.id && !viewTrackedRef.current) {
+      trackView();
+      viewTrackedRef.current = true;
+    }
+  }, [page?.id, trackView]);
 
   if (isLoading) {
     return (
@@ -70,7 +84,12 @@ export default function LandingPage() {
 
       <main className="min-h-screen">
         {(page.sections || []).map((section: any, index: number) => (
-          <LandingPageSection key={section.id || index} section={section} />
+          <LandingPageSection 
+            key={section.id || index} 
+            section={section}
+            onSectionClick={(sectionId) => trackClick(sectionId)}
+            onCheckout={(productId) => trackCheckout(productId)}
+          />
         ))}
       </main>
 

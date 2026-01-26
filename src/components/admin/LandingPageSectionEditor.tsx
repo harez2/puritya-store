@@ -428,6 +428,24 @@ function ProductsEditor({ content, onUpdate }: { content: any; onUpdate: (c: any
           onCheckedChange={(checked) => onUpdate({ ...content, showPrices: checked })}
         />
       </div>
+      <div className="flex items-center justify-between">
+        <div>
+          <Label>Enable Quick Checkout</Label>
+          <p className="text-xs text-muted-foreground">Show "Buy Now" button for direct checkout</p>
+        </div>
+        <Switch
+          checked={content.enableQuickCheckout ?? false}
+          onCheckedChange={(checked) => onUpdate({ ...content, enableQuickCheckout: checked })}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Button Text</Label>
+        <Input
+          value={content.buyButtonText || 'Buy Now'}
+          onChange={(e) => onUpdate({ ...content, buyButtonText: e.target.value })}
+          placeholder="Buy Now"
+        />
+      </div>
     </div>
   );
 }

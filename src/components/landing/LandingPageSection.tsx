@@ -1,9 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Star, Shield, Zap, Truck, Heart, Check } from 'lucide-react';
+import { Star, Shield, Zap, Truck, Heart, Check, ShoppingBag } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import ProductCard from '@/components/products/ProductCard';
+import QuickCheckoutModal from '@/components/checkout/QuickCheckoutModal';
+import { formatPrice } from '@/lib/utils';
+import { Product } from '@/lib/supabase';
 
 interface SectionProps {
   section: {
@@ -201,6 +205,12 @@ function CTASection({ content }: { content: any }) {
 function ProductsSection({ content }: { content: any }) {
   const productIds = content.productIds || [];
   const columns = content.columns || 4;
+  const enableQuickCheckout = content.enableQuickCheckout ?? false;
+  const buyButtonText = content.buyButtonText || 'Buy Now';
+  const showPrices = content.showPrices ?? true;
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quickCheckoutOpen, setQuickCheckoutOpen] = useState(false);
 
   const { data: products = [] } = useQuery({
     queryKey: ['landing-products', productIds],
@@ -221,6 +231,11 @@ function ProductsSection({ content }: { content: any }) {
 
   const gridCols = columns === 2 ? 'md:grid-cols-2' : columns === 3 ? 'md:grid-cols-3' : 'md:grid-cols-4';
 
+  const handleBuyNow = (product: Product) => {
+    setSelectedProduct(product);
+    setQuickCheckoutOpen(true);
+  };
+
   return (
     <section className="py-16 px-4">
       <div className="max-w-7xl mx-auto">
@@ -229,13 +244,115 @@ function ProductsSection({ content }: { content: any }) {
             {content.headline}
           </h2>
         )}
-        <div className={`grid grid-cols-2 ${gridCols} gap-6`}>
-          {products.map((product: any) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {enableQuickCheckout ? (
+          <div className={`grid grid-cols-2 ${gridCols} gap-6`}>
+            {products.map((product: any) => (
+              <LandingProductCard 
+                key={product.id} 
+                product={product} 
+                showPrice={showPrices}
+                buyButtonText={buyButtonText}
+                onBuyNow={() => handleBuyNow(product)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className={`grid grid-cols-2 ${gridCols} gap-6`}>
+            {products.map((product: any) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </div>
+
+      {selectedProduct && (
+        <QuickCheckoutModal
+          open={quickCheckoutOpen}
+          onOpenChange={setQuickCheckoutOpen}
+          product={selectedProduct}
+          quantity={1}
+        />
+      )}
     </section>
+  );
+}
+
+// Custom product card for landing pages with quick checkout
+function LandingProductCard({ 
+  product, 
+  showPrice, 
+  buyButtonText, 
+  onBuyNow 
+}: { 
+  product: Product; 
+  showPrice: boolean;
+  buyButtonText: string;
+  onBuyNow: () => void;
+}) {
+  const hasDiscount = product.compare_at_price && product.compare_at_price > product.price;
+  const discountPercent = hasDiscount 
+    ? Math.round(((product.compare_at_price! - product.price) / product.compare_at_price!) * 100)
+    : 0;
+
+  return (
+    <div className="group bg-card border rounded-xl overflow-hidden transition-shadow hover:shadow-lg">
+      <Link to={`/product/${product.slug}`} className="block">
+        <div className="aspect-square overflow-hidden relative">
+          {product.images?.[0] ? (
+            <img
+              src={product.images[0]}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full bg-muted flex items-center justify-center">
+              <ShoppingBag className="h-12 w-12 text-muted-foreground" />
+            </div>
+          )}
+          {hasDiscount && (
+            <span className="absolute top-2 left-2 bg-destructive text-destructive-foreground text-xs font-medium px-2 py-1 rounded">
+              -{discountPercent}%
+            </span>
+          )}
+          {!product.in_stock && (
+            <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+              <span className="text-muted-foreground font-medium">Out of Stock</span>
+            </div>
+          )}
+        </div>
+      </Link>
+      
+      <div className="p-4 space-y-3">
+        <Link to={`/product/${product.slug}`}>
+          <h3 className="font-medium line-clamp-2 hover:text-primary transition-colors">
+            {product.name}
+          </h3>
+        </Link>
+        
+        {showPrice && (
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-primary">
+              {formatPrice(product.price)}
+            </span>
+            {hasDiscount && (
+              <span className="text-sm text-muted-foreground line-through">
+                {formatPrice(product.compare_at_price!)}
+              </span>
+            )}
+          </div>
+        )}
+        
+        <Button 
+          onClick={onBuyNow}
+          disabled={!product.in_stock}
+          className="w-full"
+          size="sm"
+        >
+          <ShoppingBag className="h-4 w-4 mr-2" />
+          {buyButtonText}
+        </Button>
+      </div>
+    </div>
   );
 }
 

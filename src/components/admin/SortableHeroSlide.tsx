@@ -1,6 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, Trash2, ChevronDown, ChevronUp, Smartphone } from 'lucide-react';
+import { GripVertical, Trash2, ChevronDown, ChevronUp, Smartphone, Monitor, Eye } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { HeroSlide } from '@/contexts/SiteSettingsContext';
 import { cn } from '@/lib/utils';
@@ -21,6 +23,107 @@ interface SortableHeroSlideProps {
   onRemove: () => void;
 }
 
+function SlidePreview({ slide, mode }: { slide: HeroSlide; mode: 'desktop' | 'mobile' }) {
+  const isMobile = mode === 'mobile';
+  
+  const content = isMobile
+    ? {
+        image_url: slide.mobile_image_url || slide.image_url,
+        title: slide.mobile_title || slide.title,
+        subtitle: slide.mobile_subtitle || slide.subtitle,
+        badge: slide.mobile_badge || slide.badge,
+      }
+    : {
+        image_url: slide.image_url,
+        title: slide.title,
+        subtitle: slide.subtitle,
+        badge: slide.badge,
+      };
+
+  if (isMobile && slide.hide_on_mobile) {
+    return (
+      <div className="flex items-center justify-center h-full bg-muted/50 text-muted-foreground text-sm">
+        Hidden on mobile
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative w-full h-full overflow-hidden rounded-lg">
+      {/* Background Image */}
+      {content.image_url ? (
+        <img
+          src={content.image_url}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-br from-muted to-muted/50" />
+      )}
+      
+      {/* Overlay */}
+      <div className={cn(
+        "absolute inset-0",
+        isMobile
+          ? "bg-gradient-to-t from-black/80 via-black/40 to-transparent"
+          : "bg-gradient-to-r from-black/70 via-black/30 to-transparent"
+      )} />
+      
+      {/* Content */}
+      <div className={cn(
+        "relative h-full flex p-3",
+        isMobile ? "items-end justify-center text-center pb-4" : "items-center"
+      )}>
+        <div className={cn(isMobile ? "max-w-full" : "max-w-[60%]")}>
+          {content.badge && (
+            <span className={cn(
+              "text-primary font-medium uppercase tracking-wider",
+              isMobile ? "text-[8px]" : "text-[10px]"
+            )}>
+              {content.badge}
+            </span>
+          )}
+          <h3 className={cn(
+            "font-display text-white leading-tight mt-1",
+            isMobile ? "text-sm" : "text-lg"
+          )}>
+            {content.title || 'Slide Title'}
+          </h3>
+          {content.subtitle && (
+            <p className={cn(
+              "text-white/70 mt-1 line-clamp-2",
+              isMobile ? "text-[8px]" : "text-[10px]"
+            )}>
+              {content.subtitle}
+            </p>
+          )}
+          <div className={cn(
+            "flex gap-1 mt-2",
+            isMobile && "justify-center"
+          )}>
+            {slide.cta_text && (
+              <div className={cn(
+                "bg-primary text-primary-foreground rounded px-2 py-0.5",
+                isMobile ? "text-[7px]" : "text-[8px]"
+              )}>
+                {slide.cta_text}
+              </div>
+            )}
+            {slide.secondary_cta_text && (
+              <div className={cn(
+                "border border-white/50 text-white rounded px-2 py-0.5",
+                isMobile ? "text-[7px]" : "text-[8px]"
+              )}>
+                {slide.secondary_cta_text}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function SortableHeroSlide({
   slide,
   index,
@@ -29,6 +132,9 @@ export function SortableHeroSlide({
   onUpdate,
   onRemove,
 }: SortableHeroSlideProps) {
+  const [previewMode, setPreviewMode] = useState<'desktop' | 'mobile'>('desktop');
+  const [showPreview, setShowPreview] = useState(false);
+
   const {
     attributes,
     listeners,
@@ -111,6 +217,50 @@ export function SortableHeroSlide({
 
         <CollapsibleContent>
           <div className="border-t p-4 bg-muted/30">
+            {/* Preview Toggle */}
+            <div className="flex items-center justify-between mb-4 pb-4 border-b">
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Preview</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={showPreview}
+                  onCheckedChange={setShowPreview}
+                  id={`preview-toggle-${slide.id}`}
+                />
+                {showPreview && (
+                  <ToggleGroup
+                    type="single"
+                    value={previewMode}
+                    onValueChange={(value) => value && setPreviewMode(value as 'desktop' | 'mobile')}
+                    className="bg-background rounded-lg p-0.5"
+                  >
+                    <ToggleGroupItem value="desktop" size="sm" className="h-7 px-2">
+                      <Monitor className="h-3.5 w-3.5" />
+                    </ToggleGroupItem>
+                    <ToggleGroupItem value="mobile" size="sm" className="h-7 px-2">
+                      <Smartphone className="h-3.5 w-3.5" />
+                    </ToggleGroupItem>
+                  </ToggleGroup>
+                )}
+              </div>
+            </div>
+
+            {/* Preview Area */}
+            {showPreview && (
+              <div className="mb-4 flex justify-center">
+                <div className={cn(
+                  "border rounded-lg overflow-hidden shadow-sm transition-all duration-300",
+                  previewMode === 'mobile'
+                    ? "w-[180px] h-[320px]"
+                    : "w-full max-w-[400px] h-[200px]"
+                )}>
+                  <SlidePreview slide={slide} mode={previewMode} />
+                </div>
+              </div>
+            )}
+
             <Tabs defaultValue="desktop" className="w-full">
               <TabsList className="grid w-full grid-cols-2 mb-4">
                 <TabsTrigger value="desktop">Desktop</TabsTrigger>

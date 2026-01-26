@@ -36,7 +36,7 @@ const categories = [
 ];
 
 export default function Index() {
-  const { settings } = useSiteSettings();
+  const { settings, loading: settingsLoading } = useSiteSettings();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [latestBlogs, setLatestBlogs] = useState<Blog[]>([]);
@@ -68,7 +68,9 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section */}
-      {useSlider ? (
+      {settingsLoading ? (
+        <section className="relative h-[80vh] min-h-[600px] bg-muted animate-pulse" />
+      ) : useSlider ? (
         <HeroSlider
           slides={settings.hero_slider.slides}
           autoplay={settings.hero_slider.autoplay}

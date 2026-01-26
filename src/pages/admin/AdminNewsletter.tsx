@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Search, Trash2, Download, Users, AlertCircle } from 'lucide-react';
+import { Mail, Search, Trash2, Download, Users, AlertCircle, ToggleLeft, ToggleRight, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { DomainWhitelist } from '@/components/admin/DomainWhitelist';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface DomainWhitelistSettings {
   enabled: boolean;
@@ -30,6 +31,8 @@ export default function AdminNewsletter() {
   const [subscribers, setSubscribers] = useState<Subscriber[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
   const [whitelistSettings, setWhitelistSettings] = useState<DomainWhitelistSettings>({
     enabled: false,
     domains: []
@@ -100,6 +103,73 @@ export default function AdminNewsletter() {
     }
   };
 
+  // Bulk actions
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredSubscribers.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredSubscribers.map(s => s.id)));
+    }
+  };
+
+  const toggleSelectOne = (id: string) => {
+    const newSet = new Set(selectedIds);
+    if (newSet.has(id)) {
+      newSet.delete(id);
+    } else {
+      newSet.add(id);
+    }
+    setSelectedIds(newSet);
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .delete()
+        .in('id', Array.from(selectedIds));
+
+      if (error) throw error;
+      
+      setSubscribers(prev => prev.filter(sub => !selectedIds.has(sub.id)));
+      toast.success(`${selectedIds.size} subscriber(s) deleted`);
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      toast.error('Failed to delete subscribers');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const bulkToggleStatus = async (newStatus: boolean) => {
+    if (selectedIds.size === 0) return;
+    setBulkActionLoading(true);
+    try {
+      const { error } = await supabase
+        .from('newsletter_subscribers')
+        .update({ is_active: newStatus })
+        .in('id', Array.from(selectedIds));
+
+      if (error) throw error;
+      
+      setSubscribers(prev => 
+        prev.map(sub => selectedIds.has(sub.id) ? { ...sub, is_active: newStatus } : sub)
+      );
+      toast.success(`${selectedIds.size} subscriber(s) ${newStatus ? 'activated' : 'deactivated'}`);
+      setSelectedIds(new Set());
+    } catch (error) {
+      console.error('Error bulk updating status:', error);
+      toast.error('Failed to update subscribers');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const exportSubscribers = () => {
     const activeSubscribers = subscribers.filter(s => s.is_active);
     const csv = [
@@ -126,6 +196,7 @@ export default function AdminNewsletter() {
   );
 
   const activeCount = subscribers.filter(s => s.is_active).length;
+  const allSelected = filteredSubscribers.length > 0 && selectedIds.size === filteredSubscribers.length;
 
   return (
     <AdminLayout>
@@ -195,6 +266,62 @@ export default function AdminNewsletter() {
             </div>
           </CardHeader>
           <CardContent>
+            {/* Bulk Actions Bar */}
+            {selectedIds.size > 0 && (
+              <div className="flex items-center justify-between p-3 mb-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">
+                    {selectedIds.size} selected
+                  </span>
+                  <Button variant="ghost" size="sm" onClick={clearSelection}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => bulkToggleStatus(true)}
+                    disabled={bulkActionLoading}
+                  >
+                    <ToggleRight className="h-4 w-4 mr-1" />
+                    Activate
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => bulkToggleStatus(false)}
+                    disabled={bulkActionLoading}
+                  >
+                    <ToggleLeft className="h-4 w-4 mr-1" />
+                    Deactivate
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="destructive" size="sm" disabled={bulkActionLoading}>
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Delete
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete {selectedIds.size} subscriber(s)?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          This will permanently remove the selected subscribers from your newsletter list.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={bulkDelete}>
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            )}
+
             {loading ? (
               <div className="text-center py-8 text-muted-foreground">Loading...</div>
             ) : filteredSubscribers.length === 0 ? (
@@ -205,6 +332,12 @@ export default function AdminNewsletter() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-12">
+                      <Checkbox
+                        checked={allSelected}
+                        onCheckedChange={toggleSelectAll}
+                      />
+                    </TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Subscribed</TableHead>
                     <TableHead>Source</TableHead>
@@ -215,8 +348,15 @@ export default function AdminNewsletter() {
                 <TableBody>
                   {filteredSubscribers.map((subscriber) => {
                     const whitelisted = isWhitelisted(subscriber.email);
+                    const isSelected = selectedIds.has(subscriber.id);
                     return (
-                      <TableRow key={subscriber.id} className={!whitelisted ? 'bg-destructive/5' : ''}>
+                      <TableRow key={subscriber.id} className={`${!whitelisted ? 'bg-destructive/5' : ''} ${isSelected ? 'bg-muted/50' : ''}`}>
+                        <TableCell>
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => toggleSelectOne(subscriber.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
                             {subscriber.email}

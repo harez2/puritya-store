@@ -1,179 +1,171 @@
 
-# OTP Verification System for Order Placement
+# Incomplete Orders (Abandoned Checkout) Feature
 
 ## Overview
-This plan implements a phone-based OTP (One-Time Password) verification system that triggers during checkout. Customers must verify their phone number via SMS before completing their order. The system supports two SMS providers: **BulkSMSBD** (already integrated) and **Reve System** (new).
+This feature captures checkout form data when customers enter their information (name, phone number, address) but do not complete the order. This data is stored in a new `incomplete_orders` table and displayed in a dedicated admin section, allowing CRM agents to follow up with potential customers and convert them into actual sales.
 
 ---
 
 ## Implementation Components
 
 ### 1. Database Schema
-A new table to store OTP records with automatic expiration:
 
-**Table: `otp_verifications`**
+**New Table: `incomplete_orders`**
 | Column | Type | Description |
 |--------|------|-------------|
 | id | uuid | Primary key |
-| phone | text | Customer phone number |
-| otp_code | text | 6-digit OTP code |
-| expires_at | timestamp | Expiration time (5 minutes from creation) |
-| verified | boolean | Whether OTP has been verified |
-| attempts | integer | Failed verification attempts (max 3) |
 | session_id | text | Browser session identifier |
-| created_at | timestamp | Creation timestamp |
+| full_name | text | Customer name (nullable) |
+| phone | text | Customer phone (nullable) |
+| email | text | Customer email (nullable) |
+| address | text | Shipping address (nullable) |
+| shipping_location | text | Shipping zone selection |
+| payment_method | text | Selected payment method |
+| notes | text | Order notes |
+| cart_items | jsonb | Array of cart items with product details |
+| subtotal | numeric | Cart subtotal |
+| shipping_fee | numeric | Calculated shipping |
+| total | numeric | Order total |
+| source | text | 'checkout' or 'quick_buy' |
+| status | text | 'pending', 'converted', 'hidden' (default: 'pending') |
+| converted_order_id | uuid | Reference to actual order if converted |
+| last_updated_at | timestamp | Last form update time |
+| created_at | timestamp | First capture time |
 
-RLS Policies: Allow anonymous inserts for creating OTPs, allow reads based on phone/session matching.
-
----
-
-### 2. OTP Edge Functions
-
-**Function: `send-otp`**
-- Generates a random 6-digit OTP
-- Stores it in `otp_verifications` table with 5-minute expiry
-- Sends SMS via the configured provider (BulkSMSBD or Reve System)
-- Implements rate limiting (max 3 OTPs per phone per 10 minutes)
-
-**Function: `verify-otp`**
-- Validates the OTP code against stored record
-- Checks expiration and attempt limits
-- Marks as verified on success
-- Returns verification status
-
----
-
-### 3. Admin Panel - OTP Settings
-
-Location: **Settings > SMS Notifications** (extend existing `SmsSettingsEditor.tsx`)
-
-New configuration section:
-- **Enable OTP Verification**: Master toggle for the feature
-- **OTP Provider Selection**: Dropdown to choose between:
-  - BulkSMSBD (uses existing integration)
-  - Reve System (new integration)
-- **Reve System Credentials** (shown when Reve System selected):
-  - API Key
-  - API Secret
-  - Sender ID
-- **OTP Message Template**: Customizable with `{otp}` placeholder
-- **OTP Expiry Time**: Default 5 minutes
+**RLS Policies:**
+- Admins: Full CRUD access
+- Anonymous: Can INSERT and UPDATE their own records (by session_id)
 
 ---
 
-### 4. OTP Verification Modal Component
+### 2. Auto-Capture Logic
 
-New component: `src/components/checkout/OtpVerificationModal.tsx`
-
-**UI Flow:**
-1. **Step 1 - Phone Entry**: Input field for phone number + "Send OTP" button
-2. **Step 2 - OTP Entry**: 6-digit OTP input using existing `InputOTP` component
-3. **Step 3 - Verified**: Success state with checkmark
-
-**Features:**
-- Countdown timer showing OTP expiry (5:00 remaining)
-- "Resend OTP" button (enabled after 60 seconds)
-- Error handling for invalid/expired OTPs
-- Loading states during API calls
-
----
-
-### 5. Checkout Flow Integration
+**Strategy**: Debounced auto-save when form fields change on checkout page
 
 **Files to modify:**
-- `src/pages/Checkout.tsx`
-- `src/components/checkout/QuickCheckoutModal.tsx`
-- `src/contexts/CartContext.tsx` (for add-to-cart OTP if required)
+- `src/pages/Checkout.tsx` - Add auto-save hook
+- `src/components/checkout/QuickCheckoutModal.tsx` - Add auto-save hook
 
-**Integration Points:**
-1. Before order submission, check if OTP is enabled in settings
-2. If enabled and phone not yet verified in current session:
-   - Open OTP verification modal
-   - Block order submission until verified
-3. Store verification status in session storage
-4. Allow verified users to proceed with order
+**New hook: `src/hooks/useIncompleteOrderCapture.ts`**
+- Debounce form changes (save after 2 seconds of no input)
+- Capture form state: name, phone, email, address, cart items
+- Use session storage for session_id
+- Only save when at least phone OR name is provided
+- Update existing record if session_id exists, otherwise create new
+- Mark as converted/delete when order is successfully placed
 
----
-
-### 6. Site Settings Extension
-
-Add to `SiteSettingsContext.tsx`:
-```typescript
-// OTP Settings
-otp_verification_enabled: boolean;
-otp_provider: 'bulksmsbd' | 'reve_system';
-otp_message_template: string;
-otp_expiry_minutes: number;
-reve_api_key: string;
-reve_api_secret: string;
-reve_sender_id: string;
-```
+**Capture triggers:**
+1. Form field blur events (save on field exit)
+2. Debounced onChange (2 seconds after last keystroke)
+3. Before modal close (for QuickCheckoutModal)
 
 ---
 
-## User Experience Flow
+### 3. Admin Panel - Incomplete Orders Tab
 
-```
-Customer clicks "Place Order"
-           │
-           ▼
-   ┌───────────────────┐
-   │ OTP Enabled?      │
-   └───────────────────┘
-           │
-    Yes    │    No
-           │     └──────► Proceed to order
-           ▼
-   ┌───────────────────┐
-   │ Phone Verified    │
-   │ in this session?  │
-   └───────────────────┘
-           │
-    Yes    │    No
-           │     │
-           │     ▼
-           │  ┌─────────────────────┐
-           │  │ Show OTP Modal      │
-           │  │ 1. Enter phone      │
-           │  │ 2. Receive SMS      │
-           │  │ 3. Enter OTP code   │
-           │  └─────────────────────┘
-           │           │
-           │           ▼
-           │  ┌─────────────────────┐
-           │  │ Verification        │
-           │  │ Success/Failure     │
-           │  └─────────────────────┘
-           │           │
-           └───────────┘
-                       │
-                       ▼
-              ┌─────────────────┐
-              │ Create Order    │
-              └─────────────────┘
-```
+**Location**: Add a tabbed interface to `AdminOrders.tsx` with two tabs:
+- "Order List" (existing orders)
+- "Incomplete Orders" (new abandoned checkouts)
+
+**Table columns:**
+| Column | Description |
+|--------|-------------|
+| Date/Time | When checkout was started |
+| Customer | Name + Phone |
+| Items | Product names/images |
+| Total | Calculated order total |
+| Source | Checkout / Quick Buy |
+| Status | Pending / Hidden |
+| Actions | View, Edit, Convert, Hide, Delete |
+
+**Filtering:**
+- Date range picker
+- Status filter (All, Pending, Hidden)
+- Search by name/phone
 
 ---
 
-## Technical Details
+### 4. CRM Agent Actions
 
-### SMS Provider Implementations
+**View Details Dialog:**
+- Show complete captured form data
+- Display cart items with images
+- Show timeline of form updates
 
-**BulkSMSBD** (existing):
-- API Endpoint: `http://bulksmsbd.net/api/smsapi`
-- Already configured with existing credentials
+**Edit Order Dialog:**
+- Editable customer information (name, phone, email, address)
+- Editable cart items (add/remove products, quantities, sizes/colors)
+- Payment method selection
+- Shipping option selection
+- Notes field
 
-**Reve System** (new):
-- API Endpoint: `https://api.revesms.com/send-sms` (typical format)
-- Requires: API Key, API Secret, Sender ID
-- Will be added as alternative provider
+**Convert to Order:**
+- Button to convert incomplete order to actual order
+- Creates new entry in `orders` table with source = 'crm_converted'
+- Creates associated `order_items`
+- Updates incomplete order status to 'converted'
+- Links via `converted_order_id`
+- Shows confirmation with order number
 
-### Security Measures
-- OTPs expire after 5 minutes
-- Maximum 3 verification attempts per OTP
-- Rate limiting: 3 OTP requests per phone number per 10 minutes
-- Session-based verification tracking
-- Phone number validation (Bangladesh format)
+**Hide/Delete:**
+- "Hide" marks status as 'hidden' (can be filtered out but not deleted)
+- "Delete" permanently removes the incomplete order
+- Confirmation dialogs for both actions
+
+---
+
+### 5. Automatic Cleanup
+
+**On successful order placement:**
+- Check for incomplete orders with matching session_id
+- Mark as 'converted' and link to new order
+- This prevents duplicate follow-ups
+
+**Periodic cleanup (optional future enhancement):**
+- Consider adding a scheduled function to auto-hide orders older than 30 days
+
+---
+
+## Technical Flow
+
+```
+Customer visits Checkout
+         |
+         v
+   Fills form fields
+   (name, phone, address)
+         |
+         v
+   Debounced auto-save
+   triggers after 2s
+         |
+         v
+   +--------------------------+
+   | incomplete_orders table  |
+   | session_id = browser ID  |
+   +--------------------------+
+         |
+         +---> Customer completes order
+         |            |
+         |            v
+         |    Mark as 'converted'
+         |    Link to actual order
+         |
+         +---> Customer abandons
+                     |
+                     v
+              CRM agent sees in
+              Admin > Orders > 
+              Incomplete Orders
+                     |
+                     v
+              Agent calls customer
+              edits order if needed
+                     |
+                     v
+              Convert to actual order
+              OR hide/delete
+```
 
 ---
 
@@ -181,21 +173,101 @@ Customer clicks "Place Order"
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/send-otp/index.ts` | Edge function to generate and send OTP |
-| `supabase/functions/verify-otp/index.ts` | Edge function to validate OTP |
-| `src/components/checkout/OtpVerificationModal.tsx` | OTP verification UI modal |
-| `src/hooks/useOtpVerification.ts` | Hook for OTP verification state management |
+| `src/hooks/useIncompleteOrderCapture.ts` | Auto-capture checkout form data |
+| `src/components/admin/IncompleteOrdersTab.tsx` | Admin table for incomplete orders |
+| `src/components/admin/IncompleteOrderDetailsDialog.tsx` | View incomplete order details |
+| `src/components/admin/ConvertOrderDialog.tsx` | Dialog to convert incomplete to actual order |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/config.toml` | Add new edge functions |
-| `src/components/admin/SmsSettingsEditor.tsx` | Add OTP provider configuration section |
-| `src/contexts/SiteSettingsContext.tsx` | Add OTP-related settings |
-| `src/pages/Checkout.tsx` | Integrate OTP verification before order |
-| `src/components/checkout/QuickCheckoutModal.tsx` | Integrate OTP verification before quick order |
+| `supabase/config.toml` | No changes needed (no new edge functions) |
+| `src/pages/admin/AdminOrders.tsx` | Add Tabs component to switch between Order List and Incomplete Orders |
+| `src/pages/Checkout.tsx` | Integrate useIncompleteOrderCapture hook, mark as converted on success |
+| `src/components/checkout/QuickCheckoutModal.tsx` | Integrate useIncompleteOrderCapture hook for quick checkout |
+
+---
 
 ## Database Migration
 
-Create `otp_verifications` table with appropriate RLS policies for anonymous access during checkout.
+```sql
+-- Create incomplete_orders table
+CREATE TABLE public.incomplete_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id TEXT NOT NULL,
+  full_name TEXT,
+  phone TEXT,
+  email TEXT,
+  address TEXT,
+  shipping_location TEXT,
+  payment_method TEXT,
+  notes TEXT,
+  cart_items JSONB DEFAULT '[]'::jsonb,
+  subtotal NUMERIC DEFAULT 0,
+  shipping_fee NUMERIC DEFAULT 0,
+  total NUMERIC DEFAULT 0,
+  source TEXT DEFAULT 'checkout',
+  status TEXT DEFAULT 'pending',
+  converted_order_id UUID REFERENCES public.orders(id),
+  last_updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+-- Enable RLS
+ALTER TABLE public.incomplete_orders ENABLE ROW LEVEL SECURITY;
+
+-- Create indexes for performance
+CREATE INDEX idx_incomplete_orders_session ON public.incomplete_orders(session_id);
+CREATE INDEX idx_incomplete_orders_status ON public.incomplete_orders(status);
+CREATE INDEX idx_incomplete_orders_phone ON public.incomplete_orders(phone);
+CREATE INDEX idx_incomplete_orders_created ON public.incomplete_orders(created_at DESC);
+
+-- RLS Policies
+CREATE POLICY "Admins can manage incomplete orders"
+  ON public.incomplete_orders FOR ALL
+  USING (is_admin(auth.uid()));
+
+CREATE POLICY "Anyone can create incomplete orders"
+  ON public.incomplete_orders FOR INSERT
+  WITH CHECK (true);
+
+CREATE POLICY "Anyone can update their session incomplete orders"
+  ON public.incomplete_orders FOR UPDATE
+  USING (true);
+```
+
+---
+
+## User Interface Design
+
+**Admin Orders Page with Tabs:**
+- Tab 1: "Order List" - Current functionality
+- Tab 2: "Incomplete Orders" - New abandoned checkouts view
+
+**Incomplete Orders Table:**
+- Sortable columns
+- Bulk actions (Hide selected, Delete selected)
+- Export to CSV option
+- Pagination
+
+**Status Badges:**
+- Pending: Yellow badge
+- Converted: Green badge (with link to actual order)
+- Hidden: Gray badge
+
+**Row Actions Dropdown:**
+- View Details
+- Edit Order
+- Convert to Order (primary action)
+- Hide (soft delete)
+- Delete (permanent, with confirmation)
+
+---
+
+## Security Considerations
+
+1. RLS ensures only admins can read incomplete orders data
+2. Session ID prevents customers from accessing others' data
+3. Phone/email data is protected behind admin authentication
+4. No sensitive payment data is stored (only method type, not credentials)

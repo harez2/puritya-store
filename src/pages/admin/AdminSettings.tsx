@@ -5,13 +5,14 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Store, Shield, Package } from 'lucide-react';
+import { Store, Shield, Package, MapPin } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface ProductSettings {
   sizesEnabled: boolean;
@@ -24,6 +25,7 @@ const defaultProductSettings: ProductSettings = {
 };
 
 export default function AdminSettings() {
+  const { settings, updateSetting } = useSiteSettings();
   const [productSettings, setProductSettings] = useState<ProductSettings>(defaultProductSettings);
   const [loading, setLoading] = useState(true);
 
@@ -173,6 +175,34 @@ export default function AdminSettings() {
 
           {/* SMS Notifications */}
           <SmsSettingsEditor />
+
+          {/* Order Tracking Settings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-primary" />
+                <CardTitle>Order Tracking</CardTitle>
+              </div>
+              <CardDescription>
+                Allow customers to track their orders using phone number or order number
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="orderTrackingEnabled">Enable Order Tracking</Label>
+                  <p className="text-sm text-muted-foreground">
+                    When enabled, customers can search for their orders on the /track-order page
+                  </p>
+                </div>
+                <Switch
+                  id="orderTrackingEnabled"
+                  checked={settings.order_tracking_enabled}
+                  onCheckedChange={(checked) => updateSetting('order_tracking_enabled', checked)}
+                />
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Security Settings */}
           <Card>

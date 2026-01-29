@@ -21,6 +21,8 @@ import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
+import { useOtpVerification } from '@/hooks/useOtpVerification';
+import OtpVerificationModal from '@/components/checkout/OtpVerificationModal';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -50,6 +52,9 @@ export default function Checkout() {
     initiateUddoktapayPayment,
   } = usePaymentGateway();
   const { sendOrderSms } = useSendOrderSms();
+  const { isOtpEnabled, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
+  
+  const [showOtpModal, setShowOtpModal] = useState(false);
   
   // Get enabled payment methods from settings
   const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
@@ -193,6 +198,22 @@ export default function Checkout() {
   const handleSubmitOrder = async () => {
     if (!validateForm()) return;
     
+    // Check if OTP verification is required
+    if (isOtpEnabled && !otpVerified) {
+      setShowOtpModal(true);
+      return;
+    }
+    
+    await processOrder();
+  };
+
+  const handleOtpVerified = (phone: string) => {
+    // After OTP verification, proceed with order
+    processOrder();
+  };
+
+  const processOrder = async () => {
+    if (!validateForm()) return;
     setIsSubmitting(true);
     
     try {
@@ -829,6 +850,14 @@ export default function Checkout() {
           </div>
         </motion.div>
       </div>
+
+      {/* OTP Verification Modal */}
+      <OtpVerificationModal
+        open={showOtpModal}
+        onOpenChange={setShowOtpModal}
+        onVerified={handleOtpVerified}
+        initialPhone={form.phone}
+      />
     </Layout>
   );
 }

@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { MessageSquare, Send, Loader2, RefreshCw, Wallet } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { MessageSquare, Send, Loader2, RefreshCw, Wallet, ShieldCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -23,6 +24,16 @@ interface SmsSettings {
   orderDeliveredTemplate: string;
 }
 
+interface OtpSettings {
+  otp_verification_enabled: boolean;
+  otp_provider: 'bulksmsbd' | 'reve_system';
+  otp_message_template: string;
+  otp_expiry_minutes: number;
+  reve_api_key: string;
+  reve_api_secret: string;
+  reve_sender_id: string;
+}
+
 const defaultSettings: SmsSettings = {
   enabled: true,
   apiKey: '',
@@ -36,8 +47,19 @@ const defaultSettings: SmsSettings = {
   orderDeliveredTemplate: 'Dear {customer_name}, your order #{order_number} has been delivered! Thank you for shopping with Puritya!',
 };
 
+const defaultOtpSettings: OtpSettings = {
+  otp_verification_enabled: false,
+  otp_provider: 'bulksmsbd',
+  otp_message_template: 'Your Puritya verification code is: {otp}. Valid for {minutes} minutes.',
+  otp_expiry_minutes: 5,
+  reve_api_key: '',
+  reve_api_secret: '',
+  reve_sender_id: '',
+};
+
 const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(_, ref) {
   const [settings, setSettings] = useState<SmsSettings>(defaultSettings);
+  const [otpSettings, setOtpSettings] = useState<OtpSettings>(defaultOtpSettings);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testPhone, setTestPhone] = useState('');
@@ -49,6 +71,7 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
 
   useEffect(() => {
     fetchSettings();
+    fetchOtpSettings();
   }, []);
 
   // Fetch balance when settings load or when custom API is toggled
@@ -133,10 +156,41 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
     }
   };
 
+  const fetchOtpSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'otp_settings')
+        .maybeSingle();
+
+      if (error) throw error;
+      if (data?.value && typeof data.value === 'object') {
+        const value = data.value as Record<string, unknown>;
+        setOtpSettings({
+          otp_verification_enabled: value.otp_verification_enabled === true,
+          otp_provider: (value.otp_provider as 'bulksmsbd' | 'reve_system') || defaultOtpSettings.otp_provider,
+          otp_message_template: typeof value.otp_message_template === 'string' 
+            ? value.otp_message_template 
+            : defaultOtpSettings.otp_message_template,
+          otp_expiry_minutes: typeof value.otp_expiry_minutes === 'number' 
+            ? value.otp_expiry_minutes 
+            : defaultOtpSettings.otp_expiry_minutes,
+          reve_api_key: typeof value.reve_api_key === 'string' ? value.reve_api_key : '',
+          reve_api_secret: typeof value.reve_api_secret === 'string' ? value.reve_api_secret : '',
+          reve_sender_id: typeof value.reve_sender_id === 'string' ? value.reve_sender_id : '',
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching OTP settings:', error);
+    }
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     try {
-      const { data: existing } = await supabase
+      // Save SMS settings
+      const { data: existingSms } = await supabase
         .from('site_settings')
         .select('id')
         .eq('key', 'sms_settings')
@@ -156,7 +210,7 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
       };
 
       let error;
-      if (existing) {
+      if (existingSms) {
         const result = await supabase
           .from('site_settings')
           .update({
@@ -178,15 +232,58 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
 
       if (error) throw error;
 
+      // Save OTP settings
+      const { data: existingOtp } = await supabase
+        .from('site_settings')
+        .select('id')
+        .eq('key', 'otp_settings')
+        .maybeSingle();
+
+      const otpValue = {
+        otp_verification_enabled: otpSettings.otp_verification_enabled,
+        otp_provider: otpSettings.otp_provider,
+        otp_message_template: otpSettings.otp_message_template,
+        otp_expiry_minutes: otpSettings.otp_expiry_minutes,
+        reve_api_key: otpSettings.reve_api_key,
+        reve_api_secret: otpSettings.reve_api_secret,
+        reve_sender_id: otpSettings.reve_sender_id,
+        // Include BulkSMSBD credentials from main settings if using that provider
+        bulksms_api_key: settings.apiKey,
+        bulksms_sender_id: settings.senderId,
+      };
+
+      let otpError;
+      if (existingOtp) {
+        const result = await supabase
+          .from('site_settings')
+          .update({
+            value: otpValue,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('key', 'otp_settings');
+        otpError = result.error;
+      } else {
+        const result = await supabase
+          .from('site_settings')
+          .insert({
+            key: 'otp_settings',
+            category: 'notifications',
+            value: otpValue,
+          });
+        otpError = result.error;
+      }
+
+      if (otpError) throw otpError;
+
       toast({
         title: 'Settings saved',
-        description: 'SMS settings have been updated successfully.',
+        description: 'SMS and OTP settings have been updated successfully.',
       });
     } catch (error) {
-      console.error('Error saving SMS settings:', error);
+      console.error('Error saving settings:', error);
       toast({
         title: 'Error',
-        description: 'Failed to save SMS settings.',
+        description: 'Failed to save settings.',
         variant: 'destructive',
       });
     } finally {
@@ -474,6 +571,120 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
               <p className="text-xs text-muted-foreground">
                 Send a test SMS using the order confirmation template
               </p>
+            </div>
+
+            {/* OTP Verification Section */}
+            <div className="space-y-4 pt-6 border-t">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold">OTP Verification</h3>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Require phone number verification via OTP before customers can place orders
+              </p>
+
+              <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label className="text-base font-medium">Enable OTP Verification</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Customers must verify their phone number to place orders
+                  </p>
+                </div>
+                <Switch
+                  checked={otpSettings.otp_verification_enabled}
+                  onCheckedChange={(checked) => setOtpSettings({ ...otpSettings, otp_verification_enabled: checked })}
+                />
+              </div>
+
+              {otpSettings.otp_verification_enabled && (
+                <div className="space-y-4">
+                  {/* OTP Provider Selection */}
+                  <div className="space-y-2">
+                    <Label>OTP Provider</Label>
+                    <Select
+                      value={otpSettings.otp_provider}
+                      onValueChange={(value: 'bulksmsbd' | 'reve_system') => 
+                        setOtpSettings({ ...otpSettings, otp_provider: value })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select OTP provider" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="bulksmsbd">BulkSMSBD (uses SMS settings above)</SelectItem>
+                        <SelectItem value="reve_system">Reve System</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Reve System Credentials */}
+                  {otpSettings.otp_provider === 'reve_system' && (
+                    <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                      <h4 className="font-medium">Reve System Credentials</h4>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="reveApiKey">API Key</Label>
+                          <Input
+                            id="reveApiKey"
+                            type="password"
+                            value={otpSettings.reve_api_key}
+                            onChange={(e) => setOtpSettings({ ...otpSettings, reve_api_key: e.target.value })}
+                            placeholder="Enter Reve System API key"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="reveApiSecret">API Secret</Label>
+                          <Input
+                            id="reveApiSecret"
+                            type="password"
+                            value={otpSettings.reve_api_secret}
+                            onChange={(e) => setOtpSettings({ ...otpSettings, reve_api_secret: e.target.value })}
+                            placeholder="Enter API secret (optional)"
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="reveSenderId">Sender ID</Label>
+                        <Input
+                          id="reveSenderId"
+                          value={otpSettings.reve_sender_id}
+                          onChange={(e) => setOtpSettings({ ...otpSettings, reve_sender_id: e.target.value })}
+                          placeholder="Enter Reve System sender ID"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* OTP Message Template */}
+                  <div className="space-y-2">
+                    <Label htmlFor="otpTemplate">OTP Message Template</Label>
+                    <Textarea
+                      id="otpTemplate"
+                      value={otpSettings.otp_message_template}
+                      onChange={(e) => setOtpSettings({ ...otpSettings, otp_message_template: e.target.value })}
+                      placeholder="Enter OTP message template..."
+                      rows={2}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Available placeholders: {'{otp}'}, {'{minutes}'}
+                    </p>
+                  </div>
+
+                  {/* OTP Expiry Time */}
+                  <div className="space-y-2">
+                    <Label htmlFor="otpExpiry">OTP Expiry Time (minutes)</Label>
+                    <Input
+                      id="otpExpiry"
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={otpSettings.otp_expiry_minutes}
+                      onChange={(e) => setOtpSettings({ ...otpSettings, otp_expiry_minutes: parseInt(e.target.value) || 5 })}
+                      className="w-32"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </>
         )}

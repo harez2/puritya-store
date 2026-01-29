@@ -22,6 +22,8 @@ import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
+import { useOtpVerification } from '@/hooks/useOtpVerification';
+import OtpVerificationModal from '@/components/checkout/OtpVerificationModal';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -89,6 +91,9 @@ export default function QuickCheckoutModal({
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+
+  const { isOtpEnabled, isVerified: otpVerified } = useOtpVerification();
 
   // Get enabled shipping options from settings
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
@@ -221,6 +226,23 @@ export default function QuickCheckoutModal({
   const handleSubmitOrder = async () => {
     if (!validateForm()) return;
 
+    // Check if OTP verification is required
+    if (isOtpEnabled && !otpVerified) {
+      setShowOtpModal(true);
+      return;
+    }
+
+    await processOrder();
+  };
+
+  const handleOtpVerified = (phone: string) => {
+    setShowOtpModal(false);
+    // After OTP verification, proceed with order
+    processOrder();
+  };
+
+  const processOrder = async () => {
+    if (!validateForm()) return;
     setIsSubmitting(true);
 
     try {
@@ -717,6 +739,14 @@ export default function QuickCheckoutModal({
           )}
         </AnimatePresence>
       </DialogContent>
+
+      {/* OTP Verification Modal */}
+      <OtpVerificationModal
+        open={showOtpModal}
+        onOpenChange={setShowOtpModal}
+        onVerified={handleOtpVerified}
+        initialPhone={form.phone}
+      />
     </Dialog>
   );
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag, Pencil } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag, Pencil, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -224,6 +224,74 @@ export function IncompleteOrdersTab() {
     setEndDate(undefined);
   };
 
+  const exportToCSV = () => {
+    if (filteredOrders.length === 0) {
+      toast.error('No orders to export');
+      return;
+    }
+
+    const headers = [
+      'Date',
+      'Time',
+      'Customer Name',
+      'Phone',
+      'Email',
+      'Address',
+      'Shipping Location',
+      'Payment Method',
+      'Items',
+      'Item Details',
+      'Subtotal',
+      'Shipping Fee',
+      'Total',
+      'Source',
+      'Status',
+      'Notes',
+    ];
+
+    const csvRows = filteredOrders.map(order => {
+      const itemsSummary = order.cart_items.map(item => 
+        `${item.product_name} (Qty: ${item.quantity}${item.size ? `, Size: ${item.size}` : ''}${item.color ? `, Color: ${item.color}` : ''}) - ৳${item.price}`
+      ).join(' | ');
+
+      return [
+        format(new Date(order.created_at), 'yyyy-MM-dd'),
+        format(new Date(order.created_at), 'HH:mm:ss'),
+        order.full_name || '',
+        order.phone || '',
+        order.email || '',
+        order.address?.replace(/,/g, ';') || '',
+        order.shipping_location || '',
+        order.payment_method || '',
+        order.cart_items.length.toString(),
+        itemsSummary.replace(/,/g, ';'),
+        order.subtotal.toString(),
+        order.shipping_fee.toString(),
+        order.total.toString(),
+        order.source || '',
+        order.status || '',
+        order.notes?.replace(/,/g, ';').replace(/\n/g, ' ') || '',
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...csvRows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ].join('\n');
+
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `incomplete-orders-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exported ${filteredOrders.length} orders to CSV`);
+  };
+
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-BD', {
       style: 'currency',
@@ -317,6 +385,11 @@ export function IncompleteOrdersTab() {
             </Button>
           )}
         </div>
+
+        <Button variant="outline" onClick={exportToCSV} disabled={filteredOrders.length === 0}>
+          <Download className="h-4 w-4 mr-2" />
+          Export CSV
+        </Button>
       </div>
 
       {/* Results count */}

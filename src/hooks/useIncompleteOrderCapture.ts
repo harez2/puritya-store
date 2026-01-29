@@ -41,12 +41,30 @@ function getOrCreateSessionId(): string {
   return sessionId;
 }
 
+function createEphemeralSessionId(): string {
+  return crypto.randomUUID();
+}
+
 export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
-  const sessionId = useRef(getOrCreateSessionId());
+  // IMPORTANT:
+  // - checkout: stable session id (so the same abandoned checkout updates one row)
+  // - quick_buy: new session id per attempt (so quick orders don't overwrite previous ones)
+  const sessionId = useRef(source === 'checkout' ? getOrCreateSessionId() : createEphemeralSessionId());
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedData = useRef<string>('');
   const incompleteOrderId = useRef<string | null>(null);
   const pendingData = useRef<IncompleteOrderData | null>(null);
+
+  const rotateSession = useCallback(() => {
+    const newSessionId = crypto.randomUUID();
+    if (source === 'checkout') {
+      sessionStorage.setItem(SESSION_ID_KEY, newSessionId);
+    }
+    sessionId.current = newSessionId;
+    incompleteOrderId.current = null;
+    lastSavedData.current = '';
+    pendingData.current = null;
+  }, [source]);
 
   const saveIncompleteOrder = useCallback(async (data: IncompleteOrderData) => {
     // Only save if we have at least phone OR name
@@ -238,14 +256,12 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
       lastSavedData.current = '';
       pendingData.current = null;
       
-      // Generate new session ID for future orders
-      const newSessionId = crypto.randomUUID();
-      sessionStorage.setItem(SESSION_ID_KEY, newSessionId);
-      sessionId.current = newSessionId;
+       // Generate new session ID for future orders
+       rotateSession();
     } catch (error) {
       console.error('[IncompleteOrder] Error in markAsConverted:', error);
     }
-  }, []);
+  }, [rotateSession]);
 
   // Save on page unload
   useEffect(() => {
@@ -309,6 +325,7 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
     captureFormData,
     markAsConverted,
     saveImmediately,
+    rotateSession,
     sessionId: sessionId.current,
   };
 }

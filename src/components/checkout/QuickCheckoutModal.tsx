@@ -95,7 +95,7 @@ export default function QuickCheckoutModal({
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const { isOtpEnabled, isVerified: otpVerified } = useOtpVerification();
-  const { captureFormData, markAsConverted, saveImmediately } = useIncompleteOrderCapture('quick_buy');
+  const { captureFormData, markAsConverted, saveImmediately, rotateSession } = useIncompleteOrderCapture('quick_buy');
 
   // Get enabled shipping options from settings
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
@@ -191,6 +191,9 @@ export default function QuickCheckoutModal({
   // Track begin_checkout when modal opens
   useEffect(() => {
     if (open) {
+      // Ensure each quick order attempt gets its own session so saves don't overwrite
+      // previous incomplete orders.
+      rotateSession();
       trackBeginCheckout([getDataLayerProduct()], subtotal, 'BDT');
     }
   }, [open]);
@@ -254,11 +257,14 @@ export default function QuickCheckoutModal({
   };
 
   // Save before modal closes
-  const handleClose = () => {
+  const handleClose = async () => {
     // Save any pending data before closing
     if (form.full_name || form.phone) {
-      saveImmediately();
+      await saveImmediately();
     }
+    // Rotate so the next open starts a fresh incomplete order
+    rotateSession();
+
     onOpenChange(false);
     // Reset state after animation
     setTimeout(() => {

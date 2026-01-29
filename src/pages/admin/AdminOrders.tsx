@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
 import { IncompleteOrdersTab } from '@/components/admin/IncompleteOrdersTab';
+import { EditOrderDialog } from '@/components/admin/EditOrderDialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -115,6 +116,8 @@ export default function AdminOrders() {
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
   const [bulkNotes, setBulkNotes] = useState('');
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
+  const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     fetchOrders();
@@ -833,6 +836,13 @@ export default function AdminOrders() {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => {
+                                setEditingOrder(order);
+                                setIsEditOrderOpen(true);
+                              }}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit Order
+                              </DropdownMenuItem>
                               {statusOptions.map((option) => (
                                 <DropdownMenuItem
                                   key={option.value}
@@ -1124,6 +1134,14 @@ export default function AdminOrders() {
         open={isManualOrderOpen}
         onOpenChange={setIsManualOrderOpen}
         onOrderCreated={fetchOrders}
+      />
+
+      {/* Edit Order Dialog */}
+      <EditOrderDialog
+        order={editingOrder}
+        open={isEditOrderOpen}
+        onOpenChange={setIsEditOrderOpen}
+        onSaved={fetchOrders}
       />
     </AdminLayout>
   );

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface OtpSettings {
   otp_verification_enabled: boolean;
+  otp_bypass_logged_in_users: boolean;
   otp_provider: 'bulksmsbd' | 'reve_system';
   otp_message_template: string;
   otp_expiry_minutes: number;
@@ -17,6 +17,7 @@ interface OtpSettings {
 
 interface UseOtpVerificationReturn {
   isOtpEnabled: boolean;
+  isOtpRequired: boolean;
   isVerified: boolean;
   verifiedPhone: string | null;
   loading: boolean;
@@ -52,6 +53,8 @@ export function useOtpVerification(): UseOtpVerificationReturn {
   const [error, setError] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [userProfile, setUserProfile] = useState<{ phone: string | null } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   // Check if already verified in this session
   useEffect(() => {
@@ -60,6 +63,42 @@ export function useOtpVerification(): UseOtpVerificationReturn {
       setIsVerified(true);
       setVerifiedPhone(storedPhone);
     }
+  }, []);
+
+  // Check auth status and fetch user profile
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+      
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        
+        setUserProfile(profile);
+      }
+    };
+    
+    checkAuth();
+    
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setIsLoggedIn(!!session?.user);
+      if (session?.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('phone')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        setUserProfile(profile);
+      } else {
+        setUserProfile(null);
+      }
+    });
+    
+    return () => subscription.unsubscribe();
   }, []);
 
   // Fetch OTP settings
@@ -78,6 +117,7 @@ export function useOtpVerification(): UseOtpVerificationReturn {
           const value = data.value as Record<string, unknown>;
           setOtpSettings({
             otp_verification_enabled: value.otp_verification_enabled === true,
+            otp_bypass_logged_in_users: value.otp_bypass_logged_in_users !== false,
             otp_provider: (value.otp_provider as 'bulksmsbd' | 'reve_system') || 'bulksmsbd',
             otp_message_template: (value.otp_message_template as string) || 'Your verification code is: {otp}',
             otp_expiry_minutes: (value.otp_expiry_minutes as number) || 5,
@@ -90,6 +130,7 @@ export function useOtpVerification(): UseOtpVerificationReturn {
         } else {
           setOtpSettings({
             otp_verification_enabled: false,
+            otp_bypass_logged_in_users: true,
             otp_provider: 'bulksmsbd',
             otp_message_template: 'Your verification code is: {otp}',
             otp_expiry_minutes: 5,
@@ -99,6 +140,7 @@ export function useOtpVerification(): UseOtpVerificationReturn {
         console.error('Error fetching OTP settings:', err);
         setOtpSettings({
           otp_verification_enabled: false,
+          otp_bypass_logged_in_users: true,
           otp_provider: 'bulksmsbd',
           otp_message_template: 'Your verification code is: {otp}',
           otp_expiry_minutes: 5,
@@ -210,10 +252,15 @@ export function useOtpVerification(): UseOtpVerificationReturn {
     sessionStorage.removeItem(VERIFIED_KEY);
   }, []);
 
+  // Calculate if OTP is actually required (considering bypass for logged-in users)
+  const canBypass = otpSettings?.otp_bypass_logged_in_users && isLoggedIn && !!userProfile?.phone;
+  const isOtpRequired = (otpSettings?.otp_verification_enabled ?? false) && !canBypass && !isVerified;
+
   return {
     isOtpEnabled: otpSettings?.otp_verification_enabled ?? false,
-    isVerified,
-    verifiedPhone,
+    isOtpRequired,
+    isVerified: isVerified || canBypass,
+    verifiedPhone: verifiedPhone || (canBypass ? userProfile?.phone : null),
     loading,
     sending,
     verifying,

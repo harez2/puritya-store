@@ -26,6 +26,7 @@ interface SmsSettings {
 
 interface OtpSettings {
   otp_verification_enabled: boolean;
+  otp_bypass_logged_in_users: boolean;
   otp_provider: 'bulksmsbd' | 'reve_system';
   otp_message_template: string;
   otp_expiry_minutes: number;
@@ -49,6 +50,7 @@ const defaultSettings: SmsSettings = {
 
 const defaultOtpSettings: OtpSettings = {
   otp_verification_enabled: false,
+  otp_bypass_logged_in_users: true,
   otp_provider: 'bulksmsbd',
   otp_message_template: 'Your Puritya verification code is: {otp}. Valid for {minutes} minutes.',
   otp_expiry_minutes: 5,
@@ -169,6 +171,7 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
         const value = data.value as Record<string, unknown>;
         setOtpSettings({
           otp_verification_enabled: value.otp_verification_enabled === true,
+          otp_bypass_logged_in_users: value.otp_bypass_logged_in_users !== false,
           otp_provider: (value.otp_provider as 'bulksmsbd' | 'reve_system') || defaultOtpSettings.otp_provider,
           otp_message_template: typeof value.otp_message_template === 'string' 
             ? value.otp_message_template 
@@ -241,6 +244,7 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
 
       const otpValue = {
         otp_verification_enabled: otpSettings.otp_verification_enabled,
+        otp_bypass_logged_in_users: otpSettings.otp_bypass_logged_in_users,
         otp_provider: otpSettings.otp_provider,
         otp_message_template: otpSettings.otp_message_template,
         otp_expiry_minutes: otpSettings.otp_expiry_minutes,
@@ -598,6 +602,20 @@ const SmsSettingsEditor = forwardRef<HTMLDivElement>(function SmsSettingsEditor(
 
               {otpSettings.otp_verification_enabled && (
                 <div className="space-y-4">
+                  {/* Bypass for Logged-in Users */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
+                    <div className="space-y-0.5">
+                      <Label className="text-base font-medium">Bypass for Logged-in Users</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Skip OTP verification for logged-in users with a phone number in their profile
+                      </p>
+                    </div>
+                    <Switch
+                      checked={otpSettings.otp_bypass_logged_in_users}
+                      onCheckedChange={(checked) => setOtpSettings({ ...otpSettings, otp_bypass_logged_in_users: checked })}
+                    />
+                  </div>
+
                   {/* OTP Provider Selection */}
                   <div className="space-y-2">
                     <Label>OTP Provider</Label>

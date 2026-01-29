@@ -21,6 +21,7 @@ import { usePaymentGateway } from '@/hooks/usePaymentGateway';
 import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
+import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -223,6 +224,21 @@ export default function QuickCheckoutModal({
     setIsSubmitting(true);
 
     try {
+      // Check if customer is blocked
+      const blockCheck = await checkIfCustomerBlocked({
+        email: form.email.trim() || user?.email,
+        phone: form.phone.trim(),
+      });
+
+      if (blockCheck.isBlocked) {
+        toast({
+          title: "Order Blocked",
+          description: "We're unable to process your order. Please contact support for assistance.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
       const shippingAddress = {
         full_name: form.full_name.trim(),
         phone: form.phone.trim(),

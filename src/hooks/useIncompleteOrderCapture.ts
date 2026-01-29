@@ -297,17 +297,12 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
         };
 
         // Try to save via sendBeacon (more reliable on page close)
+        // Use POST without on_conflict to always create a new record
         const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/incomplete_orders`;
-        const headers = {
-          'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          'Prefer': 'return=minimal',
-        };
         
         const blob = new Blob([JSON.stringify(orderData)], { type: 'application/json' });
-        navigator.sendBeacon(url + '?' + new URLSearchParams({ 
-          on_conflict: 'session_id' 
-        }).toString(), blob);
+        // sendBeacon doesn't support custom headers, so we add apikey as query param
+        navigator.sendBeacon(url + '?apikey=' + import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, blob);
       }
     };
 

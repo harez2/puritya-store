@@ -54,7 +54,7 @@ export default function Checkout() {
   } = usePaymentGateway();
   const { sendOrderSms } = useSendOrderSms();
   const { isOtpEnabled, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
-  const { captureFormData, markAsConverted, saveImmediately } = useIncompleteOrderCapture('checkout');
+  const { captureFormData, markAsConverted, saveImmediately, rotateSession } = useIncompleteOrderCapture('checkout');
   
   const [showOtpModal, setShowOtpModal] = useState(false);
   
@@ -106,6 +106,12 @@ export default function Checkout() {
       index,
     }));
   };
+
+  // Rotate session on mount so each checkout visit creates a new incomplete order
+  // This ensures guest orders are captured separately
+  useEffect(() => {
+    rotateSession();
+  }, []);
 
   // Track InitiateCheckout/begin_checkout when page loads with items
   useEffect(() => {

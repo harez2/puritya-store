@@ -95,7 +95,7 @@ export default function QuickCheckoutModal({
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const { isOtpEnabled, isVerified: otpVerified } = useOtpVerification();
-  const { captureFormData, markAsConverted } = useIncompleteOrderCapture('quick_buy');
+  const { captureFormData, markAsConverted, saveImmediately } = useIncompleteOrderCapture('quick_buy');
 
   // Get enabled shipping options from settings
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
@@ -215,6 +215,11 @@ export default function QuickCheckoutModal({
       total,
       source: 'quick_buy',
     });
+  };
+
+  // Save immediately when user leaves a field
+  const handleInputBlur = () => {
+    saveImmediately();
   };
 
   const validateForm = () => {
@@ -529,6 +534,7 @@ export default function QuickCheckoutModal({
                     name="full_name"
                     value={form.full_name}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="Enter your full name"
                     maxLength={100}
                   />
@@ -541,6 +547,7 @@ export default function QuickCheckoutModal({
                     name="phone"
                     value={form.phone}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="01XXXXXXXXX"
                     maxLength={15}
                   />
@@ -556,6 +563,7 @@ export default function QuickCheckoutModal({
                       type="email"
                       value={form.email}
                       onChange={handleInputChange}
+                      onBlur={handleInputBlur}
                       placeholder="your@email.com"
                       maxLength={100}
                     />
@@ -570,6 +578,7 @@ export default function QuickCheckoutModal({
                     name="address"
                     value={form.address}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="House, Road, Area, City"
                     rows={2}
                     maxLength={500}
@@ -627,6 +636,7 @@ export default function QuickCheckoutModal({
                     name="notes"
                     value={form.notes}
                     onChange={handleInputChange}
+                    onBlur={handleInputBlur}
                     placeholder="Any special instructions"
                     maxLength={200}
                   />

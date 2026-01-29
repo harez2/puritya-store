@@ -258,6 +258,77 @@ export type Database = {
         }
         Relationships: []
       }
+      incomplete_orders: {
+        Row: {
+          address: string | null
+          cart_items: Json | null
+          converted_order_id: string | null
+          created_at: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          last_updated_at: string | null
+          notes: string | null
+          payment_method: string | null
+          phone: string | null
+          session_id: string
+          shipping_fee: number | null
+          shipping_location: string | null
+          source: string | null
+          status: string | null
+          subtotal: number | null
+          total: number | null
+        }
+        Insert: {
+          address?: string | null
+          cart_items?: Json | null
+          converted_order_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_updated_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          session_id: string
+          shipping_fee?: number | null
+          shipping_location?: string | null
+          source?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+        }
+        Update: {
+          address?: string | null
+          cart_items?: Json | null
+          converted_order_id?: string | null
+          created_at?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          last_updated_at?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          phone?: string | null
+          session_id?: string
+          shipping_fee?: number | null
+          shipping_location?: string | null
+          source?: string | null
+          status?: string | null
+          subtotal?: number | null
+          total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incomplete_orders_converted_order_id_fkey"
+            columns: ["converted_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       landing_page_analytics: {
         Row: {
           created_at: string

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
+import { IncompleteOrdersTab } from '@/components/admin/IncompleteOrdersTab';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -590,9 +592,16 @@ export default function AdminOrders() {
           </Button>
         </div>
 
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
+        <Tabs defaultValue="orders" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="orders">Order List</TabsTrigger>
+            <TabsTrigger value="incomplete">Incomplete Orders</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="orders">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <div className="relative flex-1 max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -845,6 +854,20 @@ export default function AdminOrders() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="incomplete">
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">Incomplete Orders</h2>
+                <p className="text-sm text-muted-foreground">Abandoned checkouts that can be converted to orders</p>
+              </CardHeader>
+              <CardContent>
+                <IncompleteOrdersTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Order Details Dialog */}

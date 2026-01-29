@@ -22,6 +22,7 @@ import { PaymentMethodIcon } from '@/components/checkout/PaymentMethodIcon';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
+import { useIncompleteOrderCapture } from '@/hooks/useIncompleteOrderCapture';
 import OtpVerificationModal from '@/components/checkout/OtpVerificationModal';
 import {
   trackBeginCheckout,
@@ -53,6 +54,7 @@ export default function Checkout() {
   } = usePaymentGateway();
   const { sendOrderSms } = useSendOrderSms();
   const { isOtpEnabled, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
+  const { captureFormData, markAsConverted } = useIncompleteOrderCapture('checkout');
   
   const [showOtpModal, setShowOtpModal] = useState(false);
   
@@ -155,7 +157,35 @@ export default function Checkout() {
   }, [paymentMethod]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const newForm = { ...form, [e.target.name]: e.target.value };
+    setForm(newForm);
+    
+    // Capture incomplete order data
+    captureFormData({
+      full_name: newForm.full_name,
+      phone: newForm.phone,
+      email: newForm.email,
+      address: newForm.address,
+      shipping_location: shippingLocation,
+      payment_method: paymentMethod,
+      notes: newForm.notes,
+      cart_items: items.map(item => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        product: item.product ? {
+          id: item.product.id,
+          name: item.product.name,
+          price: Number(item.product.price),
+          images: item.product.images,
+        } : undefined,
+      })),
+      subtotal,
+      shipping_fee: shippingFee,
+      total,
+      source: 'checkout',
+    });
   };
 
   const validateForm = () => {
@@ -329,6 +359,9 @@ export default function Checkout() {
       if (itemsError) throw itemsError;
 
       setOrderNumber(savedOrderNumber);
+      
+      // Mark incomplete order as converted
+      await markAsConverted(order.id);
 
       // Handle gateway payments - redirect to payment provider
       if (paymentMethod === 'bkash_gateway') {

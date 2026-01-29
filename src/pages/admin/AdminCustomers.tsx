@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight, Ban, Trash2 } from 'lucide-react';
 import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,11 +33,23 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { BlockCustomerDialog } from '@/components/admin/BlockCustomerDialog';
+import { BlockedCustomersManager } from '@/components/admin/BlockedCustomersManager';
 
 interface Profile {
   id: string;
@@ -71,6 +84,10 @@ export default function AdminCustomers() {
   const [dateTo, setDateTo] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
+  const [blockPrefillData, setBlockPrefillData] = useState<{ email?: string; phone?: string; name?: string } | undefined>();
+  const [deleteCustomerId, setDeleteCustomerId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('customers');
 
   useEffect(() => {
     fetchCustomers();
@@ -245,6 +262,45 @@ export default function AdminCustomers() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleBlockCustomer = (customer: CustomerWithRole) => {
+    setBlockPrefillData({
+      phone: customer.phone || undefined,
+      name: customer.full_name || undefined,
+    });
+    setIsBlockDialogOpen(true);
+  };
+
+  const handleDeleteCustomer = async () => {
+    if (!deleteCustomerId) return;
+    
+    const customer = customers.find(c => c.id === deleteCustomerId);
+    if (!customer) return;
+
+    // Prevent self-deletion
+    if (customer.user_id === currentUser?.id) {
+      toast.error("You cannot delete your own account");
+      setDeleteCustomerId(null);
+      return;
+    }
+
+    try {
+      // Delete profile (the user auth record will remain)
+      const { error } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', deleteCustomerId);
+
+      if (error) throw error;
+
+      toast.success('Customer profile deleted');
+      setDeleteCustomerId(null);
+      fetchCustomers();
+    } catch (error: any) {
+      console.error('Error deleting customer:', error);
+      toast.error(error.message || 'Failed to delete customer');
+    }
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -259,6 +315,13 @@ export default function AdminCustomers() {
           </Button>
         </div>
 
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="customers">All Customers</TabsTrigger>
+            <TabsTrigger value="blocked">Blocked Customers</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="customers" className="mt-4">
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-4">
@@ -437,6 +500,21 @@ export default function AdminCustomers() {
                                   </>
                                 )}
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                onClick={() => handleBlockCustomer(customer)}
+                              >
+                                <Ban className="h-4 w-4 mr-2" />
+                                Block Customer
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => setDeleteCustomerId(customer.id)}
+                                disabled={customer.user_id === currentUser?.id}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Profile
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -516,6 +594,12 @@ export default function AdminCustomers() {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          <TabsContent value="blocked" className="mt-4">
+            <BlockedCustomersManager />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Customer Details Dialog */}
@@ -563,6 +647,37 @@ export default function AdminCustomers() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Block Customer Dialog */}
+      <BlockCustomerDialog
+        open={isBlockDialogOpen}
+        onOpenChange={setIsBlockDialogOpen}
+        onBlocked={() => {
+          setBlockPrefillData(undefined);
+        }}
+        prefillData={blockPrefillData}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteCustomerId} onOpenChange={() => setDeleteCustomerId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Customer Profile?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the customer's profile data. Their authentication account will remain, but all profile information will be removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteCustomer}
+            >
+              Delete Profile
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

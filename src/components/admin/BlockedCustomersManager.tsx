@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Search, Ban, ShieldCheck, Trash2, Plus, AlertTriangle } from 'lucide-react';
+import { Search, Ban, ShieldCheck, Trash2, Plus, AlertTriangle, MessageSquare, Save } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -32,6 +34,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BlockCustomerDialog } from './BlockCustomerDialog';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 interface BlockedCustomer {
   id: string;
@@ -45,12 +48,32 @@ interface BlockedCustomer {
 }
 
 export function BlockedCustomersManager() {
+  const { settings, updateSetting } = useSiteSettings();
   const [blockedCustomers, setBlockedCustomers] = useState<BlockedCustomer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [isBlockDialogOpen, setIsBlockDialogOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [toggleId, setToggleId] = useState<string | null>(null);
+  const [blockedMessage, setBlockedMessage] = useState(settings.blocked_message || '');
+  const [savingMessage, setSavingMessage] = useState(false);
+
+  useEffect(() => {
+    setBlockedMessage(settings.blocked_message || '');
+  }, [settings.blocked_message]);
+
+  const handleSaveBlockedMessage = async () => {
+    setSavingMessage(true);
+    try {
+      await updateSetting('blocked_message', blockedMessage);
+      toast.success('Blocked message updated');
+    } catch (error) {
+      console.error('Error saving blocked message:', error);
+      toast.error('Failed to save blocked message');
+    } finally {
+      setSavingMessage(false);
+    }
+  };
 
   useEffect(() => {
     fetchBlockedCustomers();
@@ -129,8 +152,39 @@ export function BlockedCustomersManager() {
   const activeBlocks = blockedCustomers.filter(c => c.is_active).length;
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
+    <div className="space-y-6">
+      {/* Blocked Message Settings */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Blocked Customer Message
+          </CardTitle>
+          <CardDescription>
+            This message is shown to blocked customers when they try to checkout.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="blockedMessage">Message</Label>
+            <Textarea
+              id="blockedMessage"
+              value={blockedMessage}
+              onChange={(e) => setBlockedMessage(e.target.value)}
+              placeholder="Enter the message to show blocked customers..."
+              rows={3}
+            />
+          </div>
+          <Button onClick={handleSaveBlockedMessage} disabled={savingMessage}>
+            <Save className="h-4 w-4 mr-2" />
+            {savingMessage ? 'Saving...' : 'Save Message'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Blocked Customers List */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
         <div>
           <CardTitle className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-destructive" />
@@ -325,5 +379,6 @@ export function BlockedCustomersManager() {
         </AlertDialog>
       </CardContent>
     </Card>
+    </div>
   );
 }

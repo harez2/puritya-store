@@ -23,6 +23,7 @@ import { trackFacebookEvent, FacebookEvents } from '@/lib/facebook-pixel';
 import { getUtmParams, clearUtmParams } from '@/hooks/useUtmTracking';
 import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
+import { useIncompleteOrderCapture } from '@/hooks/useIncompleteOrderCapture';
 import OtpVerificationModal from '@/components/checkout/OtpVerificationModal';
 import {
   trackBeginCheckout,
@@ -94,6 +95,7 @@ export default function QuickCheckoutModal({
   const [showOtpModal, setShowOtpModal] = useState(false);
 
   const { isOtpEnabled, isVerified: otpVerified } = useOtpVerification();
+  const { captureFormData, markAsConverted } = useIncompleteOrderCapture('quick_buy');
 
   // Get enabled shipping options from settings
   const shippingOptions = (settings.shipping_options || []).filter(opt => opt.enabled);
@@ -184,7 +186,35 @@ export default function QuickCheckoutModal({
   }, [paymentMethod]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const newForm = { ...form, [e.target.name]: e.target.value };
+    setForm(newForm);
+    
+    // Capture incomplete order data
+    captureFormData({
+      full_name: newForm.full_name,
+      phone: newForm.phone,
+      email: newForm.email,
+      address: newForm.address,
+      shipping_location: selectedShippingOption?.name,
+      payment_method: paymentMethod,
+      notes: newForm.notes,
+      cart_items: [{
+        product_id: product.id,
+        quantity,
+        size,
+        color,
+        product: {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          images: product.images,
+        },
+      }],
+      subtotal,
+      shipping_fee: shippingFee,
+      total,
+      source: 'quick_buy',
+    });
   };
 
   const validateForm = () => {
@@ -356,6 +386,9 @@ export default function QuickCheckoutModal({
       if (itemsError) throw itemsError;
 
       savedOrderDetails.orderNumber = order.order_number;
+      
+      // Mark incomplete order as converted
+      await markAsConverted(order.id);
 
       // Handle UddoktaPay payment gateway (works for both logged-in and guest users)
       if (paymentMethod === 'uddoktapay') {

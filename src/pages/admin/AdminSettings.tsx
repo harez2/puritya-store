@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Store, Shield, Package, MapPin } from 'lucide-react';
+import { Store, Shield, Package, MapPin, Ban, Users, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -13,6 +13,7 @@ import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { Link } from 'react-router-dom';
 
 interface ProductSettings {
   sizesEnabled: boolean;
@@ -215,10 +216,73 @@ export default function AdminSettings() {
                 Manage security and access settings
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Security settings coming soon...
-              </p>
+            <CardContent className="space-y-6">
+              {/* Customer Blocking */}
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-destructive/10 rounded-lg">
+                    <Ban className="h-5 w-5 text-destructive" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium">Customer Blocking</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Block customers by phone, email, IP address, or device
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={settings.blocking_enabled}
+                    onCheckedChange={(checked) => updateSetting('blocking_enabled', checked)}
+                  />
+                  <Link to="/admin/customers">
+                    <Button variant="outline" size="sm">
+                      Manage
+                      <ExternalLink className="h-3 w-3 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Guest Checkout */}
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="guestCheckout">Allow Guest Checkout</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Customers can checkout without creating an account
+                  </p>
+                </div>
+                <Switch
+                  id="guestCheckout"
+                  checked={true}
+                  disabled
+                />
+              </div>
+
+              <Separator />
+
+              {/* Roles & Permissions */}
+              <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 bg-primary/10 rounded-lg">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-base font-medium">Roles & Permissions</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Manage admin users and their access levels
+                    </p>
+                  </div>
+                </div>
+                <Link to="/admin/roles">
+                  <Button variant="outline" size="sm">
+                    Manage
+                    <ExternalLink className="h-3 w-3 ml-2" />
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

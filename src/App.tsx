@@ -25,6 +25,7 @@ import Wishlist from "./pages/Wishlist";
 import Checkout from "./pages/Checkout";
 import PaymentCallback from "./pages/PaymentCallback";
 import NotFound from "./pages/NotFound";
+import OrderTracking from "./pages/OrderTracking";
 import ScrollToTop from "./components/ScrollToTop";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminProducts from "./pages/admin/AdminProducts";
@@ -93,6 +94,7 @@ const App = () => (
                         <Route path="/wishlist" element={<Wishlist />} />
                         <Route path="/checkout" element={<Checkout />} />
                         <Route path="/payment/callback" element={<PaymentCallback />} />
+                        <Route path="/track-order" element={<OrderTracking />} />
                         <Route path="/blog" element={<Blog />} />
                         <Route path="/blog/:slug" element={<BlogDetail />} />
                         {/* Admin Routes */}

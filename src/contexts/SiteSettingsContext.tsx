@@ -182,6 +182,9 @@ export interface SiteSettings {
   blocked_message: string;
   blocking_enabled: boolean;
 
+  // Order Tracking Settings
+  order_tracking_enabled: boolean;
+
   // Global SEO Settings
   seo_title_template: string;
   seo_default_description: string;
@@ -318,6 +321,8 @@ const defaultSettings: SiteSettings = {
   // Blocked Customer Settings
   blocked_message: "We're unable to process your order. Please contact support for assistance.",
   blocking_enabled: true,
+  // Order Tracking Settings
+  order_tracking_enabled: true,
   // Global SEO defaults
   seo_title_template: '{page} | {store}',
   seo_default_description: '',

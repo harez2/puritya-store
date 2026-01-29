@@ -59,6 +59,45 @@ export type Database = {
         }
         Relationships: []
       }
+      blocked_customers: {
+        Row: {
+          blocked_at: string
+          blocked_by: string | null
+          created_at: string
+          device_id: string | null
+          email: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          phone: string | null
+          reason: string
+        }
+        Insert: {
+          blocked_at?: string
+          blocked_by?: string | null
+          created_at?: string
+          device_id?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          reason: string
+        }
+        Update: {
+          blocked_at?: string
+          blocked_by?: string | null
+          created_at?: string
+          device_id?: string | null
+          email?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          phone?: string | null
+          reason?: string
+        }
+        Relationships: []
+      }
       blog_categories: {
         Row: {
           created_at: string

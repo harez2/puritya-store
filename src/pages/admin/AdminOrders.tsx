@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -111,6 +112,7 @@ export default function AdminOrders() {
   const [isBulkUpdateOpen, setIsBulkUpdateOpen] = useState(false);
   const [bulkNewStatus, setBulkNewStatus] = useState<string>('');
   const [bulkNotes, setBulkNotes] = useState('');
+  const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -577,9 +579,15 @@ export default function AdminOrders() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold">Orders</h1>
-          <p className="text-muted-foreground">View and manage customer orders</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold">Orders</h1>
+            <p className="text-muted-foreground">View and manage customer orders</p>
+          </div>
+          <Button onClick={() => setIsManualOrderOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Order
+          </Button>
         </div>
 
         <Card>
@@ -1087,6 +1095,13 @@ export default function AdminOrders() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Manual Order Dialog */}
+      <ManualOrderDialog
+        open={isManualOrderOpen}
+        onOpenChange={setIsManualOrderOpen}
+        onOrderCreated={fetchOrders}
+      />
     </AdminLayout>
   );
 }

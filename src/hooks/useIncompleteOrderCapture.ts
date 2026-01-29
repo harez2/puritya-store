@@ -30,7 +30,7 @@ interface IncompleteOrderData {
 }
 
 const SESSION_ID_KEY = 'incomplete_order_session_id';
-const DEBOUNCE_DELAY = 2000; // 2 seconds
+const DEBOUNCE_DELAY = 1500; // 1.5 seconds for faster capture
 
 function getOrCreateSessionId(): string {
   let sessionId = sessionStorage.getItem(SESSION_ID_KEY);
@@ -43,13 +43,15 @@ function getOrCreateSessionId(): string {
 
 export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
   const sessionId = useRef(getOrCreateSessionId());
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastSavedData = useRef<string>('');
   const incompleteOrderId = useRef<string | null>(null);
+  const pendingData = useRef<IncompleteOrderData | null>(null);
 
   const saveIncompleteOrder = useCallback(async (data: IncompleteOrderData) => {
     // Only save if we have at least phone OR name
     if (!data.phone?.trim() && !data.full_name?.trim()) {
+      console.log('[IncompleteOrder] Skipping save - no phone or name provided');
       return;
     }
 
@@ -75,8 +77,11 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
 
     // Skip if data hasn't changed
     if (dataHash === lastSavedData.current) {
+      console.log('[IncompleteOrder] Skipping save - data unchanged');
       return;
     }
+
+    console.log('[IncompleteOrder] Saving incomplete order...', { sessionId: sessionId.current, source: data.source });
 
     try {
       const cartItemsJson = data.cart_items.map(item => ({
@@ -84,8 +89,8 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
         product_name: item.product?.name || 'Unknown',
         product_image: item.product?.images?.[0] || null,
         quantity: item.quantity,
-        size: item.size,
-        color: item.color,
+        size: item.size || null,
+        color: item.color || null,
         price: item.product?.price || 0,
       }));
 
@@ -108,37 +113,46 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
 
       if (incompleteOrderId.current) {
         // Update existing record
+        console.log('[IncompleteOrder] Updating existing record:', incompleteOrderId.current);
         const { error } = await supabase
           .from('incomplete_orders')
           .update(orderData)
           .eq('id', incompleteOrderId.current);
 
         if (error) {
-          console.error('Error updating incomplete order:', error);
+          console.error('[IncompleteOrder] Error updating:', error);
           return;
         }
+        console.log('[IncompleteOrder] Updated successfully');
       } else {
         // Check if we already have a pending order for this session
-        const { data: existing } = await supabase
+        const { data: existing, error: fetchError } = await supabase
           .from('incomplete_orders')
           .select('id')
           .eq('session_id', sessionId.current)
           .eq('status', 'pending')
           .maybeSingle();
 
+        if (fetchError) {
+          console.error('[IncompleteOrder] Error fetching existing:', fetchError);
+        }
+
         if (existing) {
           incompleteOrderId.current = existing.id;
+          console.log('[IncompleteOrder] Found existing record, updating:', existing.id);
           const { error } = await supabase
             .from('incomplete_orders')
             .update(orderData)
             .eq('id', existing.id);
 
           if (error) {
-            console.error('Error updating incomplete order:', error);
+            console.error('[IncompleteOrder] Error updating existing:', error);
             return;
           }
+          console.log('[IncompleteOrder] Updated successfully');
         } else {
           // Create new record
+          console.log('[IncompleteOrder] Creating new record');
           const { data: newOrder, error } = await supabase
             .from('incomplete_orders')
             .insert(orderData)
@@ -146,27 +160,32 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
             .single();
 
           if (error) {
-            console.error('Error creating incomplete order:', error);
+            console.error('[IncompleteOrder] Error creating:', error);
             return;
           }
 
           incompleteOrderId.current = newOrder.id;
+          console.log('[IncompleteOrder] Created successfully:', newOrder.id);
         }
       }
 
       lastSavedData.current = dataHash;
     } catch (error) {
-      console.error('Error saving incomplete order:', error);
+      console.error('[IncompleteOrder] Error saving:', error);
     }
-  }, [source]);
+  }, []);
 
   const debouncedSave = useCallback((data: IncompleteOrderData) => {
+    // Store pending data for potential immediate save
+    pendingData.current = data;
+    
     if (debounceTimer.current) {
       clearTimeout(debounceTimer.current);
     }
 
     debounceTimer.current = setTimeout(() => {
       saveIncompleteOrder(data);
+      pendingData.current = null;
     }, DEBOUNCE_DELAY);
   }, [saveIncompleteOrder]);
 
@@ -174,8 +193,29 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
     debouncedSave({ ...data, source });
   }, [debouncedSave, source]);
 
+  // Immediately save pending data (call on blur or before navigation)
+  const saveImmediately = useCallback(async () => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+      debounceTimer.current = null;
+    }
+    
+    if (pendingData.current) {
+      await saveIncompleteOrder(pendingData.current);
+      pendingData.current = null;
+    }
+  }, [saveIncompleteOrder]);
+
   const markAsConverted = useCallback(async (orderId: string) => {
     try {
+      // Save any pending data first
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+        debounceTimer.current = null;
+      }
+
+      console.log('[IncompleteOrder] Marking as converted for order:', orderId);
+      
       // Find and update incomplete orders with this session
       const { error } = await supabase
         .from('incomplete_orders')
@@ -188,25 +228,77 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
         .eq('status', 'pending');
 
       if (error) {
-        console.error('Error marking incomplete order as converted:', error);
+        console.error('[IncompleteOrder] Error marking as converted:', error);
+      } else {
+        console.log('[IncompleteOrder] Marked as converted successfully');
       }
 
       // Clear local refs
       incompleteOrderId.current = null;
       lastSavedData.current = '';
+      pendingData.current = null;
       
       // Generate new session ID for future orders
       const newSessionId = crypto.randomUUID();
       sessionStorage.setItem(SESSION_ID_KEY, newSessionId);
       sessionId.current = newSessionId;
     } catch (error) {
-      console.error('Error in markAsConverted:', error);
+      console.error('[IncompleteOrder] Error in markAsConverted:', error);
     }
   }, []);
 
-  // Cleanup on unmount - save any pending data immediately
+  // Save on page unload
   useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Synchronously try to save if we have pending data
+      if (pendingData.current && (pendingData.current.phone?.trim() || pendingData.current.full_name?.trim())) {
+        // Use sendBeacon for reliable unload saving
+        const cartItemsJson = pendingData.current.cart_items.map(item => ({
+          product_id: item.product_id,
+          product_name: item.product?.name || 'Unknown',
+          product_image: item.product?.images?.[0] || null,
+          quantity: item.quantity,
+          size: item.size || null,
+          color: item.color || null,
+          price: item.product?.price || 0,
+        }));
+
+        const orderData = {
+          session_id: sessionId.current,
+          full_name: pendingData.current.full_name?.trim() || null,
+          phone: pendingData.current.phone?.trim() || null,
+          email: pendingData.current.email?.trim() || null,
+          address: pendingData.current.address?.trim() || null,
+          shipping_location: pendingData.current.shipping_location || null,
+          payment_method: pendingData.current.payment_method || null,
+          notes: pendingData.current.notes?.trim() || null,
+          cart_items: cartItemsJson,
+          subtotal: pendingData.current.subtotal,
+          shipping_fee: pendingData.current.shipping_fee,
+          total: pendingData.current.total,
+          source: pendingData.current.source,
+          last_updated_at: new Date().toISOString(),
+        };
+
+        // Try to save via sendBeacon (more reliable on page close)
+        const url = `${import.meta.env.VITE_SUPABASE_URL}/rest/v1/incomplete_orders`;
+        const headers = {
+          'Content-Type': 'application/json',
+          'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          'Prefer': 'return=minimal',
+        };
+        
+        const blob = new Blob([JSON.stringify(orderData)], { type: 'application/json' });
+        navigator.sendBeacon(url + '?' + new URLSearchParams({ 
+          on_conflict: 'session_id' 
+        }).toString(), blob);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
     return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
       if (debounceTimer.current) {
         clearTimeout(debounceTimer.current);
       }
@@ -216,6 +308,7 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
   return {
     captureFormData,
     markAsConverted,
+    saveImmediately,
     sessionId: sessionId.current,
   };
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ShoppingBag, Check, Printer } from 'lucide-react';
@@ -54,7 +54,7 @@ export default function Checkout() {
   } = usePaymentGateway();
   const { sendOrderSms } = useSendOrderSms();
   const { isOtpEnabled, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
-  const { captureFormData, markAsConverted } = useIncompleteOrderCapture('checkout');
+  const { captureFormData, markAsConverted, saveImmediately } = useIncompleteOrderCapture('checkout');
   
   const [showOtpModal, setShowOtpModal] = useState(false);
   
@@ -156,11 +156,39 @@ export default function Checkout() {
     }
   }, [paymentMethod]);
 
+  const captureCurrentFormData = useCallback(() => {
+    captureFormData({
+      full_name: form.full_name,
+      phone: form.phone,
+      email: form.email,
+      address: form.address,
+      shipping_location: shippingLocation,
+      payment_method: paymentMethod,
+      notes: form.notes,
+      cart_items: items.map(item => ({
+        product_id: item.product_id,
+        quantity: item.quantity,
+        size: item.size,
+        color: item.color,
+        product: item.product ? {
+          id: item.product.id,
+          name: item.product.name,
+          price: Number(item.product.price),
+          images: item.product.images,
+        } : undefined,
+      })),
+      subtotal,
+      shipping_fee: shippingFee,
+      total,
+      source: 'checkout',
+    });
+  }, [form, shippingLocation, paymentMethod, items, subtotal, shippingFee, total, captureFormData]);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newForm = { ...form, [e.target.name]: e.target.value };
     setForm(newForm);
     
-    // Capture incomplete order data
+    // Capture incomplete order data with new form values
     captureFormData({
       full_name: newForm.full_name,
       phone: newForm.phone,
@@ -186,6 +214,11 @@ export default function Checkout() {
       total,
       source: 'checkout',
     });
+  };
+
+  // Save immediately when user leaves a field
+  const handleInputBlur = () => {
+    saveImmediately();
   };
 
   const validateForm = () => {
@@ -674,6 +707,7 @@ export default function Checkout() {
                       name="full_name"
                       value={form.full_name}
                       onChange={handleInputChange}
+                      onBlur={handleInputBlur}
                       placeholder="Enter your full name"
                       maxLength={100}
                     />
@@ -685,6 +719,7 @@ export default function Checkout() {
                       name="phone"
                       value={form.phone}
                       onChange={handleInputChange}
+                      onBlur={handleInputBlur}
                       placeholder="01XXXXXXXXX"
                       maxLength={15}
                     />
@@ -699,6 +734,7 @@ export default function Checkout() {
                         type="email"
                         value={form.email}
                         onChange={handleInputChange}
+                        onBlur={handleInputBlur}
                         placeholder="your@email.com"
                         maxLength={100}
                       />
@@ -712,6 +748,7 @@ export default function Checkout() {
                       name="address"
                       value={form.address}
                       onChange={handleInputChange}
+                      onBlur={handleInputBlur}
                       placeholder="House, Road, Area, Thana, District"
                       rows={3}
                       maxLength={500}
@@ -811,6 +848,7 @@ export default function Checkout() {
                   name="notes"
                   value={form.notes}
                   onChange={handleInputChange}
+                  onBlur={handleInputBlur}
                   placeholder="Any special instructions for your order..."
                   rows={3}
                   maxLength={500}

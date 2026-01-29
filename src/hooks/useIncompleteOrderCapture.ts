@@ -67,9 +67,9 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
   }, [source]);
 
   const saveIncompleteOrder = useCallback(async (data: IncompleteOrderData) => {
-    // Only save if we have at least phone OR name
-    if (!data.phone?.trim() && !data.full_name?.trim()) {
-      console.log('[IncompleteOrder] Skipping save - no phone or name provided');
+    // Only save if we have a phone number - phone is required for incomplete orders
+    if (!data.phone?.trim()) {
+      console.log('[IncompleteOrder] Skipping save - no phone number provided');
       return;
     }
 
@@ -266,8 +266,8 @@ export function useIncompleteOrderCapture(source: 'checkout' | 'quick_buy') {
   // Save on page unload
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // Synchronously try to save if we have pending data
-      if (pendingData.current && (pendingData.current.phone?.trim() || pendingData.current.full_name?.trim())) {
+      // Synchronously try to save if we have pending data with a phone number
+      if (pendingData.current && pendingData.current.phone?.trim()) {
         // Use sendBeacon for reliable unload saving
         const cartItemsJson = pendingData.current.cart_items.map(item => ({
           product_id: item.product_id,

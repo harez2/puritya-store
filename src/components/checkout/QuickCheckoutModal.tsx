@@ -224,20 +224,24 @@ export default function QuickCheckoutModal({
     setIsSubmitting(true);
 
     try {
-      // Check if customer is blocked
-      const blockCheck = await checkIfCustomerBlocked({
-        email: form.email.trim() || user?.email,
-        phone: form.phone.trim(),
-      });
-
-      if (blockCheck.isBlocked) {
-        toast({
-          title: "Order Blocked",
-          description: settings.blocked_message || "We're unable to process your order. Please contact support for assistance.",
-          variant: "destructive",
+      // Check if customer is blocked (only if blocking is enabled)
+      const blockingEnabled = settings.blocking_enabled ?? true;
+      if (blockingEnabled) {
+        const blockCheck = await checkIfCustomerBlocked({
+          email: form.email.trim() || user?.email,
+          phone: form.phone.trim(),
+          blockingEnabled,
         });
-        setIsSubmitting(false);
-        return;
+
+        if (blockCheck.isBlocked) {
+          toast({
+            title: "Order Blocked",
+            description: blockCheck.customMessage || settings.blocked_message || "We're unable to process your order. Please contact support for assistance.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
       }
       const shippingAddress = {
         full_name: form.full_name.trim(),

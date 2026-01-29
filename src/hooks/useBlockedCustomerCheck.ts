@@ -3,46 +3,48 @@ import { supabase } from '@/lib/supabase';
 type BlockCheckParams = {
   email?: string;
   phone?: string;
+  ipAddress?: string;
+  deviceId?: string;
+  blockingEnabled?: boolean;
 };
 
 type BlockCheckResult = {
   isBlocked: boolean;
   reason?: string;
+  customMessage?: string;
 };
 
-export async function checkIfCustomerBlocked({ email, phone }: BlockCheckParams): Promise<BlockCheckResult> {
+export async function checkIfCustomerBlocked({ 
+  email, 
+  phone, 
+  ipAddress,
+  deviceId,
+  blockingEnabled = true,
+}: BlockCheckParams): Promise<BlockCheckResult> {
+  // If blocking is disabled globally, don't check
+  if (!blockingEnabled) {
+    return { isBlocked: false };
+  }
+
   try {
     // Normalize inputs
     const normalizedEmail = email?.trim().toLowerCase();
     const normalizedPhone = phone?.trim().replace(/\s/g, '');
+    const normalizedIp = ipAddress?.trim();
+    const normalizedDeviceId = deviceId?.trim();
 
-    if (!normalizedEmail && !normalizedPhone) {
+    if (!normalizedEmail && !normalizedPhone && !normalizedIp && !normalizedDeviceId) {
       return { isBlocked: false };
     }
 
-    // Build query to check blocked_customers table
-    // We need to check if any active block exists for this email or phone
-    let query = supabase
-      .from('blocked_customers')
-      .select('id, reason, email, phone')
-      .eq('is_active', true);
-
-    // Use OR condition for email and phone
-    const conditions: string[] = [];
-    if (normalizedEmail) {
-      conditions.push(`email.eq.${normalizedEmail}`);
-    }
-    if (normalizedPhone) {
-      conditions.push(`phone.eq.${normalizedPhone}`);
-    }
-
-    // Execute separate queries for each condition and combine results
+    // Execute separate queries for each identifier and combine results
     const results: any[] = [];
+    const now = new Date().toISOString();
 
     if (normalizedEmail) {
       const { data: emailBlocks } = await supabase
         .from('blocked_customers')
-        .select('id, reason, email, phone')
+        .select('id, reason, custom_message, expires_at')
         .eq('is_active', true)
         .eq('email', normalizedEmail);
       
@@ -54,7 +56,7 @@ export async function checkIfCustomerBlocked({ email, phone }: BlockCheckParams)
     if (normalizedPhone) {
       const { data: phoneBlocks } = await supabase
         .from('blocked_customers')
-        .select('id, reason, email, phone')
+        .select('id, reason, custom_message, expires_at')
         .eq('is_active', true)
         .eq('phone', normalizedPhone);
       
@@ -63,11 +65,42 @@ export async function checkIfCustomerBlocked({ email, phone }: BlockCheckParams)
       }
     }
 
-    if (results.length > 0) {
-      // Return the first matching block reason
+    if (normalizedIp) {
+      const { data: ipBlocks } = await supabase
+        .from('blocked_customers')
+        .select('id, reason, custom_message, expires_at')
+        .eq('is_active', true)
+        .eq('ip_address', normalizedIp);
+      
+      if (ipBlocks && ipBlocks.length > 0) {
+        results.push(...ipBlocks);
+      }
+    }
+
+    if (normalizedDeviceId) {
+      const { data: deviceBlocks } = await supabase
+        .from('blocked_customers')
+        .select('id, reason, custom_message, expires_at')
+        .eq('is_active', true)
+        .eq('device_id', normalizedDeviceId);
+      
+      if (deviceBlocks && deviceBlocks.length > 0) {
+        results.push(...deviceBlocks);
+      }
+    }
+
+    // Filter out expired blocks and get the first valid one
+    const activeBlocks = results.filter(block => {
+      if (!block.expires_at) return true; // No expiry = permanent
+      return new Date(block.expires_at) > new Date(now);
+    });
+
+    if (activeBlocks.length > 0) {
+      const block = activeBlocks[0];
       return {
         isBlocked: true,
-        reason: results[0].reason || 'Your account has been blocked.',
+        reason: block.reason || 'Your account has been blocked.',
+        customMessage: block.custom_message || undefined,
       };
     }
 

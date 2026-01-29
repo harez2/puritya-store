@@ -64,9 +64,12 @@ export type Database = {
           blocked_at: string
           blocked_by: string | null
           created_at: string
+          custom_message: string | null
           device_id: string | null
           email: string | null
+          expires_at: string | null
           id: string
+          ip_address: string | null
           is_active: boolean
           notes: string | null
           phone: string | null
@@ -76,9 +79,12 @@ export type Database = {
           blocked_at?: string
           blocked_by?: string | null
           created_at?: string
+          custom_message?: string | null
           device_id?: string | null
           email?: string | null
+          expires_at?: string | null
           id?: string
+          ip_address?: string | null
           is_active?: boolean
           notes?: string | null
           phone?: string | null
@@ -88,9 +94,12 @@ export type Database = {
           blocked_at?: string
           blocked_by?: string | null
           created_at?: string
+          custom_message?: string | null
           device_id?: string | null
           email?: string | null
+          expires_at?: string | null
           id?: string
+          ip_address?: string | null
           is_active?: boolean
           notes?: string | null
           phone?: string | null

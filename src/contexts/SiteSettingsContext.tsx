@@ -178,8 +178,9 @@ export interface SiteSettings {
   // Payment Gateways
   payment_gateways: PaymentGatewayConfig;
 
-  // Blocked Customer Message
+  // Blocked Customer Settings
   blocked_message: string;
+  blocking_enabled: boolean;
 
   // Global SEO Settings
   seo_title_template: string;
@@ -314,8 +315,9 @@ const defaultSettings: SiteSettings = {
     uddoktapay_api_key: '',
     uddoktapay_is_default: false,
   },
-  // Blocked Customer Message
+  // Blocked Customer Settings
   blocked_message: "We're unable to process your order. Please contact support for assistance.",
+  blocking_enabled: true,
   // Global SEO defaults
   seo_title_template: '{page} | {store}',
   seo_default_description: '',

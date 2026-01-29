@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag, Pencil } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 import { startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { IncompleteOrderDetailsDialog } from './IncompleteOrderDetailsDialog';
 import { ConvertOrderDialog } from './ConvertOrderDialog';
+import { EditIncompleteOrderDialog } from './EditIncompleteOrderDialog';
 
 interface CartItem {
   product_id: string;
@@ -90,6 +91,7 @@ export function IncompleteOrdersTab() {
   const [selectedOrder, setSelectedOrder] = useState<IncompleteOrder | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [isConvertOpen, setIsConvertOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<IncompleteOrder | null>(null);
   const [orderToHide, setOrderToHide] = useState<IncompleteOrder | null>(null);
 
@@ -129,6 +131,11 @@ export function IncompleteOrdersTab() {
   const handleConvert = (order: IncompleteOrder) => {
     setSelectedOrder(order);
     setIsConvertOpen(true);
+  };
+
+  const handleEdit = (order: IncompleteOrder) => {
+    setSelectedOrder(order);
+    setIsEditOpen(true);
   };
 
   const handleHide = async () => {
@@ -400,6 +407,10 @@ export function IncompleteOrdersTab() {
                           </DropdownMenuItem>
                           {order.status === 'pending' && (
                             <>
+                              <DropdownMenuItem onClick={() => handleEdit(order)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleConvert(order)}>
                                 <ArrowRightCircle className="h-4 w-4 mr-2" />
                                 Convert to Order
@@ -451,6 +462,14 @@ export function IncompleteOrdersTab() {
           fetchOrders();
           setIsConvertOpen(false);
         }}
+      />
+
+      {/* Edit Dialog */}
+      <EditIncompleteOrderDialog
+        order={selectedOrder}
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        onSaved={fetchOrders}
       />
 
       {/* Hide Confirmation */}

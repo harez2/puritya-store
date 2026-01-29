@@ -159,6 +159,35 @@ export default function QuickCheckoutModal({
     item_variant: [size, color].filter(Boolean).join(' / ') || undefined,
   });
 
+  // Helper to capture current form state
+  const captureCurrentFormState = () => {
+    captureFormData({
+      full_name: form.full_name,
+      phone: form.phone,
+      email: form.email,
+      address: form.address,
+      shipping_location: selectedShippingOption?.name,
+      payment_method: paymentMethod,
+      notes: form.notes,
+      cart_items: [{
+        product_id: product.id,
+        quantity,
+        size,
+        color,
+        product: {
+          id: product.id,
+          name: product.name,
+          price: Number(product.price),
+          images: product.images,
+        },
+      }],
+      subtotal,
+      shipping_fee: shippingFee,
+      total,
+      source: 'quick_buy',
+    });
+  };
+
   // Track begin_checkout when modal opens
   useEffect(() => {
     if (open) {
@@ -184,6 +213,13 @@ export default function QuickCheckoutModal({
       trackAddPaymentInfo([getDataLayerProduct()], total, paymentType, 'BDT');
     }
   }, [paymentMethod]);
+
+  // Capture incomplete order when shipping or payment method changes
+  useEffect(() => {
+    if (open && (form.full_name || form.phone)) {
+      captureCurrentFormState();
+    }
+  }, [selectedShipping, paymentMethod]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newForm = { ...form, [e.target.name]: e.target.value };
@@ -215,6 +251,22 @@ export default function QuickCheckoutModal({
       total,
       source: 'quick_buy',
     });
+  };
+
+  // Save before modal closes
+  const handleClose = () => {
+    // Save any pending data before closing
+    if (form.full_name || form.phone) {
+      saveImmediately();
+    }
+    onOpenChange(false);
+    // Reset state after animation
+    setTimeout(() => {
+      setStep('form');
+      setForm({ full_name: '', email: '', phone: '', address: '', notes: '' });
+      setOrderDetails(null);
+      setSelectedShipping(shippingOptions[0]?.id || '');
+    }, 300);
   };
 
   // Save immediately when user leaves a field
@@ -472,16 +524,7 @@ export default function QuickCheckoutModal({
     }
   };
 
-  const handleClose = () => {
-    onOpenChange(false);
-    // Reset state after animation
-    setTimeout(() => {
-      setStep('form');
-      setForm({ full_name: '', email: '', phone: '', address: '', notes: '' });
-      setOrderDetails(null);
-      setSelectedShipping(shippingOptions[0]?.id || '');
-    }, 300);
-  };
+  // Note: handleClose is now defined after handleInputChange
 
   const handlePrint = () => {
     window.print();

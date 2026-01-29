@@ -256,8 +256,8 @@ export default function AdminSettings() {
                 </div>
                 <Switch
                   id="guestCheckout"
-                  checked={true}
-                  disabled
+                  checked={settings.guest_checkout_enabled}
+                  onCheckedChange={(checked) => updateSetting('guest_checkout_enabled', checked)}
                 />
               </div>
 

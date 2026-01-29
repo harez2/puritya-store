@@ -185,6 +185,9 @@ export interface SiteSettings {
   // Order Tracking Settings
   order_tracking_enabled: boolean;
 
+  // Guest Checkout Settings
+  guest_checkout_enabled: boolean;
+
   // Global SEO Settings
   seo_title_template: string;
   seo_default_description: string;
@@ -323,6 +326,8 @@ const defaultSettings: SiteSettings = {
   blocking_enabled: true,
   // Order Tracking Settings
   order_tracking_enabled: true,
+  // Guest Checkout Settings
+  guest_checkout_enabled: true,
   // Global SEO defaults
   seo_title_template: '{page} | {store}',
   seo_default_description: '',

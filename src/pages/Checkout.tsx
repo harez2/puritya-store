@@ -205,7 +205,7 @@ export default function Checkout() {
       if (blockCheck.isBlocked) {
         toast({
           title: "Order Blocked",
-          description: "We're unable to process your order. Please contact support for assistance.",
+          description: settings.blocked_message || "We're unable to process your order. Please contact support for assistance.",
           variant: "destructive",
         });
         setIsSubmitting(false);

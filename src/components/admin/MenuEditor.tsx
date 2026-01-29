@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { GripVertical, Plus, Trash2, ExternalLink, Link as LinkIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface MenuItem {
   id: string;
@@ -19,31 +20,113 @@ interface MenuEditorProps {
   maxItems?: number;
 }
 
-const internalPages = [
-  { label: 'Home', value: '/' },
-  { label: 'Shop', value: '/shop' },
-  { label: 'New Arrivals', value: '/shop?filter=new' },
-  { label: 'Sale', value: '/shop?filter=sale' },
-  { label: 'Dresses', value: '/shop?category=dresses' },
-  { label: 'Tops', value: '/shop?category=tops' },
-  { label: 'Accessories', value: '/shop?category=accessories' },
-  { label: 'Contact', value: '/contact' },
-  { label: 'About', value: '/about' },
-  { label: 'FAQs', value: '/faqs' },
-  { label: 'Shipping Info', value: '/shipping' },
-  { label: 'Returns & Exchanges', value: '/returns' },
-  { label: 'Size Guide', value: '/size-guide' },
-  { label: 'Privacy Policy', value: '/privacy' },
-  { label: 'Terms of Service', value: '/terms' },
-  { label: 'Sustainability', value: '/sustainability' },
-  { label: 'Wishlist', value: '/wishlist' },
-  { label: 'Account', value: '/account' },
-  { label: 'Cart/Checkout', value: '/checkout' },
+interface InternalPage {
+  label: string;
+  value: string;
+  group?: string;
+}
+
+// Static pages that are always available
+const staticPages: InternalPage[] = [
+  { label: 'Home', value: '/', group: 'Main' },
+  { label: 'Shop', value: '/shop', group: 'Main' },
+  { label: 'New Arrivals', value: '/shop?filter=new', group: 'Shop' },
+  { label: 'Sale', value: '/shop?filter=sale', group: 'Shop' },
+  { label: 'Blog', value: '/blog', group: 'Main' },
+  { label: 'Wishlist', value: '/wishlist', group: 'Account' },
+  { label: 'Account', value: '/account', group: 'Account' },
+  { label: 'Order History', value: '/order-history', group: 'Account' },
+  { label: 'Addresses', value: '/addresses', group: 'Account' },
+  { label: 'Cart/Checkout', value: '/checkout', group: 'Account' },
+  { label: 'Track Order', value: '/track-order', group: 'Account' },
 ];
 
 export function MenuEditor({ items, onChange, maxItems = 10 }: MenuEditorProps) {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [dynamicPages, setDynamicPages] = useState<InternalPage[]>([]);
+
+  // Fetch dynamic pages from database
+  useEffect(() => {
+    const fetchDynamicPages = async () => {
+      const pages: InternalPage[] = [];
+
+      // Fetch categories
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('name, slug')
+        .order('name');
+      
+      if (categories) {
+        categories.forEach(cat => {
+          pages.push({
+            label: cat.name,
+            value: `/shop?category=${cat.slug}`,
+            group: 'Categories'
+          });
+        });
+      }
+
+      // Fetch custom pages
+      const { data: customPages } = await supabase
+        .from('pages')
+        .select('title, slug')
+        .eq('published', true)
+        .order('title');
+      
+      if (customPages) {
+        customPages.forEach(page => {
+          pages.push({
+            label: page.title,
+            value: `/${page.slug}`,
+            group: 'Pages'
+          });
+        });
+      }
+
+      // Fetch landing pages
+      const { data: landingPages } = await supabase
+        .from('landing_pages')
+        .select('title, slug')
+        .eq('status', 'published')
+        .order('title');
+      
+      if (landingPages) {
+        landingPages.forEach(lp => {
+          pages.push({
+            label: lp.title,
+            value: `/p/${lp.slug}`,
+            group: 'Landing Pages'
+          });
+        });
+      }
+
+      // Fetch blog categories
+      const { data: blogCategories } = await supabase
+        .from('blog_categories')
+        .select('name, slug')
+        .order('name');
+      
+      if (blogCategories) {
+        blogCategories.forEach(bc => {
+          pages.push({
+            label: `Blog: ${bc.name}`,
+            value: `/blog?category=${bc.slug}`,
+            group: 'Blog Categories'
+          });
+        });
+      }
+
+      setDynamicPages(pages);
+    };
+
+    fetchDynamicPages();
+  }, []);
+
+  // Combine static and dynamic pages
+  const allInternalPages = useMemo(() => {
+    return [...staticPages, ...dynamicPages];
+  }, [dynamicPages]);
 
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
@@ -168,9 +251,9 @@ export function MenuEditor({ items, onChange, maxItems = 10 }: MenuEditorProps) 
                         <SelectValue placeholder="Select a page" />
                       </SelectTrigger>
                       <SelectContent>
-                        {internalPages.map((page) => (
+                        {allInternalPages.map((page) => (
                           <SelectItem key={page.value} value={page.value}>
-                            {page.label}
+                            {page.group ? `${page.group} → ${page.label}` : page.label}
                           </SelectItem>
                         ))}
                       </SelectContent>

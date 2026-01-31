@@ -188,6 +188,10 @@ export interface SiteSettings {
   // Guest Checkout Settings
   guest_checkout_enabled: boolean;
 
+  // Order Number Settings
+  order_number_prefix: string;
+  order_number_use_domain: boolean;
+
   // Global SEO Settings
   seo_title_template: string;
   seo_default_description: string;
@@ -328,6 +332,9 @@ const defaultSettings: SiteSettings = {
   order_tracking_enabled: true,
   // Guest Checkout Settings
   guest_checkout_enabled: true,
+  // Order Number Settings
+  order_number_prefix: 'ORD',
+  order_number_use_domain: true,
   // Global SEO defaults
   seo_title_template: '{page} | {store}',
   seo_default_description: '',

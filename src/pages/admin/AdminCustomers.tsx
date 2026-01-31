@@ -67,6 +67,7 @@ interface UserRole {
 
 interface CustomerWithRole extends Profile {
   isAdmin: boolean;
+  isGuest: boolean;
   orderCount: number;
   totalSpent: number;
 }
@@ -108,27 +109,88 @@ export default function AdminCustomers() {
         .from('user_roles')
         .select('user_id, role');
 
-      // Fetch orders for each user
+      // Fetch orders for each user (both registered and guest)
       const { data: orders, error: ordersError } = await supabase
         .from('orders')
-        .select('user_id, total');
+        .select('user_id, total, shipping_address, created_at');
 
       if (ordersError) throw ordersError;
 
-      // Combine data
-      const customersWithData = (profiles || []).map(profile => {
+      // Combine registered users data
+      const registeredCustomers: CustomerWithRole[] = (profiles || []).map(profile => {
         const userRoles = roles?.filter(r => r.user_id === profile.user_id) || [];
         const userOrders = orders?.filter(o => o.user_id === profile.user_id) || [];
         
         return {
           ...profile,
           isAdmin: userRoles.some(r => r.role === 'admin'),
+          isGuest: false,
           orderCount: userOrders.length,
           totalSpent: userOrders.reduce((sum, o) => sum + Number(o.total), 0),
         };
       });
 
-      setCustomers(customersWithData);
+      // Extract guest customers from orders where user_id is null
+      const guestOrders = orders?.filter(o => o.user_id === null) || [];
+      
+      // Group guest orders by phone number
+      const guestCustomerMap = new Map<string, {
+        phone: string;
+        full_name: string;
+        orderCount: number;
+        totalSpent: number;
+        created_at: string;
+      }>();
+
+      guestOrders.forEach(order => {
+        const address = order.shipping_address as { phone?: string; full_name?: string } | null;
+        const phone = address?.phone?.trim();
+        
+        if (phone) {
+          const existing = guestCustomerMap.get(phone);
+          if (existing) {
+            existing.orderCount += 1;
+            existing.totalSpent += Number(order.total);
+            // Keep the earliest created_at
+            if (new Date(order.created_at) < new Date(existing.created_at)) {
+              existing.created_at = order.created_at;
+            }
+            // Keep the most recent name
+            if (address?.full_name) {
+              existing.full_name = address.full_name;
+            }
+          } else {
+            guestCustomerMap.set(phone, {
+              phone,
+              full_name: address?.full_name || 'Guest Customer',
+              orderCount: 1,
+              totalSpent: Number(order.total),
+              created_at: order.created_at,
+            });
+          }
+        }
+      });
+
+      // Convert guest map to customer array
+      const guestCustomers: CustomerWithRole[] = Array.from(guestCustomerMap.entries()).map(([phone, data]) => ({
+        id: `guest-${phone}`,
+        user_id: `guest-${phone}`,
+        full_name: data.full_name,
+        phone: data.phone,
+        avatar_url: null,
+        created_at: data.created_at,
+        isAdmin: false,
+        isGuest: true,
+        orderCount: data.orderCount,
+        totalSpent: data.totalSpent,
+      }));
+
+      // Combine and sort by created_at
+      const allCustomers = [...registeredCustomers, ...guestCustomers].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setCustomers(allCustomers);
     } catch (error) {
       console.error('Error fetching customers:', error);
       toast.error('Failed to load customers');
@@ -138,6 +200,12 @@ export default function AdminCustomers() {
   }
 
   const handleToggleAdmin = async (customer: CustomerWithRole) => {
+    // Prevent actions on guest customers
+    if (customer.isGuest) {
+      toast.error("Cannot modify guest customer roles");
+      return;
+    }
+
     // Prevent self-demotion
     if (customer.user_id === currentUser?.id) {
       toast.error("You cannot remove your own admin role");
@@ -458,7 +526,9 @@ export default function AdminCustomers() {
                           {customer.phone || '-'}
                         </td>
                         <td className="py-3 px-2">
-                          {customer.isAdmin ? (
+                          {customer.isGuest ? (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50">Guest</Badge>
+                          ) : customer.isAdmin ? (
                             <Badge variant="default" className="bg-primary">Admin</Badge>
                           ) : (
                             <Badge variant="secondary">Customer</Badge>
@@ -484,37 +554,43 @@ export default function AdminCustomers() {
                                 View Details
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                onClick={() => handleToggleAdmin(customer)}
-                                disabled={customer.user_id === currentUser?.id}
-                              >
-                                {customer.isAdmin ? (
-                                  <>
-                                    <ShieldOff className="h-4 w-4 mr-2" />
-                                    Remove Admin
-                                  </>
-                                ) : (
-                                  <>
-                                    <Shield className="h-4 w-4 mr-2" />
-                                    Make Admin
-                                  </>
-                                )}
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
+                              {!customer.isGuest && (
+                                <>
+                                  <DropdownMenuItem 
+                                    onClick={() => handleToggleAdmin(customer)}
+                                    disabled={customer.user_id === currentUser?.id}
+                                  >
+                                    {customer.isAdmin ? (
+                                      <>
+                                        <ShieldOff className="h-4 w-4 mr-2" />
+                                        Remove Admin
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Shield className="h-4 w-4 mr-2" />
+                                        Make Admin
+                                      </>
+                                    )}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                </>
+                              )}
                               <DropdownMenuItem 
                                 onClick={() => handleBlockCustomer(customer)}
                               >
                                 <Ban className="h-4 w-4 mr-2" />
                                 Block Customer
                               </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => setDeleteCustomerId(customer.id)}
-                                disabled={customer.user_id === currentUser?.id}
-                                className="text-destructive focus:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Profile
-                              </DropdownMenuItem>
+                              {!customer.isGuest && (
+                                <DropdownMenuItem 
+                                  onClick={() => setDeleteCustomerId(customer.id)}
+                                  disabled={customer.user_id === currentUser?.id}
+                                  className="text-destructive focus:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Delete Profile
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>

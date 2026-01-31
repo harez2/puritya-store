@@ -35,6 +35,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { toast } from 'sonner';
+import { generateOrderNumber, getOrderPrefix } from '@/lib/order-number';
 
 interface CartItem {
   product_id: string;
@@ -228,8 +229,9 @@ export function ConvertOrderDialog({
         country: 'Bangladesh',
       };
 
-      // Generate order number
-      const orderNum = 'PUR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+      // Generate order number with configurable prefix
+      const orderPrefix = getOrderPrefix(settings.order_number_use_domain, settings.order_number_prefix);
+      const orderNum = generateOrderNumber(orderPrefix);
 
       // Create the order
       const { data: newOrder, error: orderError } = await supabase

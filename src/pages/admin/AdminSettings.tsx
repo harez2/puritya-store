@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Store, Shield, Package, MapPin, Ban, Users, ExternalLink } from 'lucide-react';
+import { Store, Shield, Package, MapPin, Ban, Users, ExternalLink, Hash } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -14,6 +14,7 @@ import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Link } from 'react-router-dom';
+import { getDomainPrefix } from '@/lib/order-number';
 
 interface ProductSettings {
   sizesEnabled: boolean;
@@ -164,6 +165,70 @@ export default function AdminSettings() {
                   onCheckedChange={(checked) => updateProductSetting('colorsEnabled', checked)}
                   disabled={loading}
                 />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Order Number Settings */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Hash className="h-5 w-5 text-primary" />
+                <CardTitle>Order Number Format</CardTitle>
+              </div>
+              <CardDescription>
+                Customize how order numbers are generated
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="useDomainPrefix">Use Domain Prefix</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically use the first 3 letters of your domain as the order prefix
+                  </p>
+                </div>
+                <Switch
+                  id="useDomainPrefix"
+                  checked={settings.order_number_use_domain}
+                  onCheckedChange={(checked) => updateSetting('order_number_use_domain', checked)}
+                />
+              </div>
+              
+              {settings.order_number_use_domain && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm">
+                    Current domain prefix: <span className="font-mono font-bold">{getDomainPrefix()}</span>
+                  </p>
+                </div>
+              )}
+              
+              {!settings.order_number_use_domain && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <Label htmlFor="orderPrefix">Custom Order Prefix</Label>
+                    <Input
+                      id="orderPrefix"
+                      value={settings.order_number_prefix}
+                      onChange={(e) => updateSetting('order_number_prefix', e.target.value.toUpperCase().slice(0, 5))}
+                      placeholder="e.g., ORD, PUR, SHOP"
+                      maxLength={5}
+                      className="w-40 uppercase"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Maximum 5 characters. Will be used as: {settings.order_number_prefix || 'ORD'}-YYYYMMDD-XXXX
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              <div className="p-3 bg-secondary/50 rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Preview: <span className="font-mono font-medium text-foreground">
+                    {settings.order_number_use_domain ? getDomainPrefix() : (settings.order_number_prefix || 'ORD')}-{new Date().toISOString().slice(0, 10).replace(/-/g, '')}-1234
+                  </span>
+                </p>
               </div>
             </CardContent>
           </Card>

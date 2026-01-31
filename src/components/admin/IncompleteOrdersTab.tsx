@@ -225,71 +225,81 @@ export function IncompleteOrdersTab() {
   };
 
   const exportToCSV = () => {
-    if (filteredOrders.length === 0) {
-      toast.error('No orders to export');
-      return;
-    }
+    try {
+      if (filteredOrders.length === 0) {
+        toast.error('No orders to export');
+        return;
+      }
 
-    const headers = [
-      'Date',
-      'Time',
-      'Customer Name',
-      'Phone',
-      'Email',
-      'Address',
-      'Shipping Location',
-      'Payment Method',
-      'Items',
-      'Item Details',
-      'Subtotal',
-      'Shipping Fee',
-      'Total',
-      'Source',
-      'Status',
-      'Notes',
-    ];
-
-    const csvRows = filteredOrders.map(order => {
-      const itemsSummary = order.cart_items.map(item => 
-        `${item.product_name} (Qty: ${item.quantity}${item.size ? `, Size: ${item.size}` : ''}${item.color ? `, Color: ${item.color}` : ''}) - ৳${item.price}`
-      ).join(' | ');
-
-      return [
-        format(new Date(order.created_at), 'yyyy-MM-dd'),
-        format(new Date(order.created_at), 'HH:mm:ss'),
-        order.full_name || '',
-        order.phone || '',
-        order.email || '',
-        order.address?.replace(/,/g, ';') || '',
-        order.shipping_location || '',
-        order.payment_method || '',
-        order.cart_items.length.toString(),
-        itemsSummary.replace(/,/g, ';'),
-        order.subtotal.toString(),
-        order.shipping_fee.toString(),
-        order.total.toString(),
-        order.source || '',
-        order.status || '',
-        order.notes?.replace(/,/g, ';').replace(/\n/g, ' ') || '',
+      const headers = [
+        'Date',
+        'Time',
+        'Customer Name',
+        'Phone',
+        'Email',
+        'Address',
+        'Shipping Location',
+        'Payment Method',
+        'Items',
+        'Item Details',
+        'Subtotal',
+        'Shipping Fee',
+        'Total',
+        'Source',
+        'Status',
+        'Notes',
       ];
-    });
 
-    const csvContent = [
-      headers.join(','),
-      ...csvRows.map(row => row.map(cell => `"${cell}"`).join(',')),
-    ].join('\n');
+      const csvRows = filteredOrders.map(order => {
+        const itemsSummary = order.cart_items.map(item => 
+          `${item.product_name} (Qty: ${item.quantity}${item.size ? `, Size: ${item.size}` : ''}${item.color ? `, Color: ${item.color}` : ''}) - ৳${item.price}`
+        ).join(' | ');
 
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `incomplete-orders-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+        return [
+          format(new Date(order.created_at), 'yyyy-MM-dd'),
+          format(new Date(order.created_at), 'HH:mm:ss'),
+          order.full_name || '',
+          order.phone || '',
+          order.email || '',
+          order.address?.replace(/,/g, ';') || '',
+          order.shipping_location || '',
+          order.payment_method || '',
+          order.cart_items.length.toString(),
+          itemsSummary.replace(/,/g, ';'),
+          order.subtotal.toString(),
+          order.shipping_fee.toString(),
+          order.total.toString(),
+          order.source || '',
+          order.status || '',
+          order.notes?.replace(/,/g, ';').replace(/\n/g, ' ') || '',
+        ];
+      });
 
-    toast.success(`Exported ${filteredOrders.length} orders to CSV`);
+      const csvContent = [
+        headers.join(','),
+        ...csvRows.map(row => row.map(cell => `"${cell}"`).join(',')),
+      ].join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `incomplete-orders-${format(new Date(), 'yyyy-MM-dd-HHmm')}.csv`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup with small delay to ensure download starts
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+
+      toast.success(`Exported ${filteredOrders.length} orders to CSV`);
+    } catch (error) {
+      console.error('Error exporting orders:', error);
+      toast.error('Failed to export orders. Please try again.');
+    }
   };
 
   const formatCurrency = (amount: number) => {

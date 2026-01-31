@@ -21,6 +21,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { generateOrderNumber, getOrderPrefix } from '@/lib/order-number';
 
 interface Product {
   id: string;
@@ -47,6 +49,7 @@ interface ManualOrderDialogProps {
 
 export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: ManualOrderDialogProps) {
   const { user } = useAuth();
+  const { settings } = useSiteSettings();
   const [products, setProducts] = useState<Product[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -198,8 +201,9 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
 
     setSubmitting(true);
     try {
-      // Generate order number
-      const orderNumber = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      // Generate order number with configurable prefix
+      const orderPrefix = getOrderPrefix(settings.order_number_use_domain, settings.order_number_prefix);
+      const orderNumber = generateOrderNumber(orderPrefix);
 
       // Create order
       const { data: order, error: orderError } = await supabase

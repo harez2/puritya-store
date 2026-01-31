@@ -1,273 +1,173 @@
 
-# Incomplete Orders (Abandoned Checkout) Feature
+# Plan: Fix Order Export, Guest Customer Tracking, and Order Number Customization
 
-## Overview
-This feature captures checkout form data when customers enter their information (name, phone number, address) but do not complete the order. This data is stored in a new `incomplete_orders` table and displayed in a dedicated admin section, allowing CRM agents to follow up with potential customers and convert them into actual sales.
+## Issues Identified
 
----
+### 1. Order Export Not Working (Incomplete Orders)
+**Finding**: The CSV export function in `IncompleteOrdersTab.tsx` appears correctly implemented (lines 227-293). The issue may be browser-related or the download is not triggering properly. Need to verify the export logic and ensure proper error handling.
 
-## Implementation Components
+### 2. Guest Customers Not in Customer List  
+**Finding**: The `AdminCustomers.tsx` page only fetches from the `profiles` table (line 99-103). Guest orders have `user_id = NULL` and are never added to profiles since they don't create accounts. The customer list needs to also include guest customers identified by their phone number from orders.
 
-### 1. Database Schema
+**Current behavior**: Only registered users appear in the customer list.
+**Required behavior**: Guest customers (from orders where `user_id IS NULL`) should also appear, identified by their phone number from the shipping address.
 
-**New Table: `incomplete_orders`**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | uuid | Primary key |
-| session_id | text | Browser session identifier |
-| full_name | text | Customer name (nullable) |
-| phone | text | Customer phone (nullable) |
-| email | text | Customer email (nullable) |
-| address | text | Shipping address (nullable) |
-| shipping_location | text | Shipping zone selection |
-| payment_method | text | Selected payment method |
-| notes | text | Order notes |
-| cart_items | jsonb | Array of cart items with product details |
-| subtotal | numeric | Cart subtotal |
-| shipping_fee | numeric | Calculated shipping |
-| total | numeric | Order total |
-| source | text | 'checkout' or 'quick_buy' |
-| status | text | 'pending', 'converted', 'hidden' (default: 'pending') |
-| converted_order_id | uuid | Reference to actual order if converted |
-| last_updated_at | timestamp | Last form update time |
-| created_at | timestamp | First capture time |
-
-**RLS Policies:**
-- Admins: Full CRUD access
-- Anonymous: Can INSERT and UPDATE their own records (by session_id)
-
----
-
-### 2. Auto-Capture Logic
-
-**Strategy**: Debounced auto-save when form fields change on checkout page
-
-**Files to modify:**
-- `src/pages/Checkout.tsx` - Add auto-save hook
-- `src/components/checkout/QuickCheckoutModal.tsx` - Add auto-save hook
-
-**New hook: `src/hooks/useIncompleteOrderCapture.ts`**
-- Debounce form changes (save after 2 seconds of no input)
-- Capture form state: name, phone, email, address, cart items
-- Use session storage for session_id
-- Only save when at least phone OR name is provided
-- Update existing record if session_id exists, otherwise create new
-- Mark as converted/delete when order is successfully placed
-
-**Capture triggers:**
-1. Form field blur events (save on field exit)
-2. Debounced onChange (2 seconds after last keystroke)
-3. Before modal close (for QuickCheckoutModal)
-
----
-
-### 3. Admin Panel - Incomplete Orders Tab
-
-**Location**: Add a tabbed interface to `AdminOrders.tsx` with two tabs:
-- "Order List" (existing orders)
-- "Incomplete Orders" (new abandoned checkouts)
-
-**Table columns:**
-| Column | Description |
-|--------|-------------|
-| Date/Time | When checkout was started |
-| Customer | Name + Phone |
-| Items | Product names/images |
-| Total | Calculated order total |
-| Source | Checkout / Quick Buy |
-| Status | Pending / Hidden |
-| Actions | View, Edit, Convert, Hide, Delete |
-
-**Filtering:**
-- Date range picker
-- Status filter (All, Pending, Hidden)
-- Search by name/phone
-
----
-
-### 4. CRM Agent Actions
-
-**View Details Dialog:**
-- Show complete captured form data
-- Display cart items with images
-- Show timeline of form updates
-
-**Edit Order Dialog:**
-- Editable customer information (name, phone, email, address)
-- Editable cart items (add/remove products, quantities, sizes/colors)
-- Payment method selection
-- Shipping option selection
-- Notes field
-
-**Convert to Order:**
-- Button to convert incomplete order to actual order
-- Creates new entry in `orders` table with source = 'crm_converted'
-- Creates associated `order_items`
-- Updates incomplete order status to 'converted'
-- Links via `converted_order_id`
-- Shows confirmation with order number
-
-**Hide/Delete:**
-- "Hide" marks status as 'hidden' (can be filtered out but not deleted)
-- "Delete" permanently removes the incomplete order
-- Confirmation dialogs for both actions
-
----
-
-### 5. Automatic Cleanup
-
-**On successful order placement:**
-- Check for incomplete orders with matching session_id
-- Mark as 'converted' and link to new order
-- This prevents duplicate follow-ups
-
-**Periodic cleanup (optional future enhancement):**
-- Consider adding a scheduled function to auto-hide orders older than 30 days
-
----
-
-## Technical Flow
-
+### 3. Order Number Not Domain-Based
+**Finding**: The order number is generated by a database trigger (`generate_order_number` function) with a hardcoded `PUR-` prefix:
+```sql
+NEW.order_number = 'PUR-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || LPAD(FLOOR(RANDOM() * 10000)::TEXT, 4, '0');
 ```
-Customer visits Checkout
-         |
-         v
-   Fills form fields
-   (name, phone, address)
-         |
-         v
-   Debounced auto-save
-   triggers after 2s
-         |
-         v
-   +--------------------------+
-   | incomplete_orders table  |
-   | session_id = browser ID  |
-   +--------------------------+
-         |
-         +---> Customer completes order
-         |            |
-         |            v
-         |    Mark as 'converted'
-         |    Link to actual order
-         |
-         +---> Customer abandons
-                     |
-                     v
-              CRM agent sees in
-              Admin > Orders > 
-              Incomplete Orders
-                     |
-                     v
-              Agent calls customer
-              edits order if needed
-                     |
-                     v
-              Convert to actual order
-              OR hide/delete
+
+This needs to be configurable via admin settings and passed from the frontend when creating orders.
+
+---
+
+## Implementation Plan
+
+### Phase 1: Fix Incomplete Order CSV Export
+
+**File**: `src/components/admin/IncompleteOrdersTab.tsx`
+
+Changes:
+- Add try-catch wrapper around the export function
+- Add better error messaging if no data
+- Ensure the Blob download triggers correctly
+- Add loading state during export
+
+### Phase 2: Add Guest Customers to Customer List
+
+**File**: `src/pages/admin/AdminCustomers.tsx`
+
+Changes:
+- Create a new interface `GuestCustomer` to represent guest customers
+- Modify `fetchCustomers` to also query orders with `user_id IS NULL`
+- Extract unique phone numbers from shipping addresses of guest orders
+- Merge guest customers into the customer list with appropriate metadata
+- Add a visual indicator (badge) for guest vs. registered customers
+- Allow searching by phone number for both guest and registered customers
+
+**Data Structure for Guest Customers**:
+```typescript
+interface GuestCustomer {
+  id: string;          // Generated from phone hash
+  phone: string;       // From shipping_address.phone
+  full_name: string;   // From shipping_address.full_name (last used)
+  isGuest: true;
+  isAdmin: false;
+  orderCount: number;
+  totalSpent: number;
+  created_at: string;  // First order date
+}
+```
+
+### Phase 3: Add Order Number Customization
+
+#### Step 3a: Update Site Settings Context
+
+**File**: `src/contexts/SiteSettingsContext.tsx`
+
+Add new settings:
+```typescript
+// Order Number Settings
+order_number_prefix: string;        // e.g., "PUR" or custom
+order_number_use_domain: boolean;   // Auto-use first 3 letters of domain
+```
+
+#### Step 3b: Add Admin UI for Order Number Settings
+
+**File**: `src/pages/admin/AdminSettings.tsx`
+
+Add a new card "Order Settings" with:
+- Toggle: "Use domain prefix" (auto-generates prefix from first 3 letters of domain)
+- Input: "Custom prefix" (only shown when domain prefix is disabled)
+- Preview of order number format
+
+#### Step 3c: Update Order Creation Logic
+
+**Files to update**:
+- `src/pages/Checkout.tsx` (line 320)
+- `src/components/admin/ConvertOrderDialog.tsx` (line 232)
+- `src/components/admin/ManualOrderDialog.tsx`
+
+Changes:
+- Read the order prefix from site settings
+- If "use domain prefix" is enabled, extract first 3 letters from `window.location.hostname`
+- Pass the custom prefix when creating orders
+- The database trigger will need to be modified to accept a prefix OR we generate the order number entirely on the frontend
+
+#### Step 3d: Database Changes
+
+**Option A (Recommended)**: Generate order number on frontend and remove trigger dependency on prefix
+- The trigger already runs but we can pass the order_number directly
+- The trigger only runs if `order_number` is not already set
+
+**Option B**: Modify database function to read prefix from a settings table
+- More complex, requires database function changes
+
+**Recommended approach**: Generate order number on frontend with the configured prefix. The current code already does this (line 320 in Checkout.tsx), but the database trigger overrides it. We need to update the trigger to only set order_number if it's NULL.
+
+---
+
+## Technical Details
+
+### Database Migration Required
+
+Update the `generate_order_number` trigger to only set order_number when not provided:
+
+```sql
+CREATE OR REPLACE FUNCTION public.generate_order_number()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Only generate if order_number is not provided
+  IF NEW.order_number IS NULL OR NEW.order_number = '' THEN
+    NEW.order_number = 'ORD-' || TO_CHAR(NOW(), 'YYYYMMDD') || '-' || LPAD(FLOOR(RANDOM() * 10000)::TEXT, 4, '0');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SET search_path = public;
+```
+
+### Order Number Generation Helper
+
+Create a utility function:
+```typescript
+function generateOrderNumber(prefix: string): string {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `${prefix}-${date}-${random}`;
+}
+
+function getDomainPrefix(): string {
+  const hostname = window.location.hostname;
+  // Remove www. and get first part
+  const domain = hostname.replace(/^www\./, '').split('.')[0];
+  return domain.slice(0, 3).toUpperCase();
+}
 ```
 
 ---
-
-## Files to Create
-
-| File | Purpose |
-|------|---------|
-| `src/hooks/useIncompleteOrderCapture.ts` | Auto-capture checkout form data |
-| `src/components/admin/IncompleteOrdersTab.tsx` | Admin table for incomplete orders |
-| `src/components/admin/IncompleteOrderDetailsDialog.tsx` | View incomplete order details |
-| `src/components/admin/ConvertOrderDialog.tsx` | Dialog to convert incomplete to actual order |
 
 ## Files to Modify
 
 | File | Changes |
 |------|---------|
-| `supabase/config.toml` | No changes needed (no new edge functions) |
-| `src/pages/admin/AdminOrders.tsx` | Add Tabs component to switch between Order List and Incomplete Orders |
-| `src/pages/Checkout.tsx` | Integrate useIncompleteOrderCapture hook, mark as converted on success |
-| `src/components/checkout/QuickCheckoutModal.tsx` | Integrate useIncompleteOrderCapture hook for quick checkout |
+| `src/components/admin/IncompleteOrdersTab.tsx` | Fix export with error handling |
+| `src/pages/admin/AdminCustomers.tsx` | Add guest customer support |
+| `src/contexts/SiteSettingsContext.tsx` | Add order number settings |
+| `src/pages/admin/AdminSettings.tsx` | Add order settings UI |
+| `src/pages/Checkout.tsx` | Use configurable order prefix |
+| `src/components/admin/ConvertOrderDialog.tsx` | Use configurable order prefix |
+| `src/components/admin/ManualOrderDialog.tsx` | Use configurable order prefix |
+| Database migration | Update trigger to respect provided order_number |
 
 ---
 
-## Database Migration
+## Summary
 
-```sql
--- Create incomplete_orders table
-CREATE TABLE public.incomplete_orders (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  session_id TEXT NOT NULL,
-  full_name TEXT,
-  phone TEXT,
-  email TEXT,
-  address TEXT,
-  shipping_location TEXT,
-  payment_method TEXT,
-  notes TEXT,
-  cart_items JSONB DEFAULT '[]'::jsonb,
-  subtotal NUMERIC DEFAULT 0,
-  shipping_fee NUMERIC DEFAULT 0,
-  total NUMERIC DEFAULT 0,
-  source TEXT DEFAULT 'checkout',
-  status TEXT DEFAULT 'pending',
-  converted_order_id UUID REFERENCES public.orders(id),
-  last_updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Enable RLS
-ALTER TABLE public.incomplete_orders ENABLE ROW LEVEL SECURITY;
-
--- Create indexes for performance
-CREATE INDEX idx_incomplete_orders_session ON public.incomplete_orders(session_id);
-CREATE INDEX idx_incomplete_orders_status ON public.incomplete_orders(status);
-CREATE INDEX idx_incomplete_orders_phone ON public.incomplete_orders(phone);
-CREATE INDEX idx_incomplete_orders_created ON public.incomplete_orders(created_at DESC);
-
--- RLS Policies
-CREATE POLICY "Admins can manage incomplete orders"
-  ON public.incomplete_orders FOR ALL
-  USING (is_admin(auth.uid()));
-
-CREATE POLICY "Anyone can create incomplete orders"
-  ON public.incomplete_orders FOR INSERT
-  WITH CHECK (true);
-
-CREATE POLICY "Anyone can update their session incomplete orders"
-  ON public.incomplete_orders FOR UPDATE
-  USING (true);
-```
-
----
-
-## User Interface Design
-
-**Admin Orders Page with Tabs:**
-- Tab 1: "Order List" - Current functionality
-- Tab 2: "Incomplete Orders" - New abandoned checkouts view
-
-**Incomplete Orders Table:**
-- Sortable columns
-- Bulk actions (Hide selected, Delete selected)
-- Export to CSV option
-- Pagination
-
-**Status Badges:**
-- Pending: Yellow badge
-- Converted: Green badge (with link to actual order)
-- Hidden: Gray badge
-
-**Row Actions Dropdown:**
-- View Details
-- Edit Order
-- Convert to Order (primary action)
-- Hide (soft delete)
-- Delete (permanent, with confirmation)
-
----
-
-## Security Considerations
-
-1. RLS ensures only admins can read incomplete orders data
-2. Session ID prevents customers from accessing others' data
-3. Phone/email data is protected behind admin authentication
-4. No sensitive payment data is stored (only method type, not credentials)
+1. **Export Fix**: Add proper error handling and ensure blob download works correctly
+2. **Guest Customers**: Query orders with null user_id, group by phone, display in customer list with "Guest" badge
+3. **Order Numbers**: 
+   - Add admin setting for prefix customization
+   - Add toggle for domain-based prefix (first 3 letters of domain)
+   - Update all order creation points to use the setting
+   - Modify database trigger to not override provided order numbers

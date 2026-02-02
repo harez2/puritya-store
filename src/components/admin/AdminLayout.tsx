@@ -97,7 +97,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <SidebarProvider>
-      <div data-admin-layout className="min-h-screen flex w-full bg-muted/30 font-sans" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
+      <div data-admin-layout className="min-h-screen flex w-full bg-muted/30">
         <AdminSidebar />
         <div className="flex-1 flex flex-col">
           <header className="h-14 border-b border-border bg-background flex items-center px-4 gap-4 sticky top-0 z-10">

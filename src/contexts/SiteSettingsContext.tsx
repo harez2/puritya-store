@@ -1,5 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { 
+  DesignMode, 
+  BorderRadiusStyle, 
+  CardShadowStyle, 
+  ButtonStyle,
+  getBorderRadiusValue,
+  getButtonRadiusValue,
+} from '@/lib/design-modes';
 
 interface HSLColor {
   h: number;
@@ -89,6 +97,12 @@ export interface HeroSliderSettings {
 }
 
 export interface SiteSettings {
+  // Design Mode
+  design_mode: DesignMode;
+  border_radius_style: BorderRadiusStyle;
+  card_shadow_style: CardShadowStyle;
+  button_style: ButtonStyle;
+
   // Branding
   store_name: string;
   store_tagline: string;
@@ -220,6 +234,12 @@ export interface CustomThemePreset {
 }
 
 const defaultSettings: SiteSettings = {
+  // Design Mode defaults
+  design_mode: 'generic',
+  border_radius_style: 'standard',
+  card_shadow_style: 'minimal',
+  button_style: 'standard',
+  
   store_name: 'Puritya',
   store_tagline: 'Curated feminine fashion imported from around the world',
   logo_url: '',
@@ -416,6 +436,21 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     
     // Load Google Fonts dynamically
     loadGoogleFonts(headingFont, bodyFont);
+
+    // Apply design mode style variables
+    const borderRadius = currentSettings.border_radius_style || 'standard';
+    const buttonStyle = currentSettings.button_style || 'standard';
+    const cardShadow = currentSettings.card_shadow_style || 'minimal';
+    
+    root.style.setProperty('--card-radius', getBorderRadiusValue(borderRadius));
+    root.style.setProperty('--button-radius', getButtonRadiusValue(buttonStyle));
+    root.style.setProperty('--design-mode', currentSettings.design_mode || 'generic');
+    
+    // Set a data attribute for CSS-based styling
+    root.setAttribute('data-design-mode', currentSettings.design_mode || 'generic');
+    root.setAttribute('data-card-shadow', cardShadow);
+    root.setAttribute('data-border-style', borderRadius);
+    root.setAttribute('data-button-style', buttonStyle);
 
     // Apply custom CSS
     applyCustomCss(currentSettings.custom_css || '');

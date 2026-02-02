@@ -416,14 +416,19 @@ export default function AdminOrders() {
       
       if (itemsError) throw itemsError;
 
-      // Fetch customer profiles
-      const userIds = [...new Set(filteredOrders.map(o => o.user_id))];
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, phone')
-        .in('user_id', userIds);
+      // Fetch customer profiles (filter out null user_ids for guest orders)
+      const userIds = [...new Set(filteredOrders.map(o => o.user_id).filter((id): id is string => id !== null))];
+      let profiles: { user_id: string; full_name: string | null; phone: string | null }[] = [];
       
-      if (profilesError) throw profilesError;
+      if (userIds.length > 0) {
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, phone')
+          .in('user_id', userIds);
+        
+        if (profilesError) throw profilesError;
+        profiles = profilesData || [];
+      }
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p]) || []);
       const itemsMap = new Map<string, typeof allOrderItems>();

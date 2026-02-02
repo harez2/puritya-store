@@ -30,7 +30,10 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       transition={{ duration: 0.4, delay: index * 0.1 }}
       className="group"
     >
-      <div className="relative overflow-hidden rounded-lg bg-secondary product-card-hover">
+      <div 
+        className="relative overflow-hidden bg-secondary product-card-hover"
+        style={{ borderRadius: 'var(--card-radius)' }}
+      >
         {/* Image */}
         <Link to={`/product/${product.slug}`} className="block aspect-[3/4] overflow-hidden">
           {product.images?.[0] ? (

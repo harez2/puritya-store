@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search, Copy, ExternalLink, CheckCircle } from 'lucide-react';
+import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search, Copy, ExternalLink, CheckCircle, Wand2 } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,8 @@ import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/The
 import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
 import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup';
 import { HeroSlideEditor } from '@/components/admin/HeroSlideEditor';
+import { DesignModeSelector } from '@/components/admin/DesignModeSelector';
+import { DesignMode, DESIGN_MODE_PRESETS } from '@/lib/design-modes';
 
 interface HSLColor {
   h: number;
@@ -194,6 +196,38 @@ export default function AdminCustomization() {
     });
   };
 
+  const handleDesignModeChange = (mode: DesignMode, applyDefaults: boolean) => {
+    const preset = DESIGN_MODE_PRESETS[mode];
+    
+    setLocalSettings((prev) => {
+      const updates: Partial<SiteSettings> = {
+        design_mode: mode,
+        border_radius_style: preset.styles.borderRadius,
+        card_shadow_style: preset.styles.cardShadow,
+        button_style: preset.styles.buttonStyle,
+      };
+
+      // If applying defaults, also update colors and fonts
+      if (applyDefaults) {
+        updates.primary_color = preset.colors.primary;
+        updates.secondary_color = preset.colors.secondary;
+        updates.accent_color = preset.colors.accent;
+        updates.background_color = preset.colors.background;
+        updates.heading_font = preset.fonts.heading;
+        updates.body_font = preset.fonts.body;
+      }
+
+      return { ...prev, ...updates };
+    });
+
+    toast({
+      title: 'Design mode changed',
+      description: applyDefaults 
+        ? `Switched to "${preset.name}" with default colors and fonts.`
+        : `Switched to "${preset.name}" while keeping your customizations.`,
+    });
+  };
+
   const getCurrentPresetId = (): string | undefined => {
     // Check custom presets first
     const customMatch = (localSettings.custom_presets || []).find((preset) => 
@@ -266,7 +300,11 @@ export default function AdminCustomization() {
         </div>
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 md:grid-cols-12 gap-2">
+          <TabsList className="grid w-full grid-cols-6 md:grid-cols-13 gap-2">
+            <TabsTrigger value="design-mode" className="flex items-center gap-2">
+              <Wand2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Design</span>
+            </TabsTrigger>
             <TabsTrigger value="branding" className="flex items-center gap-2">
               <Type className="h-4 w-4" />
               <span className="hidden sm:inline">Branding</span>
@@ -316,6 +354,24 @@ export default function AdminCustomization() {
               <span className="hidden sm:inline">SEO</span>
             </TabsTrigger>
           </TabsList>
+
+          {/* Design Mode Tab */}
+          <TabsContent value="design-mode" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Design Mode</CardTitle>
+                <CardDescription>
+                  Choose between two distinct visual themes for your store. Each mode comes with its own color palette, fonts, and styling.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <DesignModeSelector
+                  currentMode={localSettings.design_mode || 'generic'}
+                  onModeChange={handleDesignModeChange}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           {/* Branding Tab */}
           <TabsContent value="branding" className="space-y-6">

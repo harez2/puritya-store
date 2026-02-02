@@ -20,6 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ProductImageUpload } from '@/components/admin/ProductImageUpload';
 import { RichTextEditor } from '@/components/admin/RichTextEditor';
+import { VariantStockManager } from '@/components/admin/VariantStockManager';
 
 interface Category {
   id: string;
@@ -408,17 +409,23 @@ export default function AdminProductEditor() {
                 <CardTitle>Inventory</CardTitle>
                 <CardDescription>Stock and availability settings</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="stock_quantity">Stock Quantity</Label>
+                    <Label htmlFor="stock_quantity">Total Stock Quantity</Label>
                     <Input
                       id="stock_quantity"
                       type="number"
                       value={formData.stock_quantity}
                       onChange={(e) => setFormData({ ...formData, stock_quantity: Number(e.target.value) })}
                       min={0}
+                      disabled={isEditing && Boolean(formData.sizes || formData.colors)}
                     />
+                    {isEditing && Boolean(formData.sizes || formData.colors) && (
+                      <p className="text-xs text-muted-foreground">
+                        Auto-calculated from variant stock below
+                      </p>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="low_stock_threshold">Low Stock Threshold</Label>
@@ -431,6 +438,31 @@ export default function AdminProductEditor() {
                     />
                   </div>
                 </div>
+
+                {/* Variant Stock Management - Only show when editing and has variants */}
+                {isEditing && id && Boolean(formData.sizes || formData.colors) && (
+                  <>
+                    <Separator />
+                    <div className="space-y-2">
+                      <Label className="text-base font-semibold">Variant Stock</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Manage stock per size and color combination
+                      </p>
+                    </div>
+                    <VariantStockManager
+                      productId={id}
+                      sizes={formData.sizes ? formData.sizes.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      colors={formData.colors ? formData.colors.split(',').map(s => s.trim()).filter(Boolean) : []}
+                      lowStockThreshold={formData.low_stock_threshold}
+                    />
+                  </>
+                )}
+
+                {!isEditing && Boolean(formData.sizes || formData.colors) && (
+                  <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
+                    💡 Save the product first to manage variant-level stock (per size/color)
+                  </p>
+                )}
               </CardContent>
             </Card>
 

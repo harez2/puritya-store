@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Palette, Type, Image, Layout, MessageSquare, Save, RotateCcw, Menu, ALargeSmall, Code, FileCode2, Facebook, Tag, Search, Copy, ExternalLink, CheckCircle, Wand2 } from 'lucide-react';
+import { Save, RotateCcw, Copy, ExternalLink, CheckCircle } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,12 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { useSiteSettings, SiteSettings, MenuItem, CustomThemePreset } from '@/contexts/SiteSettingsContext';
+import { useSiteSettings, SiteSettings, CustomThemePreset } from '@/contexts/SiteSettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import { SingleImageUpload } from '@/components/admin/SingleImageUpload';
 import { MenuEditor } from '@/components/admin/MenuEditor';
-import { FontSelector, GOOGLE_FONTS } from '@/components/admin/FontSelector';
+import { FontSelector } from '@/components/admin/FontSelector';
 import { CustomCssEditor } from '@/components/admin/CustomCssEditor';
 import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
@@ -29,6 +28,23 @@ interface HSLColor {
   s: number;
   l: number;
 }
+
+// Section title mapping for header display
+const SECTION_TITLES: Record<string, string> = {
+  'design-mode': 'Design Mode',
+  'branding': 'Branding',
+  'typography': 'Fonts',
+  'theme': 'Theme',
+  'menus': 'Menus',
+  'hero': 'Hero',
+  'homepage': 'Homepage',
+  'footer': 'Footer',
+  'custom-css': 'Custom CSS',
+  'scripts': 'Scripts',
+  'facebook': 'Facebook Pixel',
+  'gtm': 'Google Tag Manager',
+  'seo': 'SEO',
+};
 
 function ColorPicker({
   label,
@@ -130,18 +146,14 @@ function ColorPicker({
 }
 
 export default function AdminCustomization() {
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const { settings, loading, updateSettings } = useSiteSettings();
   const { toast } = useToast();
   const [localSettings, setLocalSettings] = useState<SiteSettings>(settings);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   
-  const activeTab = searchParams.get('tab') || 'branding';
-  
-  const handleTabChange = (value: string) => {
-    setSearchParams({ tab: value });
-  };
+  const activeSection = searchParams.get('tab') || 'branding';
 
   useEffect(() => {
     setLocalSettings(settings);
@@ -207,7 +219,6 @@ export default function AdminCustomization() {
         button_style: preset.styles.buttonStyle,
       };
 
-      // If applying defaults, also update colors and fonts
       if (applyDefaults) {
         updates.primary_color = preset.colors.primary;
         updates.secondary_color = preset.colors.secondary;
@@ -229,7 +240,6 @@ export default function AdminCustomization() {
   };
 
   const getCurrentPresetId = (): string | undefined => {
-    // Check custom presets first
     const customMatch = (localSettings.custom_presets || []).find((preset) => 
       preset.colors.primary.h === localSettings.primary_color.h &&
       preset.colors.primary.s === localSettings.primary_color.s &&
@@ -239,7 +249,6 @@ export default function AdminCustomization() {
     );
     if (customMatch) return customMatch.id;
 
-    // Then check built-in presets
     return THEME_PRESETS.find((preset) => 
       preset.colors.primary.h === localSettings.primary_color.h &&
       preset.colors.primary.s === localSettings.primary_color.s &&
@@ -277,107 +286,32 @@ export default function AdminCustomization() {
     );
   }
 
-  return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-display font-semibold">Customization</h1>
-            <p className="text-muted-foreground">Customize your store's appearance and content</p>
-          </div>
-          <div className="flex gap-2">
-            {hasChanges && (
-              <Button variant="outline" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Discard
-              </Button>
-            )}
-            <Button onClick={handleSave} disabled={!hasChanges || saving}>
-              <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
+  const renderSection = () => {
+    switch (activeSection) {
+      case 'design-mode':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Design Mode</CardTitle>
+              <CardDescription>
+                Choose between two distinct visual themes for your store. Each mode comes with its own color palette, fonts, and styling.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DesignModeSelector
+                currentMode={localSettings.design_mode || 'generic'}
+                onModeChange={handleDesignModeChange}
+              />
+            </CardContent>
+          </Card>
+        );
 
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 md:grid-cols-13 gap-2">
-            <TabsTrigger value="design-mode" className="flex items-center gap-2">
-              <Wand2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Design</span>
-            </TabsTrigger>
-            <TabsTrigger value="branding" className="flex items-center gap-2">
-              <Type className="h-4 w-4" />
-              <span className="hidden sm:inline">Branding</span>
-            </TabsTrigger>
-            <TabsTrigger value="typography" className="flex items-center gap-2">
-              <ALargeSmall className="h-4 w-4" />
-              <span className="hidden sm:inline">Fonts</span>
-            </TabsTrigger>
-            <TabsTrigger value="theme" className="flex items-center gap-2">
-              <Palette className="h-4 w-4" />
-              <span className="hidden sm:inline">Theme</span>
-            </TabsTrigger>
-            <TabsTrigger value="menus" className="flex items-center gap-2">
-              <Menu className="h-4 w-4" />
-              <span className="hidden sm:inline">Menus</span>
-            </TabsTrigger>
-            <TabsTrigger value="hero" className="flex items-center gap-2">
-              <Image className="h-4 w-4" />
-              <span className="hidden sm:inline">Hero</span>
-            </TabsTrigger>
-            <TabsTrigger value="homepage" className="flex items-center gap-2">
-              <Layout className="h-4 w-4" />
-              <span className="hidden sm:inline">Homepage</span>
-            </TabsTrigger>
-            <TabsTrigger value="footer" className="flex items-center gap-2">
-              <MessageSquare className="h-4 w-4" />
-              <span className="hidden sm:inline">Footer</span>
-            </TabsTrigger>
-            <TabsTrigger value="custom-css" className="flex items-center gap-2">
-              <Code className="h-4 w-4" />
-              <span className="hidden sm:inline">CSS</span>
-            </TabsTrigger>
-            <TabsTrigger value="scripts" className="flex items-center gap-2">
-              <FileCode2 className="h-4 w-4" />
-              <span className="hidden sm:inline">Scripts</span>
-            </TabsTrigger>
-            <TabsTrigger value="facebook" className="flex items-center gap-2">
-              <Facebook className="h-4 w-4" />
-              <span className="hidden sm:inline">Facebook</span>
-            </TabsTrigger>
-            <TabsTrigger value="gtm" className="flex items-center gap-2">
-              <Tag className="h-4 w-4" />
-              <span className="hidden sm:inline">GTM</span>
-            </TabsTrigger>
-            <TabsTrigger value="seo" className="flex items-center gap-2">
-              <Search className="h-4 w-4" />
-              <span className="hidden sm:inline">SEO</span>
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Design Mode Tab */}
-          <TabsContent value="design-mode" className="space-y-6">
+      case 'branding':
+        return (
+          <>
             <Card>
               <CardHeader>
-                <CardTitle>Design Mode</CardTitle>
-                <CardDescription>
-                  Choose between two distinct visual themes for your store. Each mode comes with its own color palette, fonts, and styling.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <DesignModeSelector
-                  currentMode={localSettings.design_mode || 'generic'}
-                  onModeChange={handleDesignModeChange}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Branding Tab */}
-          <TabsContent value="branding" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="font-sans" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>Store Identity</CardTitle>
+                <CardTitle>Store Identity</CardTitle>
                 <CardDescription>Configure your store name and logo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -484,10 +418,12 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </>
+        );
 
-          {/* Typography Tab */}
-          <TabsContent value="typography" className="space-y-6">
+      case 'typography':
+        return (
+          <>
             <Card>
               <CardHeader>
                 <CardTitle>Font Selection</CardTitle>
@@ -623,104 +559,12 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </>
+        );
 
-          {/* Branding Tab */}
-          <TabsContent value="branding" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Store Identity</CardTitle>
-                <CardDescription>Configure your store name and logo</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="store_name">Store Name</Label>
-                    <Input
-                      id="store_name"
-                      value={localSettings.store_name}
-                      onChange={(e) => handleChange('store_name', e.target.value)}
-                      placeholder="Your store name"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="store_tagline">Store Tagline</Label>
-                    <Input
-                      id="store_tagline"
-                      value={localSettings.store_tagline}
-                      onChange={(e) => handleChange('store_tagline', e.target.value)}
-                      placeholder="A catchy tagline"
-                    />
-                  </div>
-                </div>
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Logo</Label>
-                    <SingleImageUpload
-                      image={localSettings.logo_url || null}
-                      onImageChange={(url) => handleChange('logo_url', url || '')}
-                      folder="branding"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Recommended: PNG or SVG with transparent background
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Favicon</Label>
-                    <SingleImageUpload
-                      image={localSettings.favicon_url || null}
-                      onImageChange={(url) => handleChange('favicon_url', url || '')}
-                      folder="branding"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Recommended: 32x32 or 64x64 PNG
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Social Media Links</CardTitle>
-                <CardDescription>Connect your social media accounts</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="social_instagram">Instagram URL</Label>
-                    <Input
-                      id="social_instagram"
-                      value={localSettings.social_instagram}
-                      onChange={(e) => handleChange('social_instagram', e.target.value)}
-                      placeholder="https://instagram.com/yourstore"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="social_facebook">Facebook URL</Label>
-                    <Input
-                      id="social_facebook"
-                      value={localSettings.social_facebook}
-                      onChange={(e) => handleChange('social_facebook', e.target.value)}
-                      placeholder="https://facebook.com/yourstore"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="social_twitter">Twitter URL</Label>
-                    <Input
-                      id="social_twitter"
-                      value={localSettings.social_twitter}
-                      onChange={(e) => handleChange('social_twitter', e.target.value)}
-                      placeholder="https://twitter.com/yourstore"
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Theme Tab */}
-          <TabsContent value="theme" className="space-y-6">
+      case 'theme':
+        return (
+          <>
             <Card>
               <CardHeader>
                 <CardTitle>Theme Presets</CardTitle>
@@ -815,17 +659,78 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </>
+        );
 
-          {/* Hero Tab */}
-          <TabsContent value="hero" className="space-y-6">
-            {/* Hero Slider Editor */}
+      case 'menus':
+        return (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle>Header Navigation</CardTitle>
+                <CardDescription>Customize the main navigation menu. Drag items to reorder.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.header_menu}
+                  onChange={(items) => handleChange('header_menu', items)}
+                  maxItems={8}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - Shop Links</CardTitle>
+                <CardDescription>Links displayed under "Shop" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_shop_menu}
+                  onChange={(items) => handleChange('footer_shop_menu', items)}
+                  maxItems={6}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - Help Links</CardTitle>
+                <CardDescription>Links displayed under "Help" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_help_menu}
+                  onChange={(items) => handleChange('footer_help_menu', items)}
+                  maxItems={6}
+                />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Footer - About Links</CardTitle>
+                <CardDescription>Links displayed under "About" in the footer</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <MenuEditor
+                  items={localSettings.footer_about_menu}
+                  onChange={(items) => handleChange('footer_about_menu', items)}
+                  maxItems={6}
+                />
+              </CardContent>
+            </Card>
+          </>
+        );
+
+      case 'hero':
+        return (
+          <>
             <HeroSlideEditor
               settings={localSettings.hero_slider}
               onChange={(heroSlider) => handleChange('hero_slider', heroSlider)}
             />
 
-            {/* Single Hero Fallback (shown when slider is disabled) */}
             {!localSettings.hero_slider?.enabled && (
               <Card>
                 <CardHeader>
@@ -884,10 +789,12 @@ export default function AdminCustomization() {
                 </CardContent>
               </Card>
             )}
-          </TabsContent>
+          </>
+        );
 
-          {/* Homepage Tab */}
-          <TabsContent value="homepage" className="space-y-6">
+      case 'homepage':
+        return (
+          <>
             <Card>
               <CardHeader>
                 <CardTitle>Announcement Bar</CardTitle>
@@ -952,169 +859,112 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
+          </>
+        );
 
-          {/* Footer Tab */}
-          <TabsContent value="footer" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer Content</CardTitle>
-                <CardDescription>Customize your store's footer</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="footer_description">Footer Description</Label>
-                  <Textarea
-                    id="footer_description"
-                    value={localSettings.footer_description}
-                    onChange={(e) => handleChange('footer_description', e.target.value)}
-                    placeholder="A brief description of your store"
-                    rows={3}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="copyright_text">Copyright Text</Label>
-                  <Input
-                    id="copyright_text"
-                    value={localSettings.copyright_text}
-                    onChange={(e) => handleChange('copyright_text', e.target.value)}
-                    placeholder="© 2025 Your Store. All rights reserved."
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="footer_tagline">Footer Tagline</Label>
-                  <Input
-                    id="footer_tagline"
-                    value={localSettings.footer_tagline}
-                    onChange={(e) => handleChange('footer_tagline', e.target.value)}
-                    placeholder="Your slogan or location info"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Menus Tab */}
-          <TabsContent value="menus" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Header Navigation</CardTitle>
-                <CardDescription>Customize the main navigation menu. Drag items to reorder.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MenuEditor
-                  items={localSettings.header_menu}
-                  onChange={(items) => handleChange('header_menu', items)}
-                  maxItems={8}
+      case 'footer':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Footer Content</CardTitle>
+              <CardDescription>Customize your store's footer</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="footer_description">Footer Description</Label>
+                <Textarea
+                  id="footer_description"
+                  value={localSettings.footer_description}
+                  onChange={(e) => handleChange('footer_description', e.target.value)}
+                  placeholder="A brief description of your store"
+                  rows={3}
                 />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer - Shop Links</CardTitle>
-                <CardDescription>Links displayed under "Shop" in the footer</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MenuEditor
-                  items={localSettings.footer_shop_menu}
-                  onChange={(items) => handleChange('footer_shop_menu', items)}
-                  maxItems={6}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="copyright_text">Copyright Text</Label>
+                <Input
+                  id="copyright_text"
+                  value={localSettings.copyright_text}
+                  onChange={(e) => handleChange('copyright_text', e.target.value)}
+                  placeholder="© 2025 Your Store. All rights reserved."
                 />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer - Help Links</CardTitle>
-                <CardDescription>Links displayed under "Help" in the footer</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MenuEditor
-                  items={localSettings.footer_help_menu}
-                  onChange={(items) => handleChange('footer_help_menu', items)}
-                  maxItems={6}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="footer_tagline">Footer Tagline</Label>
+                <Input
+                  id="footer_tagline"
+                  value={localSettings.footer_tagline}
+                  onChange={(e) => handleChange('footer_tagline', e.target.value)}
+                  placeholder="Your slogan or location info"
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
+        );
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Footer - About Links</CardTitle>
-                <CardDescription>Links displayed under "About" in the footer</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <MenuEditor
-                  items={localSettings.footer_about_menu}
-                  onChange={(items) => handleChange('footer_about_menu', items)}
-                  maxItems={6}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+      case 'custom-css':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom CSS</CardTitle>
+              <CardDescription>Add advanced styling overrides for your store</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CustomCssEditor
+                value={localSettings.custom_css || ''}
+                onChange={(value) => handleChange('custom_css', value)}
+              />
+            </CardContent>
+          </Card>
+        );
 
-          {/* Custom CSS Tab */}
-          <TabsContent value="custom-css" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Custom CSS</CardTitle>
-                <CardDescription>Add advanced styling overrides for your store</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CustomCssEditor
-                  value={localSettings.custom_css || ''}
-                  onChange={(value) => handleChange('custom_css', value)}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+      case 'scripts':
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle>Custom Scripts</CardTitle>
+              <CardDescription>Add tracking codes, analytics, chat widgets, and other third-party scripts</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <CustomScriptsEditor
+                headScripts={localSettings.custom_head_scripts || ''}
+                bodyScripts={localSettings.custom_body_scripts || ''}
+                onHeadScriptsChange={(value) => handleChange('custom_head_scripts', value)}
+                onBodyScriptsChange={(value) => handleChange('custom_body_scripts', value)}
+              />
+            </CardContent>
+          </Card>
+        );
 
-          {/* Custom Scripts Tab */}
-          <TabsContent value="scripts" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Custom Scripts</CardTitle>
-                <CardDescription>Add tracking codes, analytics, chat widgets, and other third-party scripts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CustomScriptsEditor
-                  headScripts={localSettings.custom_head_scripts || ''}
-                  bodyScripts={localSettings.custom_body_scripts || ''}
-                  onHeadScriptsChange={(value) => handleChange('custom_head_scripts', value)}
-                  onBodyScriptsChange={(value) => handleChange('custom_body_scripts', value)}
-                />
-              </CardContent>
-            </Card>
-          </TabsContent>
+      case 'facebook':
+        return (
+          <FacebookPixelSetup
+            pixelId={localSettings.facebook_pixel_id || ''}
+            capiEnabled={localSettings.facebook_capi_enabled || false}
+            accessToken={localSettings.facebook_access_token || ''}
+            catalogId={localSettings.facebook_catalog_id || ''}
+            catalogEnabled={localSettings.facebook_catalog_enabled || false}
+            onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
+            onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
+            onAccessTokenChange={(value) => handleChange('facebook_access_token', value)}
+            onCatalogIdChange={(value) => handleChange('facebook_catalog_id', value)}
+            onCatalogEnabledChange={(value) => handleChange('facebook_catalog_enabled', value)}
+          />
+        );
 
-          {/* Facebook Pixel Tab */}
-          <TabsContent value="facebook" className="space-y-6">
-            <FacebookPixelSetup
-              pixelId={localSettings.facebook_pixel_id || ''}
-              capiEnabled={localSettings.facebook_capi_enabled || false}
-              accessToken={localSettings.facebook_access_token || ''}
-              catalogId={localSettings.facebook_catalog_id || ''}
-              catalogEnabled={localSettings.facebook_catalog_enabled || false}
-              onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
-              onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
-              onAccessTokenChange={(value) => handleChange('facebook_access_token', value)}
-              onCatalogIdChange={(value) => handleChange('facebook_catalog_id', value)}
-              onCatalogEnabledChange={(value) => handleChange('facebook_catalog_enabled', value)}
-            />
-          </TabsContent>
+      case 'gtm':
+        return (
+          <GoogleTagManagerSetup
+            containerId={localSettings.gtm_container_id || ''}
+            enabled={localSettings.gtm_enabled || false}
+            onContainerIdChange={(value) => handleChange('gtm_container_id', value)}
+            onEnabledChange={(value) => handleChange('gtm_enabled', value)}
+          />
+        );
 
-          {/* Google Tag Manager Tab */}
-          <TabsContent value="gtm" className="space-y-6">
-            <GoogleTagManagerSetup
-              containerId={localSettings.gtm_container_id || ''}
-              enabled={localSettings.gtm_enabled || false}
-              onContainerIdChange={(value) => handleChange('gtm_container_id', value)}
-              onEnabledChange={(value) => handleChange('gtm_enabled', value)}
-            />
-          </TabsContent>
-
-          {/* Global SEO Tab */}
-          <TabsContent value="seo" className="space-y-6">
+      case 'seo':
+        return (
+          <>
             <Card>
               <CardHeader>
                 <CardTitle>Title & Meta Settings</CardTitle>
@@ -1313,8 +1163,45 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </>
+        );
+
+      default:
+        return (
+          <Card>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Select a section from the sidebar to configure your store.
+            </CardContent>
+          </Card>
+        );
+    }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-semibold">{SECTION_TITLES[activeSection] || 'Customization'}</h1>
+            <p className="text-muted-foreground">Customize your store's appearance and content</p>
+          </div>
+          <div className="flex gap-2">
+            {hasChanges && (
+              <Button variant="outline" onClick={handleReset}>
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Discard
+              </Button>
+            )}
+            <Button onClick={handleSave} disabled={!hasChanges || saving}>
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {renderSection()}
+        </div>
       </div>
     </AdminLayout>
   );

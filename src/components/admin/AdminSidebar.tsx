@@ -74,7 +74,10 @@ const mainNavItems = [
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];
 
+import { Wand2, Search } from 'lucide-react';
+
 const customizationSubItems = [
+  { title: 'Design Mode', tab: 'design-mode', icon: Wand2 },
   { title: 'Branding', tab: 'branding', icon: Type },
   { title: 'Fonts', tab: 'typography', icon: ALargeSmall },
   { title: 'Theme', tab: 'theme', icon: Palette },
@@ -86,6 +89,7 @@ const customizationSubItems = [
   { title: 'Scripts', tab: 'scripts', icon: FileCode2 },
   { title: 'Facebook', tab: 'facebook', icon: Facebook },
   { title: 'GTM', tab: 'gtm', icon: Tag },
+  { title: 'SEO', tab: 'seo', icon: Search },
 ];
 
 export function AdminSidebar() {
@@ -97,6 +101,7 @@ export function AdminSidebar() {
   const collapsed = state === 'collapsed';
   
   const isCustomizationActive = location.pathname === '/admin/customization';
+  const currentTab = new URLSearchParams(location.search).get('tab') || 'branding';
   const [customizationOpen, setCustomizationOpen] = useState(isCustomizationActive);
   
   const storeName = settings.store_name || 'Store';
@@ -175,17 +180,20 @@ export function AdminSidebar() {
                   <CollapsibleContent>
                     {!collapsed && (
                       <SidebarMenuSub>
-                        {customizationSubItems.map((item) => (
-                          <SidebarMenuSubItem key={item.tab}>
-                            <SidebarMenuSubButton
-                              onClick={() => handleCustomizationTabClick(item.tab)}
-                              className="flex items-center gap-2 cursor-pointer"
-                            >
-                              <item.icon className="h-4 w-4" />
-                              <span>{item.title}</span>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        ))}
+                        {customizationSubItems.map((item) => {
+                          const isActiveTab = isCustomizationActive && currentTab === item.tab;
+                          return (
+                            <SidebarMenuSubItem key={item.tab}>
+                              <SidebarMenuSubButton
+                                onClick={() => handleCustomizationTabClick(item.tab)}
+                                className={`flex items-center gap-2 cursor-pointer ${isActiveTab ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                              >
+                                <item.icon className="h-4 w-4" />
+                                <span>{item.title}</span>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        })}
                       </SidebarMenuSub>
                     )}
                   </CollapsibleContent>

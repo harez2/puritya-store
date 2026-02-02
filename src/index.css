@@ -121,6 +121,16 @@
     @apply font-medium tracking-tight;
   }
 
+  /* Exclude admin panel from custom heading fonts */
+  [data-admin-layout] h1,
+  [data-admin-layout] h2,
+  [data-admin-layout] h3,
+  [data-admin-layout] h4,
+  [data-admin-layout] h5,
+  [data-admin-layout] h6 {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+
   h1 { font-size: calc(2.5rem * var(--heading-scale, 1)); }
   h2 { font-size: calc(2rem * var(--heading-scale, 1)); }
   h3 { font-size: calc(1.5rem * var(--heading-scale, 1)); }

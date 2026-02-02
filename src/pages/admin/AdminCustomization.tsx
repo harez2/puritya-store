@@ -377,7 +377,7 @@ export default function AdminCustomization() {
           <TabsContent value="branding" className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Store Identity</CardTitle>
+                <CardTitle className="font-sans" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>Store Identity</CardTitle>
                 <CardDescription>Configure your store name and logo</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">

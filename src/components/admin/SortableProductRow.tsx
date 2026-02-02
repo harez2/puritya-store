@@ -84,7 +84,7 @@ export function SortableProductRow({
       <td className="py-3 px-2">
         <Checkbox
           checked={isSelected}
-          onCheckedChange={onSelect}
+          onCheckedChange={(checked) => onSelect(checked === true)}
         />
       </td>
       <td className="py-3 px-2">

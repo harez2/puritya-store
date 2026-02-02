@@ -3,8 +3,8 @@
 export type DesignMode = 'generic' | 'modest';
 
 export type BorderRadiusStyle = 'standard' | 'soft' | 'pill';
-export type CardShadowStyle = 'minimal' | 'soft';
-export type ButtonStyle = 'standard' | 'rounded';
+export type CardShadowStyle = 'minimal' | 'soft' | 'elegant';
+export type ButtonStyle = 'standard' | 'rounded' | 'sleek';
 
 export interface HSLColor {
   h: number;
@@ -59,22 +59,22 @@ export const DESIGN_MODE_PRESETS: Record<DesignMode, DesignModePreset> = {
   modest: {
     id: 'modest',
     name: 'Modest Fashion',
-    description: 'Elegant, refined design for modest wear',
-    tagline: 'Graceful & Refined',
+    description: 'Premium, sleek design with luxurious elegance',
+    tagline: 'Luxe & Refined',
     colors: {
-      primary: { h: 160, s: 30, l: 45 },     // Sage Green
-      secondary: { h: 45, s: 25, l: 94 },    // Soft Ivory
-      accent: { h: 30, s: 35, l: 85 },       // Warm Tan
-      background: { h: 40, s: 20, l: 98 },   // Soft Cream
+      primary: { h: 25, s: 30, l: 25 },      // Deep Espresso Brown
+      secondary: { h: 35, s: 20, l: 95 },    // Pearl White
+      accent: { h: 38, s: 45, l: 65 },       // Champagne Gold
+      background: { h: 40, s: 15, l: 97 },   // Soft Ivory
     },
     fonts: {
-      heading: 'Playfair Display',
-      body: 'Lora',
+      heading: 'Cormorant',
+      body: 'Raleway',
     },
     styles: {
       borderRadius: 'soft',
-      cardShadow: 'soft',
-      buttonStyle: 'rounded',
+      cardShadow: 'elegant',
+      buttonStyle: 'sleek',
     },
   },
 };
@@ -85,7 +85,7 @@ export function getBorderRadiusValue(style: BorderRadiusStyle): string {
     case 'standard':
       return '0.5rem';   // rounded-lg
     case 'soft':
-      return '0.75rem';  // rounded-xl
+      return '0.25rem';  // rounded - more refined/sleek
     case 'pill':
       return '9999px';   // rounded-full
     default:
@@ -100,6 +100,8 @@ export function getButtonRadiusValue(style: ButtonStyle): string {
       return '0.375rem'; // rounded-md
     case 'rounded':
       return '9999px';   // rounded-full / pill
+    case 'sleek':
+      return '0.125rem'; // rounded-sm - sharp, premium look
     default:
       return '0.375rem';
   }
@@ -112,6 +114,8 @@ export function getCardShadowClass(style: CardShadowStyle): string {
       return 'shadow-sm hover:shadow-lg';
     case 'soft':
       return 'shadow-md hover:shadow-xl';
+    case 'elegant':
+      return 'shadow-[0_2px_15px_-3px_rgba(0,0,0,0.07),0_10px_20px_-2px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)]';
     default:
       return 'shadow-sm hover:shadow-lg';
   }

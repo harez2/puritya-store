@@ -31,7 +31,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       className="group"
     >
       <div 
-        className="relative overflow-hidden bg-secondary product-card-hover"
+        className="relative overflow-hidden bg-secondary product-card-hover transition-all duration-500"
         style={{ borderRadius: 'var(--card-radius)' }}
       >
         {/* Image */}
@@ -52,17 +52,17 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         {/* Badges */}
         <div className="absolute top-3 left-3 flex flex-col gap-2">
           {product.new_arrival && (
-            <Badge className="bg-foreground text-background hover:bg-foreground">
+            <Badge className="bg-foreground text-background hover:bg-foreground text-[0.65rem] tracking-wider uppercase font-medium">
               New
             </Badge>
           )}
           {discount > 0 && (
-            <Badge variant="destructive">
+            <Badge variant="destructive" className="text-[0.65rem] tracking-wider font-medium">
               -{discount}%
             </Badge>
           )}
           {!product.in_stock && (
-            <Badge variant="secondary">
+            <Badge variant="secondary" className="text-[0.65rem] tracking-wider uppercase font-medium">
               Sold Out
             </Badge>
           )}
@@ -73,7 +73,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           variant="ghost"
           size="icon"
           className={cn(
-            "absolute top-3 right-3 bg-background/80 backdrop-blur-sm hover:bg-background",
+            "absolute top-3 right-3 bg-background/80 backdrop-blur-sm hover:bg-background transition-all duration-300",
             isWishlisted && "text-primary"
           )}
           onClick={(e) => {
@@ -91,7 +91,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
           <Button
-            className="w-full"
+            className="w-full tracking-wide"
+            style={{ borderRadius: 'var(--button-radius)' }}
             disabled={!product.in_stock}
             onClick={(e) => {
               e.preventDefault();

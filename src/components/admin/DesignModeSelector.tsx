@@ -216,12 +216,19 @@ export function DesignModeSelector({ currentMode, onModeChange }: DesignModeSele
               How would you like to apply this change?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
-            <AlertDialogCancel className="rounded-md">Cancel</AlertDialogCancel>
-            <Button variant="outline" onClick={handleApplyKeepCustomizations} className="rounded-md">
+          <AlertDialogFooter className="flex-col sm:flex-row sm:flex-wrap gap-2 mt-4">
+            <AlertDialogCancel className="rounded-md w-full sm:w-auto">Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              onClick={handleApplyKeepCustomizations}
+              className="rounded-md w-full sm:w-auto"
+            >
               Keep My Customizations
             </Button>
-            <AlertDialogAction onClick={handleApplyWithDefaults} className="rounded-md">
+            <AlertDialogAction
+              onClick={handleApplyWithDefaults}
+              className="rounded-md w-full sm:w-auto whitespace-normal"
+            >
               Apply with Defaults
             </AlertDialogAction>
           </AlertDialogFooter>

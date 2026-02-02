@@ -925,14 +925,14 @@ export default function AdminOrders() {
               <div>
                 <h3 className="font-semibold mb-2">Shipping Address</h3>
                 <div className="bg-muted/50 p-3 rounded-lg text-sm">
-                  <p className="font-medium">{selectedOrder.shipping_address?.fullName}</p>
-                  <p>{selectedOrder.shipping_address?.addressLine1}</p>
-                  {selectedOrder.shipping_address?.addressLine2 && (
-                    <p>{selectedOrder.shipping_address.addressLine2}</p>
+                  <p className="font-medium">{selectedOrder.shipping_address?.full_name || selectedOrder.shipping_address?.fullName}</p>
+                  <p>{selectedOrder.shipping_address?.address_line1 || selectedOrder.shipping_address?.addressLine1}</p>
+                  {(selectedOrder.shipping_address?.address_line2 || selectedOrder.shipping_address?.addressLine2) && (
+                    <p>{selectedOrder.shipping_address.address_line2 || selectedOrder.shipping_address.addressLine2}</p>
                   )}
                   <p>
                     {selectedOrder.shipping_address?.city}, {selectedOrder.shipping_address?.state}{' '}
-                    {selectedOrder.shipping_address?.postalCode}
+                    {selectedOrder.shipping_address?.postal_code || selectedOrder.shipping_address?.postalCode}
                   </p>
                   <p>{selectedOrder.shipping_address?.phone}</p>
                 </div>

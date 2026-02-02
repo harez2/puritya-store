@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Outfit:wght@300;400;500;600&family=Cormorant:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Raleway:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -166,6 +166,27 @@
 
   [data-card-shadow="soft"] .product-card-hover:hover {
     box-shadow: 0 24px 48px -12px hsl(var(--primary) / 0.2);
+  }
+
+  /* Elegant shadow style for premium/modest mode */
+  [data-card-shadow="elegant"] .product-card-hover {
+    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+    border: 1px solid hsl(var(--border) / 0.5);
+  }
+
+  [data-card-shadow="elegant"] .product-card-hover:hover {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    border-color: hsl(var(--primary) / 0.2);
+  }
+
+  /* Sleek button style for modest mode */
+  [data-button-style="sleek"] .btn-primary,
+  [data-button-style="sleek"] button[class*="bg-primary"] {
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.875rem 1.75rem;
   }
 
   /* Elegant button styles */

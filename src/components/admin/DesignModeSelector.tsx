@@ -1,4 +1,4 @@
-import { Check, Sparkles, Leaf } from 'lucide-react';
+import { Check, Sparkles, Diamond } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ function DesignModeCard({
   isActive: boolean;
   onClick: () => void;
 }) {
-  const Icon = preset.id === 'generic' ? Sparkles : Leaf;
+  const Icon = preset.id === 'generic' ? Sparkles : Diamond;
   
   return (
     <Card
@@ -51,28 +51,49 @@ function DesignModeCard({
       <CardContent className="p-0">
         {/* Preview Section */}
         <div 
-          className="h-32 relative"
+          className="h-36 relative overflow-hidden"
           style={{
-            background: `linear-gradient(135deg, 
-              hsl(${preset.colors.background.h}, ${preset.colors.background.s}%, ${preset.colors.background.l}%) 0%,
-              hsl(${preset.colors.secondary.h}, ${preset.colors.secondary.s}%, ${preset.colors.secondary.l}%) 50%,
-              hsl(${preset.colors.accent.h}, ${preset.colors.accent.s}%, ${preset.colors.accent.l}%) 100%
-            )`,
+            background: preset.id === 'modest' 
+              ? `linear-gradient(145deg, 
+                  hsl(${preset.colors.background.h}, ${preset.colors.background.s}%, ${preset.colors.background.l}%) 0%,
+                  hsl(${preset.colors.secondary.h}, ${preset.colors.secondary.s}%, ${preset.colors.secondary.l}%) 100%
+                )`
+              : `linear-gradient(135deg, 
+                  hsl(${preset.colors.background.h}, ${preset.colors.background.s}%, ${preset.colors.background.l}%) 0%,
+                  hsl(${preset.colors.secondary.h}, ${preset.colors.secondary.s}%, ${preset.colors.secondary.l}%) 50%,
+                  hsl(${preset.colors.accent.h}, ${preset.colors.accent.s}%, ${preset.colors.accent.l}%) 100%
+                )`,
           }}
         >
+          {/* Subtle pattern overlay for modest mode */}
+          {preset.id === 'modest' && (
+            <div 
+              className="absolute inset-0 opacity-5"
+              style={{
+                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+              }}
+            />
+          )}
+          
           {/* Mini product cards preview */}
           <div className="absolute inset-4 flex gap-2 items-end">
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="flex-1 bg-white/80 backdrop-blur-sm"
+                className="flex-1 backdrop-blur-sm transition-all duration-300"
                 style={{
                   height: `${50 + i * 10}%`,
+                  backgroundColor: preset.id === 'modest' 
+                    ? 'rgba(255,255,255,0.95)' 
+                    : 'rgba(255,255,255,0.8)',
                   borderRadius: preset.styles.borderRadius === 'standard' ? '0.5rem' : 
-                               preset.styles.borderRadius === 'soft' ? '0.75rem' : '1rem',
-                  boxShadow: preset.styles.cardShadow === 'soft' 
-                    ? '0 4px 12px rgba(0,0,0,0.1)' 
-                    : '0 1px 3px rgba(0,0,0,0.05)',
+                               preset.styles.borderRadius === 'soft' ? '0.25rem' : '1rem',
+                  boxShadow: preset.styles.cardShadow === 'elegant'
+                    ? '0 2px 15px -3px rgba(0,0,0,0.07), 0 10px 20px -2px rgba(0,0,0,0.04)'
+                    : preset.styles.cardShadow === 'soft' 
+                      ? '0 4px 12px rgba(0,0,0,0.1)' 
+                      : '0 1px 3px rgba(0,0,0,0.05)',
+                  border: preset.id === 'modest' ? '1px solid rgba(0,0,0,0.04)' : 'none',
                 }}
               />
             ))}
@@ -81,13 +102,23 @@ function DesignModeCard({
           {/* Sample button */}
           <div className="absolute bottom-3 right-3">
             <div
-              className="px-3 py-1 text-xs font-medium text-white"
+              className="text-xs font-medium text-white transition-all"
               style={{
                 backgroundColor: `hsl(${preset.colors.primary.h}, ${preset.colors.primary.s}%, ${preset.colors.primary.l}%)`,
-                borderRadius: preset.styles.buttonStyle === 'rounded' ? '9999px' : '0.375rem',
+                borderRadius: preset.styles.buttonStyle === 'rounded' 
+                  ? '9999px' 
+                  : preset.styles.buttonStyle === 'sleek' 
+                    ? '0.125rem' 
+                    : '0.375rem',
+                padding: preset.styles.buttonStyle === 'sleek' 
+                  ? '0.5rem 1rem' 
+                  : '0.25rem 0.75rem',
+                letterSpacing: preset.styles.buttonStyle === 'sleek' ? '0.1em' : 'normal',
+                textTransform: preset.styles.buttonStyle === 'sleek' ? 'uppercase' : 'none',
+                fontSize: preset.styles.buttonStyle === 'sleek' ? '0.625rem' : '0.75rem',
               }}
             >
-              Shop Now
+              {preset.styles.buttonStyle === 'sleek' ? 'SHOP NOW' : 'Shop Now'}
             </div>
           </div>
         </div>

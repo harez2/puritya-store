@@ -469,9 +469,13 @@ export default function AdminOrders() {
       const rows: string[][] = [];
       
       for (const order of filteredOrders) {
-        const profile = profileMap.get(order.user_id);
+        const profile = order.user_id ? profileMap.get(order.user_id) : null;
         const items = itemsMap.get(order.id) || [];
         const shippingAddr = order.shipping_address || {};
+        
+        // For guest orders, use shipping name/phone as customer name/phone
+        const customerName = profile?.full_name || shippingAddr.full_name || '';
+        const customerPhone = profile?.phone || shippingAddr.phone || '';
         
         if (items.length === 0) {
           // Order with no items
@@ -481,8 +485,8 @@ export default function AdminOrders() {
             order.status,
             order.payment_status || 'pending',
             order.payment_method || '',
-            profile?.full_name || '',
-            profile?.phone || '',
+            customerName,
+            customerPhone,
             shippingAddr.full_name || '',
             shippingAddr.phone || '',
             [shippingAddr.address_line1, shippingAddr.address_line2].filter(Boolean).join(', '),
@@ -509,8 +513,8 @@ export default function AdminOrders() {
               index === 0 ? order.status : '',
               index === 0 ? (order.payment_status || 'pending') : '',
               index === 0 ? (order.payment_method || '') : '',
-              index === 0 ? (profile?.full_name || '') : '',
-              index === 0 ? (profile?.phone || '') : '',
+              index === 0 ? customerName : '',
+              index === 0 ? customerPhone : '',
               index === 0 ? (shippingAddr.full_name || '') : '',
               index === 0 ? (shippingAddr.phone || '') : '',
               index === 0 ? [shippingAddr.address_line1, shippingAddr.address_line2].filter(Boolean).join(', ') : '',

@@ -208,20 +208,20 @@ export function DesignModeSelector({ currentMode, onModeChange }: DesignModeSele
       </div>
 
       <AlertDialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-md" style={{ fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif' }}>
           <AlertDialogHeader>
-            <AlertDialogTitle>Switch Design Mode</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-lg font-semibold">Switch Design Mode</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-muted-foreground">
               You're switching to <strong>{pendingMode && DESIGN_MODE_PRESETS[pendingMode].name}</strong>. 
               How would you like to apply this change?
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <Button variant="outline" onClick={handleApplyKeepCustomizations}>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2 mt-4">
+            <AlertDialogCancel className="rounded-md">Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={handleApplyKeepCustomizations} className="rounded-md">
               Keep My Customizations
             </Button>
-            <AlertDialogAction onClick={handleApplyWithDefaults}>
+            <AlertDialogAction onClick={handleApplyWithDefaults} className="rounded-md">
               Apply with Defaults
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DndContext,
   closestCenter,
@@ -40,6 +40,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { HomepageSection, SectionSettings } from '@/contexts/SiteSettingsContext';
 import { Badge } from '@/components/ui/badge';
+import { supabase } from '@/lib/supabase';
+
+type Category = { id: string; name: string; slug: string };
+type BlogCategory = { id: string; name: string; slug: string };
 
 const SECTION_TYPE_LABELS: Record<string, string> = {
   new_in: 'New Arrivals',
@@ -162,6 +166,8 @@ export function HomepageSectionsEditor({ sections, onChange }: HomepageSectionsE
   const [editingSection, setEditingSection] = useState<HomepageSection | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isAddingNew, setIsAddingNew] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [blogCategories, setBlogCategories] = useState<BlogCategory[]>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -169,6 +175,19 @@ export function HomepageSectionsEditor({ sections, onChange }: HomepageSectionsE
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  // Fetch categories and blog categories for custom section content type
+  useEffect(() => {
+    async function fetchData() {
+      const [catRes, blogCatRes] = await Promise.all([
+        supabase.from('categories').select('id, name, slug').order('name'),
+        supabase.from('blog_categories').select('id, name, slug').order('name'),
+      ]);
+      if (catRes.data) setCategories(catRes.data);
+      if (blogCatRes.data) setBlogCategories(blogCatRes.data);
+    }
+    fetchData();
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -363,7 +382,78 @@ export function HomepageSectionsEditor({ sections, onChange }: HomepageSectionsE
                 />
               </div>
 
-              {editingSection.type !== 'custom' && (
+              {/* Custom section content type selection */}
+              {editingSection.type === 'custom' && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Content Type</Label>
+                    <Select
+                      value={editingSection.settings?.contentType || ''}
+                      onValueChange={(value) => updateEditingSettings('contentType', value as SectionSettings['contentType'])}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select content type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="products_category">Products from Category</SelectItem>
+                        <SelectItem value="reviews">Customer Reviews</SelectItem>
+                        <SelectItem value="blogs_category">Blogs from Category</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {editingSection.settings?.contentType === 'products_category' && (
+                    <div className="space-y-2">
+                      <Label>Product Category</Label>
+                      <Select
+                        value={editingSection.settings?.categoryId || ''}
+                        onValueChange={(value) => updateEditingSettings('categoryId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {categories.map((cat) => (
+                            <SelectItem key={cat.id} value={cat.id}>
+                              {cat.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {editingSection.settings?.contentType === 'blogs_category' && (
+                    <div className="space-y-2">
+                      <Label>Blog Category</Label>
+                      <Select
+                        value={editingSection.settings?.blogCategoryId || ''}
+                        onValueChange={(value) => updateEditingSettings('blogCategoryId', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a blog category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {blogCategories.length === 0 ? (
+                            <SelectItem value="" disabled>
+                              No blog categories found
+                            </SelectItem>
+                          ) : (
+                            blogCategories.map((cat) => (
+                              <SelectItem key={cat.id} value={cat.id}>
+                                {cat.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Common settings for non-custom sections OR custom sections with content type selected */}
+              {(editingSection.type !== 'custom' || editingSection.settings?.contentType) && (
                 <>
                   <div className="space-y-2">
                     <Label>Items to Show</Label>
@@ -382,7 +472,7 @@ export function HomepageSectionsEditor({ sections, onChange }: HomepageSectionsE
                     </div>
                   </div>
 
-                  {editingSection.type !== 'blogs' && (
+                  {editingSection.type !== 'blogs' && editingSection.settings?.contentType !== 'blogs_category' && editingSection.settings?.contentType !== 'reviews' && (
                     <div className="space-y-2">
                       <Label>Columns</Label>
                       <Select

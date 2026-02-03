@@ -102,6 +102,10 @@ export interface SectionSettings {
   showViewAll?: boolean;
   viewAllLink?: string;
   background?: 'default' | 'secondary' | 'accent';
+  // Custom section content settings
+  contentType?: 'products_category' | 'reviews' | 'blogs_category';
+  categoryId?: string;
+  blogCategoryId?: string;
 }
 
 export interface HomepageSection {

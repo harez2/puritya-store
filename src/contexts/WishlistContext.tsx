@@ -111,7 +111,6 @@ export function WishlistProvider({ children }: { children: ReactNode }) {
             trackFacebookEvent(
               settings.facebook_pixel_id,
               settings.facebook_capi_enabled,
-              settings.facebook_access_token || '',
               FacebookEvents.AddToWishlist,
               {
                 content_ids: [product.id],

@@ -1248,6 +1248,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_if_blocked: {
+        Args: {
+          _device_id?: string
+          _email?: string
+          _ip_address?: string
+          _phone?: string
+        }
+        Returns: {
+          custom_message: string
+          is_blocked: boolean
+          reason: string
+        }[]
+      }
       has_permission: {
         Args: { _permission_name: string; _user_id: string }
         Returns: boolean

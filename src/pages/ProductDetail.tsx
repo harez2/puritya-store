@@ -77,7 +77,6 @@ export default function ProductDetail() {
             trackFacebookEvent(
               settings.facebook_pixel_id,
               settings.facebook_capi_enabled,
-              settings.facebook_access_token || '',
               FacebookEvents.ViewContent,
               {
                 content_ids: [data.id],

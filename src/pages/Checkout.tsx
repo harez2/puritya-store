@@ -126,7 +126,6 @@ export default function Checkout() {
         trackFacebookEvent(
           settings.facebook_pixel_id,
           settings.facebook_capi_enabled,
-          settings.facebook_access_token || '',
           FacebookEvents.InitiateCheckout,
           {
             content_ids: items.map(item => item.product_id),
@@ -483,7 +482,6 @@ export default function Checkout() {
         trackFacebookEvent(
           settings.facebook_pixel_id,
           settings.facebook_capi_enabled,
-          settings.facebook_access_token || '',
           FacebookEvents.Purchase,
           {
             content_ids: items.map(item => item.product_id),

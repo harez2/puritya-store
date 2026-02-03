@@ -13,12 +13,10 @@ import { toast } from 'sonner';
 interface FacebookPixelSetupProps {
   pixelId: string;
   capiEnabled: boolean;
-  accessToken: string;
   catalogId: string;
   catalogEnabled: boolean;
   onPixelIdChange: (value: string) => void;
   onCapiEnabledChange: (value: boolean) => void;
-  onAccessTokenChange: (value: string) => void;
   onCatalogIdChange: (value: string) => void;
   onCatalogEnabledChange: (value: boolean) => void;
 }
@@ -26,19 +24,14 @@ interface FacebookPixelSetupProps {
 export function FacebookPixelSetup({
   pixelId,
   capiEnabled,
-  accessToken,
   catalogId,
   catalogEnabled,
   onPixelIdChange,
   onCapiEnabledChange,
-  onAccessTokenChange,
   onCatalogIdChange,
   onCatalogEnabledChange,
 }: FacebookPixelSetupProps) {
-  const [showToken, setShowToken] = useState(false);
   const isPixelConfigured = pixelId.trim().length > 0;
-  const hasAccessToken = accessToken.trim().length > 0;
-  const isCapiReady = isPixelConfigured && hasAccessToken;
   const isCatalogConfigured = catalogId.trim().length > 0;
 
   return (
@@ -85,15 +78,10 @@ export function FacebookPixelSetup({
                 <div className="text-xs text-muted-foreground">Server-side tracking</div>
               </div>
               <div className="ml-auto">
-                {capiEnabled && isCapiReady ? (
+                {capiEnabled && isPixelConfigured ? (
                   <Badge variant="default" className="bg-green-500">
                     <CheckCircle className="h-3 w-3 mr-1" />
                     Active
-                  </Badge>
-                ) : capiEnabled && !hasAccessToken ? (
-                  <Badge variant="destructive">
-                    <AlertCircle className="h-3 w-3 mr-1" />
-                    Missing Token
                   </Badge>
                 ) : (
                   <Badge variant="secondary">Disabled</Badge>
@@ -184,68 +172,13 @@ export function FacebookPixelSetup({
           </div>
 
           {capiEnabled && (
-            <div className="space-y-2">
-              <Label htmlFor="access-token">
-                <div className="flex items-center gap-2">
-                  <Key className="h-4 w-4" />
-                  Access Token
-                </div>
-              </Label>
-              <div className="relative">
-                <Input
-                  id="access-token"
-                  type={showToken ? 'text' : 'password'}
-                  value={accessToken}
-                  onChange={(e) => onAccessTokenChange(e.target.value.trim())}
-                  placeholder="Enter your Conversions API Access Token"
-                  className="font-mono pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
-                  onClick={() => setShowToken(!showToken)}
-                >
-                  {showToken ? (
-                    <EyeOff className="h-4 w-4 text-muted-foreground" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-muted-foreground" />
-                  )}
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Generate your access token in{' '}
-                <a
-                  href="https://business.facebook.com/events_manager"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  Facebook Events Manager → Settings → Conversions API
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </p>
-            </div>
-          )}
-
-          {capiEnabled && !hasAccessToken && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Access Token Required</AlertTitle>
-              <AlertDescription>
-                Enter your Conversions API access token above to enable server-side event tracking.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {capiEnabled && hasAccessToken && (
             <Alert>
-              <CheckCircle className="h-4 w-4" />
-              <AlertTitle>Conversions API Ready</AlertTitle>
+              <Shield className="h-4 w-4" />
+              <AlertTitle>Access Token Configured Securely</AlertTitle>
               <AlertDescription>
-                Server-side events will be sent alongside browser events for improved tracking accuracy 
-                and iOS 14+ compatibility. Events are deduplicated using event IDs.
+                Your Facebook Conversions API access token is stored securely as a server-side environment variable
+                (FACEBOOK_CAPI_ACCESS_TOKEN). This protects your token from being exposed in client-side code or browser requests.
+                To update the token, please contact your administrator to update the edge function secret in the backend settings.
               </AlertDescription>
             </Alert>
           )}

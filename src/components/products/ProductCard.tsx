@@ -107,7 +107,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
       {/* Product Info */}
       <Link to={`/product/${product.slug}`} className="block mt-4">
-        <h3 className="font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+        <h3 className="font-medium text-foreground line-clamp-2 group-hover:text-primary transition-colors product-title">
           {product.name}
         </h3>
         <div className="flex items-center gap-2 mt-2">

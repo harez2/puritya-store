@@ -289,6 +289,27 @@
     width: 100%;
   }
 
+  /* Elegant product title underline animation for Modest mode */
+  [data-design-mode="modest"] .product-card-hover .product-title {
+    position: relative;
+    display: inline-block;
+  }
+
+  [data-design-mode="modest"] .product-card-hover .product-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: linear-gradient(90deg, hsl(var(--accent)) 0%, hsl(var(--primary) / 0.6) 100%);
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-design-mode="modest"] .product-card-hover:hover .product-title::after {
+    width: 100%;
+  }
+
   /* Elegant button styles */
   .btn-primary {
     @apply bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-300;

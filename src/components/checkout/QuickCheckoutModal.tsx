@@ -493,7 +493,6 @@ export default function QuickCheckoutModal({
         trackFacebookEvent(
           settings.facebook_pixel_id,
           settings.facebook_capi_enabled,
-          settings.facebook_access_token || '',
           FacebookEvents.Purchase,
           {
             content_ids: [product.id],

@@ -89,17 +89,15 @@ function trackBrowserEvent(eventName: string, parameters?: Record<string, any>, 
   }
 }
 
-// Send server event via edge function
+// Send server event via edge function (token is stored server-side only)
 async function sendServerEvent(
   pixelId: string,
-  accessToken: string,
   eventData: FacebookEventData
 ): Promise<void> {
   try {
     const { error } = await supabase.functions.invoke('facebook-capi', {
       body: {
         pixel_id: pixelId,
-        access_token: accessToken,
         event_data: eventData,
       },
     });
@@ -116,7 +114,6 @@ async function sendServerEvent(
 export async function trackFacebookEvent(
   pixelId: string,
   capiEnabled: boolean,
-  accessToken: string,
   eventName: string,
   customData?: Record<string, any>,
   userData?: {
@@ -135,8 +132,8 @@ export async function trackFacebookEvent(
   // Always track browser event
   trackBrowserEvent(eventName, customData, eventId);
 
-  // Send server event if CAPI is enabled and access token is provided
-  if (capiEnabled && accessToken) {
+  // Send server event if CAPI is enabled (token is stored server-side only)
+  if (capiEnabled) {
     const eventData: FacebookEventData = {
       event_name: eventName,
       event_id: eventId,
@@ -156,7 +153,7 @@ export async function trackFacebookEvent(
       action_source: 'website',
     };
 
-    await sendServerEvent(pixelId, accessToken, eventData);
+    await sendServerEvent(pixelId, eventData);
   }
 }
 

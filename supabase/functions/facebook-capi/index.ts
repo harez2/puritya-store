@@ -42,15 +42,16 @@ serve(async (req) => {
   }
 
   try {
-    const { pixel_id, event_data, access_token } = await req.json();
+    const { pixel_id, event_data } = await req.json();
 
-    // Use provided access token or fall back to secret
-    const accessToken = access_token || Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
+    // SECURITY: Only use server-side environment variable for access token
+    // Never accept access token from client requests
+    const accessToken = Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
     
     if (!accessToken) {
-      console.error("Facebook access token not provided");
+      console.error("Facebook CAPI access token not configured in environment variables");
       return new Response(
-        JSON.stringify({ error: "Facebook access token not configured" }),
+        JSON.stringify({ error: "Facebook CAPI access token not configured. Please set FACEBOOK_CAPI_ACCESS_TOKEN in edge function secrets." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

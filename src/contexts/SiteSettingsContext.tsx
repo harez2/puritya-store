@@ -195,7 +195,7 @@ export interface SiteSettings {
   // Facebook Pixel & Conversion API
   facebook_pixel_id: string;
   facebook_capi_enabled: boolean;
-  facebook_access_token: string;
+  // Note: facebook_access_token is now stored securely server-side only
 
   // Facebook Catalog
   facebook_catalog_id: string;
@@ -338,7 +338,6 @@ const defaultSettings: SiteSettings = {
   custom_presets: [],
   facebook_pixel_id: '',
   facebook_capi_enabled: false,
-  facebook_access_token: '',
   facebook_catalog_id: '',
   facebook_catalog_enabled: false,
   gtm_container_id: '',

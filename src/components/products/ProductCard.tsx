@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -15,9 +15,12 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const navigate = useNavigate();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { addToCart } = useCart();
   const isWishlisted = isInWishlist(product.id);
+
+  const hasVariants = (product.sizes?.length ?? 0) > 0 || (product.colors?.length ?? 0) > 0;
 
   const discount = product.compare_at_price
     ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
@@ -96,11 +99,15 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             disabled={!product.in_stock}
             onClick={(e) => {
               e.preventDefault();
-              addToCart(product.id);
+              if (hasVariants) {
+                navigate(`/product/${product.slug}`);
+              } else {
+                addToCart(product.id);
+              }
             }}
           >
             <ShoppingBag className="h-4 w-4 mr-2" />
-            {product.in_stock ? 'Add to Cart' : 'Sold Out'}
+            {product.in_stock ? (hasVariants ? 'Select Options' : 'Add to Cart') : 'Sold Out'}
           </Button>
         </motion.div>
       </div>

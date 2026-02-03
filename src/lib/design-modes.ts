@@ -62,10 +62,10 @@ export const DESIGN_MODE_PRESETS: Record<DesignMode, DesignModePreset> = {
     description: 'Premium, sleek design with luxurious elegance',
     tagline: 'Luxe & Refined',
     colors: {
-      primary: { h: 25, s: 30, l: 25 },      // Deep Espresso Brown
-      secondary: { h: 35, s: 20, l: 95 },    // Pearl White
-      accent: { h: 38, s: 45, l: 65 },       // Champagne Gold
-      background: { h: 40, s: 15, l: 97 },   // Soft Ivory
+      primary: { h: 20, s: 25, l: 18 },      // Rich Noir Brown
+      secondary: { h: 38, s: 15, l: 96 },    // Ivory Silk
+      accent: { h: 42, s: 55, l: 58 },       // Antique Gold
+      background: { h: 40, s: 12, l: 98 },   // Warm White
     },
     fonts: {
       heading: 'Cormorant',

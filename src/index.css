@@ -180,23 +180,85 @@
 
   /* Elegant shadow style for premium/modest mode */
   [data-card-shadow="elegant"] .product-card-hover {
-    box-shadow: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
-    border: 1px solid hsl(var(--border) / 0.5);
+    box-shadow: 0 4px 20px -4px rgba(0, 0, 0, 0.08), 0 12px 28px -4px rgba(0, 0, 0, 0.05);
+    border: 1px solid hsl(var(--border) / 0.4);
+    background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.97) 100%);
   }
 
   [data-card-shadow="elegant"] .product-card-hover:hover {
-    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-    border-color: hsl(var(--primary) / 0.2);
+    box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.15), 0 4px 16px -4px rgba(0, 0, 0, 0.08);
+    border-color: hsl(var(--accent) / 0.4);
+    transform: translateY(-4px);
   }
 
   /* Sleek button style for modest mode */
   [data-button-style="sleek"] .btn-primary,
   [data-button-style="sleek"] button[class*="bg-primary"] {
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     text-transform: uppercase;
     font-weight: 500;
-    font-size: 0.75rem;
-    padding: 0.875rem 1.75rem;
+    font-size: 0.7rem;
+    padding: 1rem 2rem;
+    border: 1px solid transparent;
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.9) 100%);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  [data-button-style="sleek"] .btn-primary:hover,
+  [data-button-style="sleek"] button[class*="bg-primary"]:hover {
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.95) 0%, hsl(var(--primary) / 0.85) 100%);
+    box-shadow: 0 4px 20px -4px hsl(var(--primary) / 0.4);
+    transform: translateY(-1px);
+  }
+
+  /* Modest mode typography refinements */
+  [data-design-mode="modest"] h1,
+  [data-design-mode="modest"] h2,
+  [data-design-mode="modest"] h3 {
+    letter-spacing: 0.02em;
+    font-weight: 500;
+  }
+
+  [data-design-mode="modest"] h1 {
+    font-size: calc(2.75rem * var(--heading-scale, 1));
+  }
+
+  /* Modest mode accent decorations */
+  [data-design-mode="modest"] .section-title::after {
+    content: '';
+    display: block;
+    width: 60px;
+    height: 1px;
+    background: linear-gradient(90deg, hsl(var(--accent)) 0%, transparent 100%);
+    margin-top: 0.75rem;
+  }
+
+  /* Premium divider styling */
+  [data-design-mode="modest"] hr,
+  [data-design-mode="modest"] .separator {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--accent) / 0.3) 50%, transparent 100%);
+    height: 1px;
+    border: none;
+  }
+
+  /* Elegant link underlines */
+  [data-design-mode="modest"] a:not([class*="btn"]):not([class*="Button"]) {
+    position: relative;
+  }
+
+  [data-design-mode="modest"] .nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 1px;
+    background: hsl(var(--accent));
+    transition: width 0.3s ease;
+  }
+
+  [data-design-mode="modest"] .nav-link:hover::after {
+    width: 100%;
   }
 
   /* Elegant button styles */

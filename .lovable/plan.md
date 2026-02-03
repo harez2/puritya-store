@@ -1,181 +1,165 @@
 
-# Plan: Dual Design System - Generic Fashion & Modest Fashion
+# Dynamic Homepage Sections Feature
 
 ## Overview
+This plan introduces a dynamic section management system for the homepage, allowing admins to add, remove, enable/disable, and reorder content sections. We'll start with "New In" and "On Sale" product sections, with the architecture designed to support additional section types (blogs, reviews, custom) in the future.
 
-This plan introduces a **Design Mode** feature that allows you to switch between two distinct visual themes from the admin panel:
+## Architecture
 
-1. **Generic Fashion** (Current) - Modern, minimalist, trend-focused design
-2. **Modest Fashion** - Elegant, conservative, modest-focused design with softer aesthetics
+The system will store homepage section configurations in the site settings (using the existing `site_settings` table and `SiteSettingsContext`), following the same pattern used for hero slides. Each section will have:
+- Unique ID
+- Section type (e.g., `new_in`, `on_sale`, `featured`, `blogs`, `reviews`, `custom`)
+- Enable/disable toggle
+- Display order (position)
+- Customizable title and subtitle
+- Type-specific settings (e.g., product limit, layout columns)
 
----
-
-## What Changes
-
-### Visual Differences Between Modes
-
-| Aspect | Generic Fashion | Modest Fashion |
-|--------|-----------------|----------------|
-| **Color Palette** | Rose Gold, Bold accents | Sage Green, Soft Earth tones |
-| **Typography** | Modern serifs + Clean sans | Elegant scripts + Refined serifs |
-| **Product Cards** | Minimal, hover effects | Softer borders, subtle shadows |
-| **Hero Style** | Bold, full-bleed imagery | Overlaid patterns, softer gradients |
-| **Button Style** | Sharp/rounded corners | Pill-shaped, softer appearance |
-| **Overall Mood** | Trendy, contemporary | Graceful, refined, modest |
-
-### Admin Panel Addition
-
-A new **"Design Mode"** selector will be added to the Customization page with:
-- Visual preview cards showing both design styles
-- One-click switching between modes
-- Instant preview of changes before saving
-- All other customization options (colors, fonts, content) remain fully editable after selecting a mode
-
----
-
-## How It Works
-
-### 1. Design Mode Setting
-- New setting `design_mode` added to site settings (`'generic'` | `'modest'`)
-- Stored in the database alongside other customization settings
-- Defaults to `'generic'` (current design)
-
-### 2. Design-Specific Presets
-Each mode comes with pre-configured defaults:
-
-**Generic Fashion Preset:**
-- Colors: Rose Gold primary, Warm cream secondary
-- Fonts: Cormorant Garamond + Outfit
-- Border radius: Standard (rounded-lg)
-- Card style: Minimal with hover effects
-
-**Modest Fashion Preset:**
-- Colors: Sage Green primary, Soft cream/ivory secondary
-- Fonts: Playfair Display + Lora (or Crimson Text + Nunito)
-- Border radius: More rounded (rounded-xl to pill)
-- Card style: Soft shadows, subtle borders
-
-### 3. CSS Variables Integration
-The existing CSS variable system will be extended with:
-```css
---border-radius-style: /* 'standard' | 'soft' | 'pill' */
---card-shadow-style: /* 'minimal' | 'soft' */
---button-style: /* 'standard' | 'rounded' */
+```text
++---------------------------+
+|   Homepage Sections       |
++---------------------------+
+| - Hero (existing)         |
+| - Features (existing)     |
+| - Categories (existing)   |
+| + Dynamic Sections        | <-- NEW: Reorderable, toggleable
+|   - New In                |
+|   - On Sale               |
+|   - Featured (existing)   |
+|   - Blogs (existing)      |
+| - CTA Banner (existing)   |
++---------------------------+
 ```
 
-### 4. Component Adaptations
-Key components will read the design mode and apply appropriate styles:
-- `ProductCard.tsx` - Different hover effects and shadow styles
-- `Header.tsx` - Adjusted spacing and typography weight
-- `Footer.tsx` - Layout variations
-- `Button` components - Shape variations based on mode
-- Hero sections - Different overlay and gradient styles
+## Implementation Details
 
----
+### 1. Update SiteSettingsContext Types
+Add new interfaces and default settings for homepage sections:
 
-## Technical Implementation
+**File: `src/contexts/SiteSettingsContext.tsx`**
+- Add `HomepageSection` interface with properties:
+  - `id: string` - Unique identifier
+  - `type: string` - Section type (new_in, on_sale, featured, blogs, custom)
+  - `title: string` - Display title
+  - `subtitle: string` - Optional subtitle
+  - `enabled: boolean` - Toggle visibility
+  - `display_order: number` - Position ordering
+  - `settings: object` - Type-specific settings (limit, columns, background, etc.)
+- Add `homepage_sections: HomepageSection[]` to `SiteSettings` interface
+- Add default sections for New In and On Sale
 
-### Files to Create
+### 2. Create Homepage Sections Renderer Component
+**New File: `src/components/home/HomepageSection.tsx`**
 
-| File | Purpose |
-|------|---------|
-| `src/lib/design-modes.ts` | Design mode definitions and presets |
-| `src/components/admin/DesignModeSelector.tsx` | Admin UI for switching modes |
+A component that renders different section types based on configuration:
+- `new_in` - Fetches products where `new_arrival = true`
+- `on_sale` - Fetches products where `compare_at_price > price` (has discount)
+- `featured` - Fetches products where `featured = true`
+- `blogs` - Fetches latest published blogs
+- `reviews` - Fetches latest approved reviews
+- `custom` - Renders custom HTML/text content
 
-### Files to Modify
+Each section will use the existing `ProductCard` component for consistency.
 
-| File | Changes |
-|------|---------|
-| `src/contexts/SiteSettingsContext.tsx` | Add `design_mode` setting with defaults |
-| `src/pages/admin/AdminCustomization.tsx` | Add Design Mode tab/section at top |
-| `src/index.css` | Add design mode CSS variables and mode-specific classes |
-| `src/components/products/ProductCard.tsx` | Apply mode-specific card styles |
-| `src/components/layout/Header.tsx` | Mode-aware header styling |
-| `src/components/layout/Footer.tsx` | Mode-aware footer styling |
-| `src/pages/Index.tsx` | Mode-specific hero and section styling |
-| `src/components/ui/button.tsx` | Design mode aware button variants |
+### 3. Update Index Page
+**File: `src/pages/Index.tsx`**
 
-### Database Changes
-No database schema changes required - uses existing `site_settings` table.
+Modify the homepage to:
+- Import homepage sections from settings
+- Filter to only enabled sections
+- Sort by display_order
+- Render each section using the new `HomepageSection` component
+- Replace the hardcoded "Featured Collection" section with dynamic rendering
 
----
+### 4. Create Admin Sections Editor Component
+**New File: `src/components/admin/HomepageSectionsEditor.tsx`**
 
-## Design Mode Presets
+Features:
+- Drag-and-drop reordering using @dnd-kit (following HeroSlideEditor pattern)
+- Enable/disable toggle for each section
+- Edit section title and subtitle
+- Add new sections (dropdown to select type)
+- Delete custom sections (built-in sections can only be disabled)
+- Type-specific settings editor (product limit, columns, background style)
 
-### Generic Fashion (Default)
+### 5. Add New Admin Customization Tab
+**File: `src/pages/admin/AdminCustomization.tsx`**
+
+- Add new "Sections" tab to the customization page
+- Integrate the HomepageSectionsEditor component
+- Add tab to SECTION_TITLES mapping
+
+### 6. Update Admin Sidebar
+**File: `src/components/admin/AdminSidebar.tsx`**
+
+- Add "Sections" entry to customizationSubItems array with appropriate icon
+
+## Default Section Configuration
+
+The system will include these default sections:
+
+| Section | Type | Default State | Description |
+|---------|------|---------------|-------------|
+| New In | new_in | Enabled | Products marked as new_arrival |
+| On Sale | on_sale | Enabled | Products with compare_at_price > price |
+| Featured Collection | featured | Enabled | Products marked as featured |
+| From Our Blog | blogs | Enabled | Latest published blog posts |
+
+## Technical Considerations
+
+### Database Queries for On Sale Products
+To fetch "on sale" products, we'll use a Supabase filter:
 ```typescript
-{
-  id: 'generic',
-  name: 'Generic Fashion',
-  description: 'Modern, minimalist, trend-focused design',
-  colors: {
-    primary: { h: 12, s: 45, l: 55 },      // Rose Gold
-    secondary: { h: 35, s: 35, l: 92 },    // Warm Cream
-    accent: { h: 350, s: 35, l: 90 },      // Soft Blush
-    background: { h: 30, s: 30, l: 98 },   // Off-White
-  },
-  fonts: { heading: 'Cormorant Garamond', body: 'Outfit' },
-  styles: {
-    borderRadius: 'standard',   // rounded-lg
-    cardShadow: 'minimal',
-    buttonStyle: 'standard',
-  }
+supabase
+  .from('products')
+  .select('*')
+  .not('compare_at_price', 'is', null)
+  .gt('compare_at_price', 'price')
+  .order('display_order', { ascending: true })
+  .limit(limit)
+```
+
+Note: Supabase doesn't directly support comparing two columns, so we'll fetch products with `compare_at_price` and filter client-side, or use a database view/function for better performance.
+
+### Alternative: Client-side filtering
+Fetch all products with compare_at_price set, then filter in JavaScript:
+```typescript
+const onSaleProducts = products.filter(p => 
+  p.compare_at_price && p.compare_at_price > p.price
+);
+```
+
+### Section Settings Schema
+```typescript
+interface SectionSettings {
+  limit?: number;        // Number of items to show
+  columns?: number;      // Grid columns (2, 3, or 4)
+  showViewAll?: boolean; // Show "View All" button
+  viewAllLink?: string;  // Custom link for "View All"
+  background?: 'default' | 'secondary' | 'accent';
 }
 ```
 
-### Modest Fashion
-```typescript
-{
-  id: 'modest',
-  name: 'Modest Fashion',
-  description: 'Elegant, refined design for modest wear',
-  colors: {
-    primary: { h: 160, s: 30, l: 45 },     // Sage Green
-    secondary: { h: 45, s: 25, l: 94 },    // Soft Ivory
-    accent: { h: 30, s: 35, l: 85 },       // Warm Tan
-    background: { h: 40, s: 20, l: 98 },   // Soft Cream
-  },
-  fonts: { heading: 'Playfair Display', body: 'Lora' },
-  styles: {
-    borderRadius: 'soft',       // rounded-xl
-    cardShadow: 'soft',
-    buttonStyle: 'rounded',
-  }
-}
-```
+## File Changes Summary
 
----
+| File | Action | Description |
+|------|--------|-------------|
+| `src/contexts/SiteSettingsContext.tsx` | Modify | Add HomepageSection types and defaults |
+| `src/components/home/HomepageSection.tsx` | Create | Section renderer component |
+| `src/components/admin/HomepageSectionsEditor.tsx` | Create | Admin editor for sections |
+| `src/pages/Index.tsx` | Modify | Use dynamic sections |
+| `src/pages/admin/AdminCustomization.tsx` | Modify | Add Sections tab |
+| `src/components/admin/AdminSidebar.tsx` | Modify | Add Sections nav item |
 
-## Admin UI Design
+## Future Extensibility
 
-### New "Design Mode" Section
-Located at the **top of the Customization page** (before Theme tab), featuring:
+The architecture supports adding more section types:
+- **Reviews Section**: Show approved product reviews
+- **Instagram Feed**: Display social media content
+- **Custom HTML**: Free-form content blocks
+- **Category Showcase**: Highlight specific categories
+- **Countdown Timer**: Promotional banners with timers
 
-1. **Large Preview Cards** - Side-by-side visual representation of each mode
-2. **Active Indicator** - Clear checkmark on currently selected mode
-3. **One-Click Apply** - Clicking a card applies that mode's defaults
-4. **Keep Customizations Option** - Toggle to preserve your current color/font customizations when switching
-
-### Preview Card Contents
-- Miniature hero section preview
-- Sample product card grid
-- Button style showcase
-- Color palette display
-
----
-
-## User Experience Flow
-
-1. Admin navigates to **Customization > Design Mode** (new first tab)
-2. Views two large preview cards: Generic Fashion vs Modest Fashion
-3. Clicks on desired mode
-4. System asks: "Apply with default colors/fonts or keep current?"
-5. Mode is applied instantly in preview
-6. Admin can further customize colors, fonts, content as usual
-7. Click "Save Changes" to persist
-
----
-
-## Summary
-
-This implementation adds a high-level design toggle that dramatically changes the look and feel of your store while preserving all existing customization capabilities. You can switch between a modern generic fashion aesthetic and an elegant modest fashion theme with a single click, then fine-tune as needed.
+Each new type only requires:
+1. Adding the type to the section types enum
+2. Implementing the render logic in HomepageSection
+3. Adding the settings editor in HomepageSectionsEditor

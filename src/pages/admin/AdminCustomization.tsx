@@ -20,6 +20,7 @@ import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/The
 import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
 import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup';
 import { HeroSlideEditor } from '@/components/admin/HeroSlideEditor';
+import { HomepageSectionsEditor } from '@/components/admin/HomepageSectionsEditor';
 import { DesignModeSelector } from '@/components/admin/DesignModeSelector';
 import { DesignMode, DESIGN_MODE_PRESETS } from '@/lib/design-modes';
 
@@ -38,6 +39,7 @@ const SECTION_TITLES: Record<string, string> = {
   'menus': 'Menus',
   'hero': 'Hero',
   'homepage': 'Homepage',
+  'sections': 'Sections',
   'footer': 'Footer',
   'custom-css': 'Custom CSS',
   'scripts': 'Scripts',
@@ -860,6 +862,14 @@ export default function AdminCustomization() {
               </CardContent>
             </Card>
           </>
+        );
+
+      case 'sections':
+        return (
+          <HomepageSectionsEditor
+            sections={localSettings.homepage_sections || []}
+            onChange={(sections) => handleChange('homepage_sections', sections)}
+          />
         );
 
       case 'footer':

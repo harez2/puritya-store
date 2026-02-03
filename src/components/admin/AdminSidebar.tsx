@@ -74,7 +74,7 @@ const mainNavItems = [
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];
 
-import { Wand2, Search } from 'lucide-react';
+import { Wand2, Search, LayoutGrid } from 'lucide-react';
 
 const customizationSubItems = [
   { title: 'Design Mode', tab: 'design-mode', icon: Wand2 },
@@ -84,6 +84,7 @@ const customizationSubItems = [
   { title: 'Menus', tab: 'menus', icon: Menu },
   { title: 'Hero', tab: 'hero', icon: Image },
   { title: 'Homepage', tab: 'homepage', icon: Layout },
+  { title: 'Sections', tab: 'sections', icon: LayoutGrid },
   { title: 'Footer', tab: 'footer', icon: MessageSquare },
   { title: 'CSS', tab: 'custom-css', icon: Code },
   { title: 'Scripts', tab: 'scripts', icon: FileCode2 },

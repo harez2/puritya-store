@@ -96,6 +96,24 @@ export interface HeroSliderSettings {
   slides: HeroSlide[];
 }
 
+export interface SectionSettings {
+  limit?: number;
+  columns?: number;
+  showViewAll?: boolean;
+  viewAllLink?: string;
+  background?: 'default' | 'secondary' | 'accent';
+}
+
+export interface HomepageSection {
+  id: string;
+  type: 'new_in' | 'on_sale' | 'featured' | 'blogs' | 'reviews' | 'custom';
+  title: string;
+  subtitle?: string;
+  enabled: boolean;
+  display_order: number;
+  settings?: SectionSettings;
+}
+
 export interface SiteSettings {
   // Design Mode
   design_mode: DesignMode;
@@ -214,6 +232,9 @@ export interface SiteSettings {
   seo_twitter_handle: string;
   seo_robots_index: boolean;
   seo_robots_follow: boolean;
+
+  // Homepage Sections
+  homepage_sections: HomepageSection[];
 }
 
 export interface CustomThemePreset {
@@ -363,6 +384,45 @@ const defaultSettings: SiteSettings = {
   seo_twitter_handle: '',
   seo_robots_index: true,
   seo_robots_follow: true,
+  // Homepage Sections defaults
+  homepage_sections: [
+    {
+      id: 'new_in',
+      type: 'new_in',
+      title: 'New Arrivals',
+      subtitle: 'The latest additions to our collection',
+      enabled: true,
+      display_order: 0,
+      settings: { limit: 4, columns: 4, showViewAll: true, background: 'default' },
+    },
+    {
+      id: 'on_sale',
+      type: 'on_sale',
+      title: 'On Sale',
+      subtitle: 'Great deals on selected items',
+      enabled: true,
+      display_order: 1,
+      settings: { limit: 4, columns: 4, showViewAll: true, background: 'secondary' },
+    },
+    {
+      id: 'featured',
+      type: 'featured',
+      title: 'Featured Collection',
+      subtitle: 'Our most loved pieces',
+      enabled: true,
+      display_order: 2,
+      settings: { limit: 4, columns: 4, showViewAll: true, background: 'default' },
+    },
+    {
+      id: 'blogs',
+      type: 'blogs',
+      title: 'From Our Blog',
+      subtitle: 'Latest news and style inspiration',
+      enabled: true,
+      display_order: 3,
+      settings: { limit: 3, showViewAll: true, background: 'default' },
+    },
+  ],
 };
 
 interface SiteSettingsContextType {

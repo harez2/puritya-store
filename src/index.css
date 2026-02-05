@@ -133,8 +133,8 @@
 
   /* Admin panel uses fixed rose-gold accent for form controls - override design mode */
   [data-admin-layout] {
-    --primary: 12 45% 55%;
-    --primary-foreground: 30 30% 98%;
+    --primary: var(--admin-primary, 12 45% 55%);
+    --primary-foreground: var(--admin-primary-foreground, 30 30% 98%);
   }
 
   h1 { font-size: calc(2.5rem * var(--heading-scale, 1)); }

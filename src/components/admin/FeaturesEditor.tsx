@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
 interface Feature {
   icon: string;
@@ -13,7 +14,9 @@ interface Feature {
 }
 
 interface FeaturesEditorProps {
+  enabled: boolean;
   features: Feature[];
+  onEnabledChange: (enabled: boolean) => void;
   onChange: (features: Feature[]) => void;
 }
 
@@ -37,7 +40,7 @@ const getIconComponent = (iconName: string) => {
   return found?.icon || Truck;
 };
 
-export function FeaturesEditor({ features, onChange }: FeaturesEditorProps) {
+export function FeaturesEditor({ enabled, features, onEnabledChange, onChange }: FeaturesEditorProps) {
   const handleFeatureChange = (index: number, field: keyof Feature, value: string) => {
     const updated = [...features];
     updated[index] = { ...updated[index], [field]: value };
@@ -67,15 +70,30 @@ export function FeaturesEditor({ features, onChange }: FeaturesEditorProps) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Features Bar</CardTitle>
-        <CardDescription>
-          Edit the features/benefits section that appears below the hero slider on the homepage.
-          These highlight key selling points like free delivery, returns policy, and payment options.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Features Bar</CardTitle>
+              <CardDescription>
+                Display key selling points like free delivery, returns policy, and payment options below the hero section.
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="features_enabled" className="text-sm text-muted-foreground">
+                {enabled ? 'Visible' : 'Hidden'}
+              </Label>
+              <Switch
+                id="features_enabled"
+                checked={enabled}
+                onCheckedChange={onEnabledChange}
+              />
+            </div>
+          </div>
+        </CardHeader>
+        {enabled && (
+          <CardContent className="space-y-4">
         {features.map((feature, index) => {
           const IconComponent = getIconComponent(feature.icon);
           return (
@@ -186,7 +204,9 @@ export function FeaturesEditor({ features, onChange }: FeaturesEditorProps) {
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        )}
+      </Card>
+    </div>
   );
 }

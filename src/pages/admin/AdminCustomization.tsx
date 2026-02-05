@@ -799,7 +799,9 @@ export default function AdminCustomization() {
       case 'features':
         return (
           <FeaturesEditor
+            enabled={localSettings.features_enabled}
             features={localSettings.features}
+            onEnabledChange={(enabled) => handleChange('features_enabled', enabled)}
             onChange={(features) => handleChange('features', features)}
           />
         );

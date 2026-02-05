@@ -467,6 +467,10 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
   const applyTheme = (currentSettings: SiteSettings) => {
     const root = document.documentElement;
     
+    // Store admin-safe colors (always rose-gold for admin panels)
+    root.style.setProperty('--admin-primary', '12 45% 55%');
+    root.style.setProperty('--admin-primary-foreground', '30 30% 98%');
+    
     // Apply primary color
     root.style.setProperty('--primary', `${currentSettings.primary_color.h} ${currentSettings.primary_color.s}% ${currentSettings.primary_color.l}%`);
     

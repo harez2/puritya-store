@@ -174,6 +174,7 @@ export interface SiteSettings {
   social_twitter: string;
 
   // Features
+  features_enabled: boolean;
   features: Feature[];
 
   // Menus
@@ -300,6 +301,7 @@ const defaultSettings: SiteSettings = {
   social_instagram: '',
   social_facebook: '',
   social_twitter: '',
+  features_enabled: true,
   features: [
     { icon: 'truck', title: 'Free Delivery', desc: 'On orders over ৳5,000' },
     { icon: 'refresh-cw', title: 'Easy Returns', desc: '7-day return policy' },

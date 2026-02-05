@@ -98,31 +98,33 @@ export default function Index() {
       )}
 
       {/* Features */}
-      <section className="py-12 border-b border-border">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {settings.features.map((feature, i) => {
-              const IconComponent = iconMap[feature.icon] || Truck;
-              return (
-                <motion.div
-                  key={feature.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  viewport={{ once: true }}
-                  className="flex items-center gap-4 justify-center"
-                >
-                  <IconComponent className="h-8 w-8 text-primary" />
-                  <div>
-                    <h3 className="font-medium">{feature.title}</h3>
-                    <p className="text-sm text-muted-foreground">{feature.desc}</p>
-                  </div>
-                </motion.div>
-              );
-            })}
+      {settings.features_enabled && settings.features.length > 0 && (
+        <section className="py-12 border-b border-border">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {settings.features.map((feature, i) => {
+                const IconComponent = iconMap[feature.icon] || Truck;
+                return (
+                  <motion.div
+                    key={feature.title}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-4 justify-center"
+                  >
+                    <IconComponent className="h-8 w-8 text-primary" />
+                    <div>
+                      <h3 className="font-medium">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground">{feature.desc}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Categories */}
       <section className="py-20">

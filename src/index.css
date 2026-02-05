@@ -131,36 +131,10 @@
     font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
-  /* Admin panel form controls - consistent colors regardless of design mode */
+  /* Admin panel uses fixed rose-gold accent for form controls - override design mode */
   [data-admin-layout] {
-    --admin-control-bg: 12 45% 55%;
-    --admin-control-fg: 30 30% 98%;
-  }
-
-  [data-admin-layout] [data-state="checked"][role="checkbox"],
-  [data-admin-layout] [data-state="checked"][role="switch"] {
-    background-color: hsl(var(--admin-control-bg)) !important;
-    border-color: hsl(var(--admin-control-bg)) !important;
-  }
-
-  [data-admin-layout] [data-state="checked"][role="checkbox"] svg,
-  [data-admin-layout] [data-state="checked"][role="checkbox"] [data-state="checked"] {
-    color: hsl(var(--admin-control-fg)) !important;
-  }
-
-  [data-admin-layout] [role="checkbox"]:not([data-state="checked"]),
-  [data-admin-layout] [role="switch"]:not([data-state="checked"]) {
-    border-color: hsl(30 20% 70%) !important;
-  }
-
-  [data-admin-layout] [role="radio"][data-state="checked"]::before,
-  [data-admin-layout] [role="radio"][data-state="checked"] svg {
-    color: hsl(var(--admin-control-bg)) !important;
-    fill: hsl(var(--admin-control-bg)) !important;
-  }
-
-  [data-admin-layout] [role="radio"] {
-    border-color: hsl(var(--admin-control-bg)) !important;
+    --primary: 12 45% 55%;
+    --primary-foreground: 30 30% 98%;
   }
 
   h1 { font-size: calc(2.5rem * var(--heading-scale, 1)); }

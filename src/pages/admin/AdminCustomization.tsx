@@ -22,6 +22,7 @@ import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup'
 import { HeroSlideEditor } from '@/components/admin/HeroSlideEditor';
 import { HomepageSectionsEditor } from '@/components/admin/HomepageSectionsEditor';
 import { DesignModeSelector } from '@/components/admin/DesignModeSelector';
+import { FeaturesEditor } from '@/components/admin/FeaturesEditor';
 import { DesignMode, DESIGN_MODE_PRESETS } from '@/lib/design-modes';
 
 interface HSLColor {
@@ -38,6 +39,7 @@ const SECTION_TITLES: Record<string, string> = {
   'theme': 'Theme',
   'menus': 'Menus',
   'hero': 'Hero',
+  'features': 'Features',
   'homepage': 'Homepage',
   'sections': 'Sections',
   'footer': 'Footer',
@@ -792,6 +794,14 @@ export default function AdminCustomization() {
               </Card>
             )}
           </>
+        );
+
+      case 'features':
+        return (
+          <FeaturesEditor
+            features={localSettings.features}
+            onChange={(features) => handleChange('features', features)}
+          />
         );
 
       case 'homepage':

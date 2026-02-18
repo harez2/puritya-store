@@ -59,6 +59,7 @@ import {
 
 const mainNavItems = [
   { title: 'Dashboard', url: '/admin', icon: LayoutDashboard },
+  { title: 'POS / New Order', url: '/admin/pos', icon: CreditCard },
   { title: 'Products', url: '/admin/products', icon: Package },
   { title: 'Orders', url: '/admin/orders', icon: ShoppingCart },
   { title: 'Payments', url: '/admin/payments', icon: CreditCard },

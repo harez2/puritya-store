@@ -104,6 +104,11 @@ export function EditOrderDialog({
   const [searchLoading, setSearchLoading] = useState(false);
   const [showProductSearch, setShowProductSearch] = useState(false);
 
+  // Variant selection for variable products
+  const [pendingProduct, setPendingProduct] = useState<Product | null>(null);
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+
   useEffect(() => {
     if (order && open) {
       loadOrderData();
@@ -193,8 +198,23 @@ export function EditOrderDialog({
     return () => clearTimeout(timer);
   }, [productSearch]);
 
-  const addProduct = (product: Product) => {
-    const existingIndex = orderItems.findIndex(item => item.product_id === product.id && !item.size && !item.color);
+  const handleProductSelect = (product: Product) => {
+    const hasVariants = (product.sizes && product.sizes.length > 0) || (product.colors && product.colors.length > 0);
+    if (hasVariants) {
+      setPendingProduct(product);
+      setSelectedSize(product.sizes?.[0] || '');
+      setSelectedColor(product.colors?.[0] || '');
+    } else {
+      addProductToOrder(product, null, null);
+    }
+    setProductSearch('');
+    setSearchResults([]);
+  };
+
+  const addProductToOrder = (product: Product, size: string | null, color: string | null) => {
+    const existingIndex = orderItems.findIndex(
+      item => item.product_id === product.id && item.size === size && item.color === color
+    );
     if (existingIndex >= 0) {
       const updated = [...orderItems];
       updated[existingIndex].quantity += 1;
@@ -206,13 +226,21 @@ export function EditOrderDialog({
         product_image: product.images?.[0] || null,
         quantity: 1,
         price: product.price,
-        size: null,
-        color: null,
+        size,
+        color,
       }]);
     }
-    setProductSearch('');
-    setSearchResults([]);
+    setPendingProduct(null);
     setShowProductSearch(false);
+  };
+
+  const confirmVariantAdd = () => {
+    if (!pendingProduct) return;
+    addProductToOrder(
+      pendingProduct,
+      selectedSize || null,
+      selectedColor || null,
+    );
   };
 
   const updateItemQuantity = (index: number, quantity: number) => {
@@ -527,19 +555,79 @@ export function EditOrderDialog({
                         <button
                           key={product.id}
                           className="w-full px-3 py-2 text-left hover:bg-muted flex items-center gap-2"
-                          onClick={() => addProduct(product)}
+                          onClick={() => handleProductSelect(product)}
                         >
                           {product.images?.[0] && (
                             <img src={product.images[0]} alt="" className="w-8 h-8 object-cover rounded" />
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate">{product.name}</div>
-                            <div className="text-xs text-muted-foreground">{formatCurrency(product.price)}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {formatCurrency(product.price)}
+                              {((product.sizes?.length ?? 0) > 0 || (product.colors?.length ?? 0) > 0) && (
+                                <span className="ml-1 text-primary">• Has variants</span>
+                              )}
+                            </div>
                           </div>
                         </button>
                       ))}
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* Variant selector for variable products */}
+              {pendingProduct && (
+                <div className="border rounded-md p-4 bg-muted/30 space-y-3">
+                  <div className="flex items-center gap-2">
+                    {pendingProduct.images?.[0] && (
+                      <img src={pendingProduct.images[0]} alt="" className="w-10 h-10 object-cover rounded" />
+                    )}
+                    <div>
+                      <div className="font-medium text-sm">{pendingProduct.name}</div>
+                      <div className="text-xs text-muted-foreground">{formatCurrency(pendingProduct.price)}</div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    {pendingProduct.sizes && pendingProduct.sizes.length > 0 && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Size</Label>
+                        <Select value={selectedSize} onValueChange={setSelectedSize}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Select size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pendingProduct.sizes.map(s => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    {pendingProduct.colors && pendingProduct.colors.length > 0 && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Color</Label>
+                        <Select value={selectedColor} onValueChange={setSelectedColor}>
+                          <SelectTrigger className="h-8">
+                            <SelectValue placeholder="Select color" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {pendingProduct.colors.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={confirmVariantAdd}>
+                      <Plus className="h-3 w-3 mr-1" /> Add to Order
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setPendingProduct(null)}>
+                      Cancel
+                    </Button>
+                  </div>
                 </div>
               )}
 

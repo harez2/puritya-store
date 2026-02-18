@@ -96,10 +96,11 @@ export default function OtpVerificationModal({
     }
   };
 
-  const handleVerifyOtp = async () => {
-    if (otpCode.length !== 6) return;
+  const handleVerifyOtp = async (code?: string) => {
+    const codeToVerify = code || otpCode;
+    if (codeToVerify.length !== 6) return;
 
-    const success = await verifyOtp(phone.trim(), otpCode);
+    const success = await verifyOtp(phone.trim(), codeToVerify);
     if (success) {
       setStep('verified');
       setTimeout(() => {
@@ -118,8 +119,8 @@ export default function OtpVerificationModal({
   const handleOtpComplete = (value: string) => {
     setOtpCode(value);
     if (value.length === 6) {
-      // Auto-verify when 6 digits entered
-      setTimeout(() => handleVerifyOtp(), 100);
+      // Auto-verify when 6 digits entered — pass value directly to avoid stale closure
+      setTimeout(() => handleVerifyOtp(value), 100);
     }
   };
 
@@ -233,7 +234,7 @@ export default function OtpVerificationModal({
               )}
 
               <Button
-                onClick={handleVerifyOtp}
+                onClick={() => handleVerifyOtp()}
                 disabled={otpCode.length !== 6 || verifying}
                 className="w-full"
               >

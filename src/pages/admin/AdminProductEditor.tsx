@@ -346,22 +346,43 @@ export default function AdminProductEditor() {
                       id="price"
                       type="number"
                       value={formData.price}
-                      onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
+                      onChange={(e) => {
+                        const newPrice = Number(e.target.value);
+                        setFormData(prev => ({
+                          ...prev,
+                          price: newPrice,
+                          // Reset sale price if it becomes >= new price
+                          compare_at_price: prev.compare_at_price && prev.compare_at_price >= newPrice ? 0 : prev.compare_at_price,
+                        }));
+                      }}
                       required
                       min={0}
                       placeholder="0"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="compare_at_price">Compare at Price</Label>
+                    <Label htmlFor="compare_at_price">Sale Price</Label>
                     <Input
                       id="compare_at_price"
                       type="number"
                       value={formData.compare_at_price}
-                      onChange={(e) => setFormData({ ...formData, compare_at_price: Number(e.target.value) })}
+                      onChange={(e) => {
+                        const salePrice = Number(e.target.value);
+                        if (salePrice >= formData.price && salePrice > 0) {
+                          toast.error('Sale Price must be less than Price');
+                          return;
+                        }
+                        setFormData({ ...formData, compare_at_price: salePrice });
+                      }}
                       min={0}
-                      placeholder="Original price for showing discount"
+                      max={formData.price > 0 ? formData.price - 1 : undefined}
+                      placeholder="Discounted price (must be less than Price)"
                     />
+                    {formData.compare_at_price > 0 && formData.price > 0 && formData.compare_at_price < formData.price && (
+                      <p className="text-xs text-muted-foreground">
+                        Discount: {Math.round(((formData.price - formData.compare_at_price) / formData.price) * 100)}% off
+                      </p>
+                    )}
                   </div>
                 </div>
               </CardContent>

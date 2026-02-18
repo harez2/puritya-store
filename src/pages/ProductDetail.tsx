@@ -156,8 +156,11 @@ export default function ProductDetail() {
   }
 
   const isWishlisted = isInWishlist(product.id);
-  const discount = product.compare_at_price
-    ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
+  const hasDiscount = product.compare_at_price && Number(product.compare_at_price) > 0 && Number(product.compare_at_price) < Number(product.price);
+  const displayPrice = hasDiscount ? Number(product.compare_at_price) : Number(product.price);
+  const originalPrice = hasDiscount ? Number(product.price) : null;
+  const discount = hasDiscount
+    ? Math.round(((Number(product.price) - Number(product.compare_at_price)) / Number(product.price)) * 100)
     : 0;
 
   // Strip HTML for fallback meta description
@@ -263,10 +266,10 @@ export default function ProductDetail() {
             <h1 className="font-display text-3xl md:text-4xl mb-4">{product.name}</h1>
 
             <div className="flex items-baseline gap-3 mb-6">
-              <span className="text-2xl font-semibold">{formatPrice(Number(product.price))}</span>
-              {product.compare_at_price && (
+              <span className="text-2xl font-semibold">{formatPrice(displayPrice)}</span>
+              {originalPrice && (
                 <span className="text-lg text-muted-foreground line-through">
-                  {formatPrice(Number(product.compare_at_price))}
+                  {formatPrice(originalPrice)}
                 </span>
               )}
             </div>

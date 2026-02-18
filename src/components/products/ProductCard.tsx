@@ -22,8 +22,11 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
   const hasVariants = (product.sizes?.length ?? 0) > 0 || (product.colors?.length ?? 0) > 0;
 
-  const discount = product.compare_at_price
-    ? Math.round(((Number(product.compare_at_price) - Number(product.price)) / Number(product.compare_at_price)) * 100)
+  const hasDiscount = product.compare_at_price && Number(product.compare_at_price) > 0 && Number(product.compare_at_price) < Number(product.price);
+  const displayPrice = hasDiscount ? Number(product.compare_at_price) : Number(product.price);
+  const originalPrice = hasDiscount ? Number(product.price) : null;
+  const discount = hasDiscount
+    ? Math.round(((Number(product.price) - Number(product.compare_at_price)) / Number(product.price)) * 100)
     : 0;
 
   return (
@@ -119,11 +122,11 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         </h3>
         <div className="flex items-center gap-2 mt-2">
           <span className="font-semibold text-foreground">
-            {formatPrice(Number(product.price))}
+            {formatPrice(displayPrice)}
           </span>
-          {product.compare_at_price && (
+          {originalPrice && (
             <span className="text-sm text-muted-foreground line-through">
-              {formatPrice(Number(product.compare_at_price))}
+              {formatPrice(originalPrice)}
             </span>
           )}
         </div>

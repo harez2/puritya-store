@@ -154,7 +154,7 @@ export default function OrderTracking() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Track Your Order</h1>
           <p className="text-muted-foreground">
-            Enter your order number or phone number to track your order status
+            Enter your Order ID or phone number to track your order status
           </p>
         </div>
 
@@ -163,7 +163,7 @@ export default function OrderTracking() {
           <CardHeader>
             <CardTitle className="text-lg">Search Order</CardTitle>
             <CardDescription>
-              Find your order using order number or the phone number used during checkout
+              Find your order using Order ID or the phone number used during checkout
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -175,7 +175,7 @@ export default function OrderTracking() {
                   onClick={() => setSearchType('order_number')}
                   className="flex-1"
                 >
-                  Order Number
+                  Order ID
                 </Button>
                 <Button
                   type="button"
@@ -189,13 +189,13 @@ export default function OrderTracking() {
 
               <div className="space-y-2">
                 <Label htmlFor="searchValue">
-                  {searchType === 'order_number' ? 'Order Number' : 'Phone Number'}
+                  {searchType === 'order_number' ? 'Order ID' : 'Phone Number'}
                 </Label>
                 <div className="flex gap-2">
                   <Input
                     id="searchValue"
                     type={searchType === 'phone' ? 'tel' : 'text'}
-                    placeholder={searchType === 'order_number' ? 'e.g., PUR-20260129-1234' : 'e.g., +880 1234-567890'}
+                    placeholder={searchType === 'order_number' ? 'Enter your Order ID (e.g., PUR-20260129-1234)' : 'Enter your Phone Number (e.g., 017XXXXXXXX)'}
                     value={searchValue}
                     onChange={(e) => setSearchValue(e.target.value)}
                     className="flex-1"
@@ -219,7 +219,7 @@ export default function OrderTracking() {
                   <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
                   <h3 className="text-lg font-medium mb-2">No Orders Found</h3>
                   <p className="text-muted-foreground">
-                    We couldn't find any orders matching your search. Please check your {searchType === 'order_number' ? 'order number' : 'phone number'} and try again.
+                    We couldn't find any orders matching your search. Please check your {searchType === 'order_number' ? 'Order ID' : 'phone number'} and try again.
                   </p>
                 </CardContent>
               </Card>

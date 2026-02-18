@@ -78,10 +78,77 @@ export default function AdminPOS() {
   const [shippingFee, setShippingFee] = useState(0);
   const [customerOpen, setCustomerOpen] = useState(true);
 
+  // Phone lookup state
+  const [phoneLookupDone, setPhoneLookupDone] = useState(false);
+  const [lookingUpPhone, setLookingUpPhone] = useState(false);
+  const [previousAddresses, setPreviousAddresses] = useState<any[]>([]);
+  const [addressMode, setAddressMode] = useState<'select' | 'manual' | null>(null);
+
   // Variant selector state
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
   const [variantSize, setVariantSize] = useState<string | null>(null);
   const [variantColor, setVariantColor] = useState<string | null>(null);
+
+  const lookupPhone = async (phoneValue: string) => {
+    const trimmed = phoneValue.trim().replace(/\s/g, '');
+    if (trimmed.length < 5) return;
+    
+    setLookingUpPhone(true);
+    try {
+      // Search orders by phone in shipping_address
+      const { data: orders } = await supabase
+        .from('orders')
+        .select('shipping_address')
+        .order('created_at', { ascending: false })
+        .limit(50);
+
+      if (orders && orders.length > 0) {
+        const matched: any[] = [];
+        const seen = new Set<string>();
+        for (const o of orders) {
+          const addr = o.shipping_address as any;
+          if (addr?.phone?.replace(/\s/g, '') === trimmed) {
+            const key = `${addr.full_name}|${addr.address_line1}|${addr.city}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              matched.push(addr);
+            }
+          }
+        }
+        setPreviousAddresses(matched);
+        if (matched.length > 0) {
+          setAddressMode('select');
+          // Auto-fill name from first match
+          if (!fullName && matched[0].full_name) {
+            setFullName(matched[0].full_name);
+          }
+        } else {
+          setAddressMode('manual');
+        }
+      } else {
+        setPreviousAddresses([]);
+        setAddressMode('manual');
+      }
+      setPhoneLookupDone(true);
+    } catch (err) {
+      console.error('Phone lookup error:', err);
+      setAddressMode('manual');
+      setPhoneLookupDone(true);
+    } finally {
+      setLookingUpPhone(false);
+    }
+  };
+
+  const selectAddress = (addr: any) => {
+    setFullName(addr.full_name || '');
+    setAddressLine1(addr.address_line1 || '');
+    setAddressLine2(addr.address_line2 || '');
+    setCity(addr.city || '');
+    setState(addr.state || '');
+    setPostalCode(addr.postal_code || '');
+    setCountry(addr.country || 'Bangladesh');
+    setAddressMode('select');
+  };
 
   useEffect(() => {
     fetchData();
@@ -199,6 +266,9 @@ export default function AdminPOS() {
     setShippingFee(0);
     setSearchQuery('');
     setSelectedCategory('all');
+    setPhoneLookupDone(false);
+    setPreviousAddresses([]);
+    setAddressMode(null);
     searchRef.current?.focus();
   };
 
@@ -521,41 +591,112 @@ export default function AdminPOS() {
                   <Badge variant="outline" className="text-xs">{customerOpen ? 'Hide' : 'Show'}</Badge>
                 </CollapsibleTrigger>
                 <CollapsibleContent className="space-y-3 pt-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Full Name *</Label>
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Customer name" className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Phone *</Label>
-                      <Input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="h-9" />
-                    </div>
-                  </div>
+                  {/* Phone First */}
                   <div className="space-y-1">
-                    <Label className="text-xs">Address *</Label>
-                    <Input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="Street address" className="h-9" />
+                    <Label className="text-xs">Phone *</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        value={phone}
+                        onChange={(e) => {
+                          setPhone(e.target.value);
+                          if (phoneLookupDone) {
+                            setPhoneLookupDone(false);
+                            setPreviousAddresses([]);
+                            setAddressMode(null);
+                          }
+                        }}
+                        placeholder="Enter phone number"
+                        className="h-9"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 shrink-0"
+                        onClick={() => lookupPhone(phone)}
+                        disabled={lookingUpPhone || phone.trim().length < 5}
+                      >
+                        {lookingUpPhone ? 'Searching...' : <Search className="h-4 w-4" />}
+                      </Button>
+                    </div>
                   </div>
-                  <Input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Apt, suite, etc. (optional)" className="h-9" />
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">City *</Label>
-                      <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="h-9" />
+
+                  {/* Previous addresses found */}
+                  {phoneLookupDone && previousAddresses.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs text-primary">
+                          {previousAddresses.length} previous address{previousAddresses.length > 1 ? 'es' : ''} found
+                        </Label>
+                        <Button
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-xs"
+                          onClick={() => setAddressMode(addressMode === 'manual' ? 'select' : 'manual')}
+                        >
+                          {addressMode === 'manual' ? 'Use existing' : 'Enter manually'}
+                        </Button>
+                      </div>
+                      {addressMode === 'select' && (
+                        <div className="space-y-2 max-h-36 overflow-y-auto">
+                          {previousAddresses.map((addr, i) => (
+                            <button
+                              key={i}
+                              onClick={() => selectAddress(addr)}
+                              className={`w-full text-left p-2 rounded border text-xs transition-colors hover:border-primary ${
+                                addressLine1 === addr.address_line1 && city === addr.city && fullName === addr.full_name
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border'
+                              }`}
+                            >
+                              <p className="font-medium">{addr.full_name}</p>
+                              <p className="text-muted-foreground">
+                                {addr.address_line1}{addr.city ? `, ${addr.city}` : ''}{addr.state ? `, ${addr.state}` : ''}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">State</Label>
-                      <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="h-9" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">Postal Code</Label>
-                      <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className="h-9" />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">Country</Label>
-                      <Input value={country} onChange={(e) => setCountry(e.target.value)} className="h-9" />
-                    </div>
-                  </div>
+                  )}
+
+                  {phoneLookupDone && previousAddresses.length === 0 && (
+                    <p className="text-xs text-muted-foreground">No previous orders found for this phone number</p>
+                  )}
+
+                  {/* Name & Address fields */}
+                  {(addressMode === 'manual' || addressMode === 'select') && (
+                    <>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Full Name *</Label>
+                        <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Customer name" className="h-9" />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs">Address *</Label>
+                        <Input value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} placeholder="Street address" className="h-9" />
+                      </div>
+                      <Input value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} placeholder="Apt, suite, etc. (optional)" className="h-9" />
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">City *</Label>
+                          <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="City" className="h-9" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">State</Label>
+                          <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="State" className="h-9" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Postal Code</Label>
+                          <Input value={postalCode} onChange={(e) => setPostalCode(e.target.value)} placeholder="Postal code" className="h-9" />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Country</Label>
+                          <Input value={country} onChange={(e) => setCountry(e.target.value)} className="h-9" />
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </CollapsibleContent>
               </Collapsible>
 

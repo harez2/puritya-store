@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GripVertical, MoreHorizontal, Pencil, Trash2, Zap, Copy } from 'lucide-react';
+import { GripVertical, MoreHorizontal, Pencil, Trash2, Zap, Copy, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -147,6 +147,10 @@ export function SortableProductRow({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => window.open(`/product/${product.slug}`, '_blank')}>
+              <ExternalLink className="h-4 w-4 mr-2" />
+              View Product
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={onQuickEdit}>
               <Zap className="h-4 w-4 mr-2" />
               Quick Edit

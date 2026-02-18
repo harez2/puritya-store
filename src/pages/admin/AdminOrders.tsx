@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
 import { IncompleteOrdersTab } from '@/components/admin/IncompleteOrdersTab';
 import { EditOrderDialog } from '@/components/admin/EditOrderDialog';
@@ -96,6 +97,7 @@ const paymentStatusOptions = [
 
 export default function AdminOrders() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const { sendOrderSms } = useSendOrderSms();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -598,7 +600,7 @@ export default function AdminOrders() {
             <h1 className="text-3xl font-bold">Orders</h1>
             <p className="text-muted-foreground">View and manage customer orders</p>
           </div>
-          <Button onClick={() => setIsManualOrderOpen(true)}>
+          <Button onClick={() => navigate('/admin/pos')}>
             <Plus className="h-4 w-4 mr-2" />
             Create Order
           </Button>

@@ -118,45 +118,18 @@ export default function OrderTracking() {
     setSearched(true);
 
     try {
-      let query = supabase
-        .from('orders')
-        .select(`
-          id,
-          order_number,
-          status,
-          payment_status,
-          payment_method,
-          subtotal,
-          shipping_fee,
-          total,
-          created_at,
-          shipping_address,
-          order_items (
-            id,
-            product_name,
-            quantity,
-            price,
-            size,
-            color,
-            product_image
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (searchType === 'order_number') {
-        query = query.ilike('order_number', `%${searchValue.trim()}%`);
-      } else {
-        // Search by phone in shipping_address JSON
-        query = query.filter('shipping_address->>phone', 'ilike', `%${searchValue.trim()}%`);
-      }
-
-      const { data, error } = await query;
+      const { data, error } = await supabase.functions.invoke('track-order', {
+        body: {
+          searchType,
+          searchValue: searchValue.trim(),
+        },
+      });
 
       if (error) throw error;
 
-      setOrders((data || []) as Order[]);
+      setOrders((data?.orders || []) as Order[]);
       
-      if (!data || data.length === 0) {
+      if (!data?.orders || data.orders.length === 0) {
         toast.info('No orders found matching your search');
       }
     } catch (error) {

@@ -353,7 +353,7 @@ export default function AdminProductEditor() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="compare_at_price">Sale Price</Label>
+                    <Label htmlFor="compare_at_price">Compare at Price</Label>
                     <Input
                       id="compare_at_price"
                       type="number"

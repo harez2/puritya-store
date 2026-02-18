@@ -165,6 +165,8 @@ export interface SiteSettings {
 
   // Footer
   footer_description: string;
+  footer_logo_url: string;
+  footer_logo_size: number; // 32 to 120px (height)
   copyright_text: string;
   footer_tagline: string;
 
@@ -296,6 +298,8 @@ const defaultSettings: SiteSettings = {
   cta_subtitle: 'Subscribe for exclusive access to new arrivals, special offers, and styling tips.',
   cta_button_text: 'Create Account',
   footer_description: 'Curated feminine fashion imported from around the world. Elevate your style with our carefully selected pieces.',
+  footer_logo_url: '',
+  footer_logo_size: 40,
   copyright_text: '© 2025 Puritya. All rights reserved.',
   footer_tagline: 'puritya.store • Shipping across Bangladesh 🇧🇩',
   social_instagram: '',

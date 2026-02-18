@@ -891,7 +891,39 @@ export default function AdminCustomization() {
               <CardTitle>Footer Content</CardTitle>
               <CardDescription>Customize your store's footer</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Footer Logo</Label>
+                  <SingleImageUpload
+                    image={localSettings.footer_logo_url || null}
+                    onImageChange={(url) => handleChange('footer_logo_url', url || '')}
+                    folder="branding"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Optional. If empty, the header logo or store name will be used.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Footer Logo Size</Label>
+                    <div className="flex items-center gap-4">
+                      <Slider
+                        value={[localSettings.footer_logo_size || 40]}
+                        min={24}
+                        max={120}
+                        step={4}
+                        onValueChange={([size]) => handleChange('footer_logo_size', size)}
+                        className="flex-1"
+                      />
+                      <span className="text-sm text-muted-foreground w-12">{localSettings.footer_logo_size || 40}px</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Height of the logo in the footer (24-120px)
+                    </p>
+                  </div>
+                </div>
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="footer_description">Footer Description</Label>
                 <Textarea

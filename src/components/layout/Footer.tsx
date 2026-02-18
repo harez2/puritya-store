@@ -71,11 +71,12 @@ export default function Footer() {
           {/* Brand & Newsletter */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block mb-6">
-              {settings.logo_url ? (
+              {(settings.footer_logo_url || settings.logo_url) ? (
                 <img 
-                  src={settings.logo_url} 
+                  src={settings.footer_logo_url || settings.logo_url} 
                   alt={settings.store_name} 
-                  className="h-10 w-auto"
+                  style={{ height: `${settings.footer_logo_size || 40}px` }}
+                  className="w-auto"
                 />
               ) : (
                 <h2 className="text-3xl font-display font-semibold">{settings.store_name.toUpperCase()}</h2>

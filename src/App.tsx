@@ -12,6 +12,7 @@ import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
 import { GoogleTagManagerProvider } from "@/components/GoogleTagManagerProvider";
 import { SitePopup } from "@/components/SitePopup";
+import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { captureUtmParams } from "@/hooks/useUtmTracking";
 import { useVisitorTracking } from "@/hooks/useVisitorTracking";
 import Index from "./pages/Index";
@@ -84,6 +85,7 @@ const App = () => (
                   <GoogleTagManagerProvider>
                     <FacebookPixelProvider>
                       <SitePopup />
+                      <FloatingChatButton />
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/shop" element={<Shop />} />

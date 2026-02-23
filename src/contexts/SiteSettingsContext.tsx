@@ -247,6 +247,11 @@ export interface SiteSettings {
   seo_robots_index: boolean;
   seo_robots_follow: boolean;
 
+  // Floating Chat Button
+  floating_chat_enabled: boolean;
+  floating_chat_whatsapp: string;
+  floating_chat_messenger: string;
+
   // Homepage Sections
   homepage_sections: HomepageSection[];
 }
@@ -319,6 +324,9 @@ const defaultSettings: SiteSettings = {
   social_whatsapp: '',
   social_telegram: '',
   social_linkedin: '',
+  floating_chat_enabled: true,
+  floating_chat_whatsapp: '',
+  floating_chat_messenger: '',
   features_enabled: true,
   features: [
     { icon: 'truck', title: 'Free Delivery', desc: 'On orders over ৳5,000' },

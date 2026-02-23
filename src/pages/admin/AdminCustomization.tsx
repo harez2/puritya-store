@@ -488,6 +488,48 @@ export default function AdminCustomization() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Floating Chat Button */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Floating Chat Button</CardTitle>
+                <CardDescription>Show a floating live chat button on your storefront</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Enable Floating Chat</Label>
+                    <p className="text-sm text-muted-foreground">Show chat button on all pages</p>
+                  </div>
+                  <Switch
+                    checked={localSettings.floating_chat_enabled}
+                    onCheckedChange={(checked) => handleChange('floating_chat_enabled', checked)}
+                  />
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="floating_chat_whatsapp">WhatsApp Chat URL</Label>
+                    <Input
+                      id="floating_chat_whatsapp"
+                      value={localSettings.floating_chat_whatsapp}
+                      onChange={(e) => handleChange('floating_chat_whatsapp', e.target.value)}
+                      placeholder="https://wa.me/1234567890"
+                    />
+                    <p className="text-xs text-muted-foreground">Format: https://wa.me/PHONENUMBER</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="floating_chat_messenger">Messenger Chat URL</Label>
+                    <Input
+                      id="floating_chat_messenger"
+                      value={localSettings.floating_chat_messenger}
+                      onChange={(e) => handleChange('floating_chat_messenger', e.target.value)}
+                      placeholder="https://m.me/yourpage"
+                    />
+                    <p className="text-xs text-muted-foreground">Format: https://m.me/PAGENAME</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </>
         );
 

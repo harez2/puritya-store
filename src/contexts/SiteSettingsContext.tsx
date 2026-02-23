@@ -171,9 +171,16 @@ export interface SiteSettings {
   footer_tagline: string;
 
   // Social Links
+  show_social_links: boolean;
   social_instagram: string;
   social_facebook: string;
   social_twitter: string;
+  social_youtube: string;
+  social_tiktok: string;
+  social_pinterest: string;
+  social_whatsapp: string;
+  social_telegram: string;
+  social_linkedin: string;
 
   // Features
   features_enabled: boolean;
@@ -302,9 +309,16 @@ const defaultSettings: SiteSettings = {
   footer_logo_size: 40,
   copyright_text: '© 2025 Puritya. All rights reserved.',
   footer_tagline: 'puritya.store • Shipping across Bangladesh 🇧🇩',
+  show_social_links: true,
   social_instagram: '',
   social_facebook: '',
   social_twitter: '',
+  social_youtube: '',
+  social_tiktok: '',
+  social_pinterest: '',
+  social_whatsapp: '',
+  social_telegram: '',
+  social_linkedin: '',
   features_enabled: true,
   features: [
     { icon: 'truck', title: 'Free Delivery', desc: 'On orders over ৳5,000' },

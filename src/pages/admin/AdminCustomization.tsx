@@ -387,8 +387,20 @@ export default function AdminCustomization() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Social Media Links</CardTitle>
-                <CardDescription>Connect your social media accounts</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Social Media Links</CardTitle>
+                    <CardDescription>Connect your social media accounts</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="show_social_links" className="text-sm">Show in Footer</Label>
+                    <Switch
+                      id="show_social_links"
+                      checked={localSettings.show_social_links}
+                      onCheckedChange={(checked) => handleChange('show_social_links', checked)}
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-3">
@@ -411,12 +423,66 @@ export default function AdminCustomization() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="social_twitter">Twitter URL</Label>
+                    <Label htmlFor="social_twitter">Twitter / X URL</Label>
                     <Input
                       id="social_twitter"
                       value={localSettings.social_twitter}
                       onChange={(e) => handleChange('social_twitter', e.target.value)}
-                      placeholder="https://twitter.com/yourstore"
+                      placeholder="https://x.com/yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_youtube">YouTube URL</Label>
+                    <Input
+                      id="social_youtube"
+                      value={localSettings.social_youtube}
+                      onChange={(e) => handleChange('social_youtube', e.target.value)}
+                      placeholder="https://youtube.com/@yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_tiktok">TikTok URL</Label>
+                    <Input
+                      id="social_tiktok"
+                      value={localSettings.social_tiktok}
+                      onChange={(e) => handleChange('social_tiktok', e.target.value)}
+                      placeholder="https://tiktok.com/@yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_pinterest">Pinterest URL</Label>
+                    <Input
+                      id="social_pinterest"
+                      value={localSettings.social_pinterest}
+                      onChange={(e) => handleChange('social_pinterest', e.target.value)}
+                      placeholder="https://pinterest.com/yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_whatsapp">WhatsApp URL</Label>
+                    <Input
+                      id="social_whatsapp"
+                      value={localSettings.social_whatsapp}
+                      onChange={(e) => handleChange('social_whatsapp', e.target.value)}
+                      placeholder="https://wa.me/1234567890"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_telegram">Telegram URL</Label>
+                    <Input
+                      id="social_telegram"
+                      value={localSettings.social_telegram}
+                      onChange={(e) => handleChange('social_telegram', e.target.value)}
+                      placeholder="https://t.me/yourstore"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="social_linkedin">LinkedIn URL</Label>
+                    <Input
+                      id="social_linkedin"
+                      value={localSettings.social_linkedin}
+                      onChange={(e) => handleChange('social_linkedin', e.target.value)}
+                      placeholder="https://linkedin.com/company/yourstore"
                     />
                   </div>
                 </div>

@@ -671,10 +671,11 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
         }
       };
       
-      // Update OG and Twitter image tags
-      if (settings.seo_og_image) {
-        updateMetaTag('meta[property="og:image"]', 'content', settings.seo_og_image);
-        updateMetaTag('meta[name="twitter:image"]', 'content', settings.seo_og_image);
+      // Update OG and Twitter image tags (fallback to logo)
+      const ogImage = settings.seo_og_image || settings.logo_url || '';
+      if (ogImage) {
+        updateMetaTag('meta[property="og:image"]', 'content', ogImage);
+        updateMetaTag('meta[name="twitter:image"]', 'content', ogImage);
       }
       
       // Update OG title and description

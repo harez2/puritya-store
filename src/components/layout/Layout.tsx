@@ -31,14 +31,14 @@ export default function Layout({ children }: LayoutProps) {
         
         {/* Open Graph defaults */}
         <meta property="og:site_name" content={settings.store_name} />
-        {settings.seo_og_image && <meta property="og:image" content={settings.seo_og_image} />}
+        <meta property="og:image" content={settings.seo_og_image || settings.logo_url || ''} />
         
         {/* Twitter Card defaults */}
         <meta name="twitter:card" content="summary_large_image" />
         {settings.seo_twitter_handle && (
           <meta name="twitter:site" content={settings.seo_twitter_handle} />
         )}
-        {settings.seo_og_image && <meta name="twitter:image" content={settings.seo_og_image} />}
+        <meta name="twitter:image" content={settings.seo_og_image || settings.logo_url || ''} />
       </Helmet>
       <Header />
       <main className="flex-1">{children}</main>

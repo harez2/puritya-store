@@ -28,7 +28,18 @@ export function FloatingChatButton() {
   const hasWhatsApp = !!settings.floating_chat_whatsapp;
   const hasMessenger = !!settings.floating_chat_messenger;
 
-  if (!hasWhatsApp && !hasMessenger) return null;
+  // If no URLs configured, still show the button as a visual indicator
+  if (!hasWhatsApp && !hasMessenger) {
+    return (
+      <button
+        className="fixed bottom-6 right-6 z-50 bg-[#25D366] text-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform"
+        aria-label="Chat with us"
+        onClick={() => {}}
+      >
+        <MessageCircle className="h-6 w-6" />
+      </button>
+    );
+  }
 
   // If only one option, link directly
   const singleLink = hasWhatsApp && !hasMessenger
@@ -38,15 +49,16 @@ export function FloatingChatButton() {
     : null;
 
   if (singleLink) {
+    const isWhatsApp = hasWhatsApp;
     return (
       <a
         href={singleLink}
         target="_blank"
         rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-50 bg-primary text-primary-foreground rounded-full p-4 shadow-lg hover:scale-110 transition-transform"
+        className={`fixed bottom-6 right-6 z-50 ${isWhatsApp ? 'bg-[#25D366]' : 'bg-[#0084FF]'} text-white rounded-full p-4 shadow-lg hover:scale-110 transition-transform`}
         aria-label="Chat with us"
       >
-        <MessageCircle className="h-6 w-6" />
+        {isWhatsApp ? <WhatsAppIcon className="h-6 w-6" /> : <MessengerIcon className="h-6 w-6" />}
       </a>
     );
   }

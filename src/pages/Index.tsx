@@ -39,7 +39,7 @@ export default function Index() {
   return (
     <Layout>
       {/* Hero Section */}
-      {settingsLoading ? (
+      {settings.hero_enabled !== false && (settingsLoading ? (
         <section className="relative h-[80vh] min-h-[600px] bg-muted animate-pulse" />
       ) : useSlider ? (
         <HeroSlider
@@ -95,7 +95,7 @@ export default function Index() {
             </motion.div>
           </div>
         </section>
-      )}
+      ))}
 
       {/* Features */}
       {settings.features_enabled && settings.features.length > 0 && (
@@ -127,6 +127,7 @@ export default function Index() {
       )}
 
       {/* Categories */}
+      {settings.categories_enabled !== false && (
       <section className="py-20">
         <div className="container mx-auto px-4">
           <motion.div
@@ -169,6 +170,7 @@ export default function Index() {
           </div>
         </div>
       </section>
+      )}
 
       {/* Dynamic Homepage Sections */}
       {enabledSections.map((section) => (
@@ -176,6 +178,7 @@ export default function Index() {
       ))}
 
       {/* CTA Banner */}
+      {settings.cta_enabled !== false && (
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="bg-primary rounded-2xl p-12 md:p-20 text-center text-primary-foreground">
@@ -189,6 +192,7 @@ export default function Index() {
           </div>
         </div>
       </section>
+      )}
     </Layout>
   );
 }

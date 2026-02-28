@@ -917,6 +917,60 @@ export default function AdminCustomization() {
       case 'homepage':
         return (
           <>
+            {/* Section Visibility Toggles */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Section Visibility</CardTitle>
+                <CardDescription>Enable or disable each homepage section</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="hero_enabled">Hero Section</Label>
+                    <p className="text-xs text-muted-foreground">The main banner at the top of homepage</p>
+                  </div>
+                  <Switch
+                    id="hero_enabled"
+                    checked={localSettings.hero_enabled !== false}
+                    onCheckedChange={(checked) => handleChange('hero_enabled', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="features_enabled_toggle">Features Bar</Label>
+                    <p className="text-xs text-muted-foreground">Free delivery, secure payment badges</p>
+                  </div>
+                  <Switch
+                    id="features_enabled_toggle"
+                    checked={localSettings.features_enabled}
+                    onCheckedChange={(checked) => handleChange('features_enabled', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="categories_enabled">Categories Section</Label>
+                    <p className="text-xs text-muted-foreground">Shop by Category grid</p>
+                  </div>
+                  <Switch
+                    id="categories_enabled"
+                    checked={localSettings.categories_enabled !== false}
+                    onCheckedChange={(checked) => handleChange('categories_enabled', checked)}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="cta_enabled_toggle">CTA Banner</Label>
+                    <p className="text-xs text-muted-foreground">Call to action section at the bottom</p>
+                  </div>
+                  <Switch
+                    id="cta_enabled_toggle"
+                    checked={localSettings.cta_enabled !== false}
+                    onCheckedChange={(checked) => handleChange('cta_enabled', checked)}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Announcement Bar</CardTitle>
@@ -945,42 +999,44 @@ export default function AdminCustomization() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Call to Action Banner</CardTitle>
-                <CardDescription>Customize the CTA section on the homepage</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="cta_title">CTA Title</Label>
-                  <Input
-                    id="cta_title"
-                    value={localSettings.cta_title}
-                    onChange={(e) => handleChange('cta_title', e.target.value)}
-                    placeholder="Join Our Community"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cta_subtitle">CTA Subtitle</Label>
-                  <Textarea
-                    id="cta_subtitle"
-                    value={localSettings.cta_subtitle}
-                    onChange={(e) => handleChange('cta_subtitle', e.target.value)}
-                    placeholder="Get exclusive offers and updates"
-                    rows={2}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="cta_button_text">Button Text</Label>
-                  <Input
-                    id="cta_button_text"
-                    value={localSettings.cta_button_text}
-                    onChange={(e) => handleChange('cta_button_text', e.target.value)}
-                    placeholder="Sign Up"
-                  />
-                </div>
-              </CardContent>
-            </Card>
+            {localSettings.cta_enabled !== false && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Call to Action Banner</CardTitle>
+                  <CardDescription>Customize the CTA section on the homepage</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="cta_title">CTA Title</Label>
+                    <Input
+                      id="cta_title"
+                      value={localSettings.cta_title}
+                      onChange={(e) => handleChange('cta_title', e.target.value)}
+                      placeholder="Join Our Community"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cta_subtitle">CTA Subtitle</Label>
+                    <Textarea
+                      id="cta_subtitle"
+                      value={localSettings.cta_subtitle}
+                      onChange={(e) => handleChange('cta_subtitle', e.target.value)}
+                      placeholder="Get exclusive offers and updates"
+                      rows={2}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="cta_button_text">Button Text</Label>
+                    <Input
+                      id="cta_button_text"
+                      value={localSettings.cta_button_text}
+                      onChange={(e) => handleChange('cta_button_text', e.target.value)}
+                      placeholder="Sign Up"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </>
         );
 

@@ -144,6 +144,11 @@ export interface SiteSettings {
   accent_color: HSLColor;
   background_color: HSLColor;
 
+  // Section Visibility
+  hero_enabled: boolean;
+  categories_enabled: boolean;
+  cta_enabled: boolean;
+
   // Hero Section (single image fallback)
   hero_title: string;
   hero_subtitle: string;
@@ -293,6 +298,9 @@ const defaultSettings: SiteSettings = {
   secondary_color: { h: 35, s: 35, l: 92 },
   accent_color: { h: 350, s: 35, l: 90 },
   background_color: { h: 30, s: 30, l: 98 },
+  hero_enabled: true,
+  categories_enabled: true,
+  cta_enabled: true,
   hero_title: 'Elevate Your Feminine Style',
   hero_subtitle: 'Discover curated fashion pieces imported from around the world. Timeless elegance for the modern woman.',
   hero_badge: 'New Collection',

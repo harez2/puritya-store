@@ -464,7 +464,7 @@ export type Database = {
           id: string
           order_id: string
           price: number
-          product_id: string
+          product_id: string | null
           product_image: string | null
           product_name: string
           quantity: number
@@ -476,7 +476,7 @@ export type Database = {
           id?: string
           order_id: string
           price: number
-          product_id: string
+          product_id?: string | null
           product_image?: string | null
           product_name: string
           quantity: number
@@ -488,7 +488,7 @@ export type Database = {
           id?: string
           order_id?: string
           price?: number
-          product_id?: string
+          product_id?: string | null
           product_image?: string | null
           product_name?: string
           quantity?: number
@@ -552,6 +552,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string
+          deleted_at: string | null
           id: string
           notes: string | null
           order_number: string
@@ -571,6 +572,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           order_number: string
@@ -590,6 +592,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           id?: string
           notes?: string | null
           order_number?: string

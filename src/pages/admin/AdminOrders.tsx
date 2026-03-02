@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
@@ -24,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
@@ -39,9 +40,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
+import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 
@@ -58,6 +69,7 @@ interface Order {
   shipping_address: any;
   notes: string | null;
   created_at: string;
+  deleted_at?: string | null;
 }
 
 interface OrderItem {
@@ -100,7 +112,9 @@ export default function AdminOrders() {
   const navigate = useNavigate();
   const { sendOrderSms } = useSendOrderSms();
   const [orders, setOrders] = useState<Order[]>([]);
+  const [trashedOrders, setTrashedOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [trashLoading, setTrashLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
@@ -120,9 +134,14 @@ export default function AdminOrders() {
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
   const [isEditOrderOpen, setIsEditOrderOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
+  const [isEmptyTrashOpen, setIsEmptyTrashOpen] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
+  const [selectedTrashIds, setSelectedTrashIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchOrders();
+    fetchTrashedOrders();
   }, []);
 
   async function fetchOrders() {
@@ -130,15 +149,165 @@ export default function AdminOrders() {
       const { data, error } = await supabase
         .from('orders')
         .select('*')
+        .is('deleted_at', null)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setOrders(data || []);
+      setOrders((data as Order[]) || []);
     } catch (error) {
       console.error('Error fetching orders:', error);
       toast.error('Failed to load orders');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchTrashedOrders() {
+    try {
+      setTrashLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .not('deleted_at', 'is', null)
+        .order('deleted_at', { ascending: false });
+
+      if (error) throw error;
+      setTrashedOrders((data as Order[]) || []);
+    } catch (error) {
+      console.error('Error fetching trashed orders:', error);
+    } finally {
+      setTrashLoading(false);
+    }
+  }
+
+  async function handleMoveToTrash(orderId: string) {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .eq('id', orderId);
+
+      if (error) throw error;
+      toast.success('Order moved to trash');
+      fetchOrders();
+      fetchTrashedOrders();
+    } catch (error: any) {
+      console.error('Error moving order to trash:', error);
+      toast.error(error.message || 'Failed to move order to trash');
+    }
+  }
+
+  async function handleBulkMoveToTrash() {
+    if (selectedOrderIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ deleted_at: new Date().toISOString() } as any)
+        .in('id', Array.from(selectedOrderIds));
+
+      if (error) throw error;
+      toast.success(`${selectedOrderIds.size} order(s) moved to trash`);
+      setSelectedOrderIds(new Set());
+      fetchOrders();
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to move orders to trash');
+    }
+  }
+
+  async function handleRestoreOrder(orderId: string) {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ deleted_at: null } as any)
+        .eq('id', orderId);
+
+      if (error) throw error;
+      toast.success('Order restored');
+      fetchOrders();
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to restore order');
+    }
+  }
+
+  async function handlePermanentDelete(orderId: string) {
+    try {
+      // Delete order items first, then the order
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+      if (itemsError) throw itemsError;
+
+      // Delete status history
+      const { error: historyError } = await supabase
+        .from('order_status_history')
+        .delete()
+        .eq('order_id', orderId);
+      if (historyError) console.error('Error deleting status history:', historyError);
+
+      // Delete payment history
+      const { error: payHistoryError } = await supabase
+        .from('payment_status_history')
+        .delete()
+        .eq('order_id', orderId);
+      if (payHistoryError) console.error('Error deleting payment history:', payHistoryError);
+
+      const { error } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (error) throw error;
+      toast.success('Order permanently deleted');
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete order');
+    }
+  }
+
+  async function handleEmptyTrash() {
+    try {
+      for (const order of trashedOrders) {
+        await handlePermanentDelete(order.id);
+      }
+      toast.success('Trash emptied');
+      setIsEmptyTrashOpen(false);
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to empty trash');
+    }
+  }
+
+  async function handleBulkRestoreTrash() {
+    if (selectedTrashIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ deleted_at: null } as any)
+        .in('id', Array.from(selectedTrashIds));
+      if (error) throw error;
+      toast.success(`${selectedTrashIds.size} order(s) restored`);
+      setSelectedTrashIds(new Set());
+      fetchOrders();
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to restore orders');
+    }
+  }
+
+  async function handleBulkPermanentDelete() {
+    if (selectedTrashIds.size === 0) return;
+    try {
+      for (const id of selectedTrashIds) {
+        await handlePermanentDelete(id);
+      }
+      toast.success(`${selectedTrashIds.size} order(s) permanently deleted`);
+      setSelectedTrashIds(new Set());
+      fetchTrashedOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete orders');
     }
   }
 
@@ -166,7 +335,6 @@ export default function AdminOrders() {
 
       if (error) throw error;
       
-      // Fetch profile names for changed_by users
       const historyWithNames: StatusHistory[] = [];
       for (const item of data || []) {
         let changedByName = 'System';
@@ -207,7 +375,6 @@ export default function AdminOrders() {
     const oldStatus = order?.status;
     
     try {
-      // Update order status
       const { error: updateError } = await supabase
         .from('orders')
         .update({ status: statusUpdateNewStatus })
@@ -215,7 +382,6 @@ export default function AdminOrders() {
 
       if (updateError) throw updateError;
 
-      // Record status change in history with notes
       const { error: historyError } = await supabase
         .from('order_status_history')
         .insert({
@@ -230,7 +396,6 @@ export default function AdminOrders() {
         console.error('Error recording status history:', historyError);
       }
 
-      // Send SMS for shipped/delivered status changes
       if (order && (statusUpdateNewStatus === 'shipped' || statusUpdateNewStatus === 'delivered')) {
         const shippingAddress = order.shipping_address || {};
         const customerName = shippingAddress.full_name || 'Customer';
@@ -277,7 +442,6 @@ export default function AdminOrders() {
 
       toast.success(`Payment status updated to ${newPaymentStatus}`);
       
-      // Update local state
       setOrders(prev => prev.map(o => 
         o.id === orderId ? { ...o, payment_status: newPaymentStatus } : o
       ));
@@ -323,7 +487,6 @@ export default function AdminOrders() {
     try {
       const orderIdsArray = Array.from(selectedOrderIds);
       
-      // Update all selected orders
       const { error: updateError } = await supabase
         .from('orders')
         .update({ status: bulkNewStatus })
@@ -331,7 +494,6 @@ export default function AdminOrders() {
 
       if (updateError) throw updateError;
 
-      // Record status changes in history for each order
       const historyRecords = orderIdsArray.map(orderId => {
         const order = orders.find(o => o.id === orderId);
         return {
@@ -365,7 +527,6 @@ export default function AdminOrders() {
     const matchesSearch = order.order_number.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
-    // Date range filtering
     const orderDate = new Date(order.created_at);
     let matchesDateRange = true;
     
@@ -409,7 +570,6 @@ export default function AdminOrders() {
     try {
       toast.info('Preparing export...');
       
-      // Fetch all order items for filtered orders
       const orderIds = filteredOrders.map(o => o.id);
       const { data: allOrderItems, error: itemsError } = await supabase
         .from('order_items')
@@ -418,7 +578,6 @@ export default function AdminOrders() {
       
       if (itemsError) throw itemsError;
 
-      // Fetch customer profiles (filter out null user_ids for guest orders)
       const userIds = [...new Set(filteredOrders.map(o => o.user_id).filter((id): id is string => id !== null))];
       let profiles: { user_id: string; full_name: string | null; phone: string | null }[] = [];
       
@@ -441,31 +600,12 @@ export default function AdminOrders() {
         itemsMap.get(item.order_id)!.push(item);
       });
 
-      // CSV Headers
       const headers = [
-        'Order Number',
-        'Order Date',
-        'Status',
-        'Payment Status',
-        'Payment Method',
-        'Customer Name',
-        'Customer Phone',
-        'Shipping Name',
-        'Shipping Phone',
-        'Shipping Address',
-        'City',
-        'State',
-        'Postal Code',
-        'Country',
-        'Item Name',
-        'Item Size',
-        'Item Color',
-        'Item Quantity',
-        'Item Price',
-        'Subtotal',
-        'Shipping Fee',
-        'Total',
-        'Notes'
+        'Order Number', 'Order Date', 'Status', 'Payment Status', 'Payment Method',
+        'Customer Name', 'Customer Phone', 'Shipping Name', 'Shipping Phone',
+        'Shipping Address', 'City', 'State', 'Postal Code', 'Country',
+        'Item Name', 'Item Size', 'Item Color', 'Item Quantity', 'Item Price',
+        'Subtotal', 'Shipping Fee', 'Total', 'Notes'
       ];
 
       const rows: string[][] = [];
@@ -475,39 +615,21 @@ export default function AdminOrders() {
         const items = itemsMap.get(order.id) || [];
         const shippingAddr = order.shipping_address || {};
         
-        // For guest orders, use shipping name/phone as customer name/phone
         const customerName = profile?.full_name || shippingAddr.full_name || '';
         const customerPhone = profile?.phone || shippingAddr.phone || '';
         
         if (items.length === 0) {
-          // Order with no items
           rows.push([
-            order.order_number,
-            format(new Date(order.created_at), 'yyyy-MM-dd HH:mm:ss'),
-            order.status,
-            order.payment_status || 'pending',
-            order.payment_method || '',
-            customerName,
-            customerPhone,
-            shippingAddr.full_name || '',
-            shippingAddr.phone || '',
+            order.order_number, format(new Date(order.created_at), 'yyyy-MM-dd HH:mm:ss'),
+            order.status, order.payment_status || 'pending', order.payment_method || '',
+            customerName, customerPhone, shippingAddr.full_name || '', shippingAddr.phone || '',
             [shippingAddr.address_line1, shippingAddr.address_line2].filter(Boolean).join(', '),
-            shippingAddr.city || '',
-            shippingAddr.state || '',
-            shippingAddr.postal_code || '',
-            shippingAddr.country || '',
-            '',
-            '',
-            '',
-            '',
-            '',
-            String(order.subtotal),
-            String(order.shipping_fee),
-            String(order.total),
-            order.notes || ''
+            shippingAddr.city || '', shippingAddr.state || '',
+            shippingAddr.postal_code || '', shippingAddr.country || '',
+            '', '', '', '', '',
+            String(order.subtotal), String(order.shipping_fee), String(order.total), order.notes || ''
           ]);
         } else {
-          // One row per item
           items.forEach((item, index) => {
             rows.push([
               index === 0 ? order.order_number : '',
@@ -524,11 +646,8 @@ export default function AdminOrders() {
               index === 0 ? (shippingAddr.state || '') : '',
               index === 0 ? (shippingAddr.postal_code || '') : '',
               index === 0 ? (shippingAddr.country || '') : '',
-              item.product_name,
-              item.size || '',
-              item.color || '',
-              String(item.quantity),
-              String(item.price),
+              item.product_name, item.size || '', item.color || '',
+              String(item.quantity), String(item.price),
               index === 0 ? String(order.subtotal) : '',
               index === 0 ? String(order.shipping_fee) : '',
               index === 0 ? String(order.total) : '',
@@ -562,33 +681,22 @@ export default function AdminOrders() {
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'delivered':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'shipped':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'processing':
-        return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
+      case 'shipped': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getPaymentStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'paid':
-        return 'bg-green-100 text-green-800 border-green-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'failed':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'refunded':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'paid': return 'bg-green-100 text-green-800 border-green-200';
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'failed': return 'bg-red-100 text-red-800 border-red-200';
+      case 'refunded': return 'bg-blue-100 text-blue-800 border-blue-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -610,6 +718,15 @@ export default function AdminOrders() {
           <TabsList>
             <TabsTrigger value="orders">Order List</TabsTrigger>
             <TabsTrigger value="incomplete">Incomplete Orders</TabsTrigger>
+            <TabsTrigger value="trash" className="flex items-center gap-1.5">
+              <Trash2 className="h-3.5 w-3.5" />
+              Trash
+              {trashedOrders.length > 0 && (
+                <Badge variant="secondary" className="ml-1 h-5 min-w-[20px] px-1 text-xs">
+                  {trashedOrders.length}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="orders">
@@ -742,6 +859,14 @@ export default function AdminOrders() {
                         </SelectContent>
                       </Select>
                       <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={handleBulkMoveToTrash}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />
+                        Move to Trash
+                      </Button>
+                      <Button 
                         variant="ghost" 
                         size="sm"
                         onClick={() => setSelectedOrderIds(new Set())}
@@ -863,6 +988,14 @@ export default function AdminOrders() {
                                   Mark as {option.label}
                                 </DropdownMenuItem>
                               ))}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem 
+                                className="text-destructive"
+                                onClick={() => handleMoveToTrash(order.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Move to Trash
+                              </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </td>
@@ -885,6 +1018,159 @@ export default function AdminOrders() {
               </CardHeader>
               <CardContent>
                 <IncompleteOrdersTab />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Trash Tab */}
+          <TabsContent value="trash">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold flex items-center gap-2">
+                      <Trash2 className="h-5 w-5" />
+                      Trash
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      Deleted orders are kept for 30 days before being permanently removed
+                    </p>
+                  </div>
+                  {trashedOrders.length > 0 && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm"
+                      onClick={() => setIsEmptyTrashOpen(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Empty Trash
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {trashLoading ? (
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
+                ) : trashedOrders.length === 0 ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Trash2 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+                    <p className="font-medium">Trash is empty</p>
+                    <p className="text-sm">Deleted orders will appear here</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Bulk Trash Actions */}
+                    {selectedTrashIds.size > 0 && (
+                      <div className="flex items-center gap-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <CheckSquare className="h-4 w-4 text-destructive" />
+                          <span className="font-medium text-sm">
+                            {selectedTrashIds.size} order{selectedTrashIds.size > 1 ? 's' : ''} selected
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 ml-auto">
+                          <Button size="sm" variant="outline" onClick={handleBulkRestoreTrash}>
+                            <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                            Restore
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={handleBulkPermanentDelete}>
+                            <Trash2 className="h-3.5 w-3.5 mr-1" />
+                            Delete Permanently
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => setSelectedTrashIds(new Set())}>
+                            Clear
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="py-3 px-2 w-10">
+                              <Checkbox
+                                checked={trashedOrders.length > 0 && selectedTrashIds.size === trashedOrders.length}
+                                onCheckedChange={() => {
+                                  if (selectedTrashIds.size === trashedOrders.length) {
+                                    setSelectedTrashIds(new Set());
+                                  } else {
+                                    setSelectedTrashIds(new Set(trashedOrders.map(o => o.id)));
+                                  }
+                                }}
+                              />
+                            </th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Deleted</th>
+                            <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
+                            <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
+                            <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {trashedOrders.map((order) => (
+                            <tr key={order.id} className={`border-b last:border-0 hover:bg-muted/50 ${selectedTrashIds.has(order.id) ? 'bg-destructive/5' : ''}`}>
+                              <td className="py-3 px-2">
+                                <Checkbox
+                                  checked={selectedTrashIds.has(order.id)}
+                                  onCheckedChange={() => {
+                                    setSelectedTrashIds(prev => {
+                                      const newSet = new Set(prev);
+                                      if (newSet.has(order.id)) newSet.delete(order.id);
+                                      else newSet.add(order.id);
+                                      return newSet;
+                                    });
+                                  }}
+                                />
+                              </td>
+                              <td className="py-3 px-2">
+                                <p className="font-medium">{order.order_number}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(new Date(order.created_at), 'MMM d, yyyy')}
+                                </p>
+                              </td>
+                              <td className="py-3 px-2 text-sm text-muted-foreground">
+                                {order.deleted_at && formatDistanceToNow(new Date(order.deleted_at), { addSuffix: true })}
+                              </td>
+                              <td className="py-3 px-2">
+                                <Badge variant="outline" className={`capitalize text-xs ${getStatusColor(order.status)}`}>
+                                  {order.status}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-2 text-right font-medium">
+                                {formatCurrency(order.total)}
+                              </td>
+                              <td className="py-3 px-2 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleRestoreOrder(order.id)}
+                                    title="Restore"
+                                  >
+                                    <RotateCcw className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive"
+                                    onClick={() => {
+                                      setOrderToDelete(order.id);
+                                      setIsDeleteConfirmOpen(true);
+                                    }}
+                                    title="Delete permanently"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -1005,12 +1291,10 @@ export default function AdminOrders() {
                   <p className="text-sm text-muted-foreground">No status changes recorded yet.</p>
                 ) : (
                   <div className="relative pl-6 space-y-4">
-                    {/* Timeline line */}
                     <div className="absolute left-2 top-2 bottom-2 w-0.5 bg-border" />
                     
                     {statusHistory.map((history, index) => (
                       <div key={history.id} className="relative">
-                        {/* Timeline dot */}
                         <div className={`absolute -left-4 w-3 h-3 rounded-full border-2 ${
                           index === 0 ? 'bg-primary border-primary' : 'bg-background border-muted-foreground'
                         }`} />
@@ -1139,6 +1423,59 @@ export default function AdminOrders() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Empty Trash Confirmation */}
+      <AlertDialog open={isEmptyTrashOpen} onOpenChange={setIsEmptyTrashOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Empty Trash
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all {trashedOrders.length} order(s) in the trash. 
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleEmptyTrash}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Permanent Delete Confirmation */}
+      <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" />
+              Permanently Delete Order
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This order will be permanently deleted and cannot be recovered.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                if (orderToDelete) handlePermanentDelete(orderToDelete);
+                setIsDeleteConfirmOpen(false);
+                setOrderToDelete(null);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Permanently
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Manual Order Dialog */}
       <ManualOrderDialog

@@ -1159,10 +1159,12 @@ export default function AdminCustomization() {
           <FacebookPixelSetup
             pixelId={localSettings.facebook_pixel_id || ''}
             capiEnabled={localSettings.facebook_capi_enabled || false}
+            capiAccessToken={localSettings.facebook_capi_access_token || ''}
             catalogId={localSettings.facebook_catalog_id || ''}
             catalogEnabled={localSettings.facebook_catalog_enabled || false}
             onPixelIdChange={(value) => handleChange('facebook_pixel_id', value)}
             onCapiEnabledChange={(value) => handleChange('facebook_capi_enabled', value)}
+            onCapiAccessTokenChange={(value) => handleChange('facebook_capi_access_token', value)}
             onCatalogIdChange={(value) => handleChange('facebook_catalog_id', value)}
             onCatalogEnabledChange={(value) => handleChange('facebook_catalog_enabled', value)}
           />

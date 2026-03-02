@@ -44,14 +44,30 @@ serve(async (req) => {
   try {
     const { pixel_id, event_data } = await req.json();
 
-    // SECURITY: Only use server-side environment variable for access token
-    // Never accept access token from client requests
-    const accessToken = Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
+    // Try environment variable first, then fallback to database
+    let accessToken = Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
     
     if (!accessToken) {
-      console.error("Facebook CAPI access token not configured in environment variables");
+      // Fallback: read from site_settings table
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { data: tokenSetting } = await supabaseClient
+        .from("site_settings")
+        .select("value")
+        .eq("key", "facebook_capi_access_token")
+        .single();
+      
+      if (tokenSetting?.value && typeof tokenSetting.value === "string" && tokenSetting.value.trim()) {
+        accessToken = tokenSetting.value.trim();
+      }
+    }
+    
+    if (!accessToken) {
+      console.error("Facebook CAPI access token not configured");
       return new Response(
-        JSON.stringify({ error: "Facebook CAPI access token not configured. Please set FACEBOOK_CAPI_ACCESS_TOKEN in edge function secrets." }),
+        JSON.stringify({ error: "Facebook CAPI access token not configured. Please set it in Admin → Customization → Facebook Pixel settings." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

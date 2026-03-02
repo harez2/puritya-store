@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (product) {
-        title = `${product.name} | ${storeName}`
+        title = product.name
         description = product.meta_description ||
           (product.short_description ? stripHtml(product.short_description).substring(0, 160) : '') ||
           (product.description ? stripHtml(product.description).substring(0, 160) : '')
@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (blog) {
-        title = `${blog.title} | ${storeName} Blog`
+        title = blog.title
         description = blog.meta_description || blog.excerpt || stripHtml(blog.content).substring(0, 160)
         image = blog.featured_image || defaultImage
         ogType = 'article'
@@ -149,14 +149,14 @@ Deno.serve(async (req) => {
       const slug = pageMatch[1]
       const { data: page } = await supabase
         .from('pages')
-        .select('title, meta_description')
+        .select('title, meta_description, content')
         .eq('slug', slug)
         .eq('published', true)
         .maybeSingle()
 
       if (page) {
-        title = `${page.title} | ${storeName}`
-        description = page.meta_description || ''
+        title = page.title
+        description = page.meta_description || stripHtml(page.content || '').substring(0, 160)
         image = defaultImage
       }
     } else if (path === '/' || path === '') {

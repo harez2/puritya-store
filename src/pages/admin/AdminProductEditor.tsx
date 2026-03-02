@@ -49,6 +49,8 @@ const initialProductForm = {
   category_id: '',
   stock_quantity: 0,
   low_stock_threshold: 5,
+  brand: '',
+  features: [] as { key: string; value: string }[],
 };
 
 export default function AdminProductEditor() {
@@ -140,6 +142,8 @@ export default function AdminProductEditor() {
           category_id: data.category_id || '',
           stock_quantity: data.stock_quantity ?? 0,
           low_stock_threshold: data.low_stock_threshold ?? 5,
+          brand: (data as any).brand || '',
+          features: Array.isArray((data as any).features) ? (data as any).features : [],
         });
       }
     } catch (error) {
@@ -180,6 +184,8 @@ export default function AdminProductEditor() {
         category_id: formData.category_id || null,
         stock_quantity: formData.stock_quantity,
         low_stock_threshold: formData.low_stock_threshold,
+        brand: formData.brand || null,
+        features: formData.features.filter(f => f.key.trim() && f.value.trim()),
       };
 
       if (isEditing) {
@@ -484,6 +490,74 @@ export default function AdminProductEditor() {
                     💡 Save the product first to manage variant-level stock (per size/color)
                   </p>
                 )}
+              </CardContent>
+            </Card>
+
+            {/* Brand & Features */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Brand & Features</CardTitle>
+                <CardDescription>Brand name and product specifications</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="brand">Brand</Label>
+                  <Input
+                    id="brand"
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                    placeholder="e.g. Nike, Adidas"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Product Features</Label>
+                  <p className="text-xs text-muted-foreground">Add key-value pairs for product specifications</p>
+                  {formData.features.map((feature, index) => (
+                    <div key={index} className="flex gap-2 items-center">
+                      <Input
+                        value={feature.key}
+                        onChange={(e) => {
+                          const updated = [...formData.features];
+                          updated[index] = { ...updated[index], key: e.target.value };
+                          setFormData({ ...formData, features: updated });
+                        }}
+                        placeholder="e.g. Material"
+                        className="flex-1"
+                      />
+                      <Input
+                        value={feature.value}
+                        onChange={(e) => {
+                          const updated = [...formData.features];
+                          updated[index] = { ...updated[index], value: e.target.value };
+                          setFormData({ ...formData, features: updated });
+                        }}
+                        placeholder="e.g. Cotton"
+                        className="flex-1"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          const updated = formData.features.filter((_, i) => i !== index);
+                          setFormData({ ...formData, features: updated });
+                        }}
+                        className="shrink-0"
+                      >
+                        ✕
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setFormData({ ...formData, features: [...formData.features, { key: '', value: '' }] })}
+                  >
+                    + Add Feature
+                  </Button>
+                </div>
               </CardContent>
             </Card>
 

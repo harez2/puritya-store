@@ -186,7 +186,7 @@ export default function ProductDetail() {
     "sku": product.id,
     "brand": {
       "@type": "Brand",
-      "name": settings.store_name || "Store"
+      "name": (product as any).brand || settings.store_name || "Store"
     },
     "offers": {
       "@type": "Offer",
@@ -265,7 +265,12 @@ export default function ProductDetail() {
               {discount > 0 && <Badge variant="destructive">-{discount}%</Badge>}
             </div>
 
-            <h1 className="font-display text-3xl md:text-4xl mb-4">{product.name}</h1>
+            <h1 className="font-display text-3xl md:text-4xl mb-2">{product.name}</h1>
+
+            {/* Brand */}
+            {(product as any).brand && (
+              <p className="text-sm text-muted-foreground mb-4">Brand: <span className="font-medium text-foreground">{(product as any).brand}</span></p>
+            )}
 
             <div className="flex items-baseline gap-3 mb-6">
               <span className="text-2xl font-semibold">{formatPrice(displayPrice)}</span>
@@ -498,6 +503,25 @@ export default function ProductDetail() {
             </div>
           </motion.div>
         </div>
+        {/* Product Features Tab */}
+        {Array.isArray((product as any).features) && (product as any).features.length > 0 && (
+          <section className="mt-12">
+            <h2 className="font-display text-2xl mb-6">Specifications</h2>
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <tbody>
+                  {((product as any).features as { key: string; value: string }[]).map((feature, index) => (
+                    <tr key={index} className={index % 2 === 0 ? 'bg-muted/50' : 'bg-background'}>
+                      <td className="px-4 py-3 font-medium text-sm w-1/3 border-r">{feature.key}</td>
+                      <td className="px-4 py-3 text-sm">{feature.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
         {/* Product Reviews */}
         <ProductReviews productId={product.id} />
 

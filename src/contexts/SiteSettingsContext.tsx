@@ -507,17 +507,21 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     root.style.setProperty('--admin-primary', '12 45% 55%');
     root.style.setProperty('--admin-primary-foreground', '30 30% 98%');
     
-    // Apply primary color
+    // Apply primary color and compute foreground for contrast
     root.style.setProperty('--primary', `${currentSettings.primary_color.h} ${currentSettings.primary_color.s}% ${currentSettings.primary_color.l}%`);
+    root.style.setProperty('--primary-foreground', currentSettings.primary_color.l < 50 ? '0 0% 98%' : '0 0% 9%');
     
-    // Apply secondary color
+    // Apply secondary color and compute foreground
     root.style.setProperty('--secondary', `${currentSettings.secondary_color.h} ${currentSettings.secondary_color.s}% ${currentSettings.secondary_color.l}%`);
+    root.style.setProperty('--secondary-foreground', currentSettings.secondary_color.l < 50 ? '0 0% 98%' : '0 0% 9%');
     
-    // Apply accent color
+    // Apply accent color and compute foreground
     root.style.setProperty('--accent', `${currentSettings.accent_color.h} ${currentSettings.accent_color.s}% ${currentSettings.accent_color.l}%`);
+    root.style.setProperty('--accent-foreground', currentSettings.accent_color.l < 50 ? '0 0% 98%' : '0 0% 9%');
     
     // Apply background color
     root.style.setProperty('--background', `${currentSettings.background_color.h} ${currentSettings.background_color.s}% ${currentSettings.background_color.l}%`);
+    root.style.setProperty('--foreground', currentSettings.background_color.l < 50 ? '0 0% 98%' : '0 0% 9%');
     
     // Also update ring to match primary
     root.style.setProperty('--ring', `${currentSettings.primary_color.h} ${currentSettings.primary_color.s}% ${currentSettings.primary_color.l}%`);

@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.og-meta]
 verify_jwt = false
+
+[functions.steadfast-courier]
+verify_jwt = false

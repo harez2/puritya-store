@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
@@ -70,6 +70,11 @@ interface Order {
   notes: string | null;
   created_at: string;
   deleted_at?: string | null;
+  courier_name?: string | null;
+  courier_consignment_id?: string | null;
+  courier_tracking_code?: string | null;
+  courier_tracking_url?: string | null;
+  courier_status?: string | null;
 }
 
 interface OrderItem {
@@ -138,6 +143,7 @@ export default function AdminOrders() {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [selectedTrashIds, setSelectedTrashIds] = useState<Set<string>>(new Set());
+  const [courierLoading, setCourierLoading] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchOrders();
@@ -179,6 +185,79 @@ export default function AdminOrders() {
       setTrashLoading(false);
     }
   }
+
+  const handleSendToCourier = async (orderId: string) => {
+    setCourierLoading(prev => new Set(prev).add(orderId));
+    try {
+      const { data, error } = await supabase.functions.invoke('steadfast-courier', {
+        body: { action: 'create_order', order_id: orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Sent to Steadfast! Tracking: ${data.tracking_code}`);
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send to courier');
+    } finally {
+      setCourierLoading(prev => {
+        const s = new Set(prev);
+        s.delete(orderId);
+        return s;
+      });
+    }
+  };
+
+  const handleBulkSendToCourier = async () => {
+    const eligibleIds = Array.from(selectedOrderIds).filter(id => {
+      const order = orders.find(o => o.id === id);
+      return order && !order.courier_consignment_id;
+    });
+    if (eligibleIds.length === 0) {
+      toast.error('No eligible orders to send');
+      return;
+    }
+    for (const id of eligibleIds) {
+      setCourierLoading(prev => new Set(prev).add(id));
+    }
+    try {
+      const { data, error } = await supabase.functions.invoke('steadfast-courier', {
+        body: { action: 'bulk_create', order_ids: eligibleIds },
+      });
+      if (error) throw error;
+      const results = data?.results || [];
+      const successCount = results.filter((r: any) => r.success).length;
+      const failCount = results.filter((r: any) => !r.success).length;
+      if (successCount > 0) toast.success(`${successCount} order(s) sent to courier`);
+      if (failCount > 0) toast.error(`${failCount} order(s) failed`);
+      fetchOrders();
+      setSelectedOrderIds(new Set());
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to send to courier');
+    } finally {
+      setCourierLoading(new Set());
+    }
+  };
+
+  const handleSyncCourierStatus = async (orderId: string) => {
+    setCourierLoading(prev => new Set(prev).add(orderId));
+    try {
+      const { data, error } = await supabase.functions.invoke('steadfast-courier', {
+        body: { action: 'check_status', order_id: orderId },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success(`Courier status: ${data.courier_status}`);
+      fetchOrders();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to sync courier status');
+    } finally {
+      setCourierLoading(prev => {
+        const s = new Set(prev);
+        s.delete(orderId);
+        return s;
+      });
+    }
+  };
 
   async function handleMoveToTrash(orderId: string) {
     try {
@@ -233,21 +312,18 @@ export default function AdminOrders() {
 
   async function handlePermanentDelete(orderId: string) {
     try {
-      // Delete order items first, then the order
       const { error: itemsError } = await supabase
         .from('order_items')
         .delete()
         .eq('order_id', orderId);
       if (itemsError) throw itemsError;
 
-      // Delete status history
       const { error: historyError } = await supabase
         .from('order_status_history')
         .delete()
         .eq('order_id', orderId);
       if (historyError) console.error('Error deleting status history:', historyError);
 
-      // Delete payment history
       const { error: payHistoryError } = await supabase
         .from('payment_status_history')
         .delete()
@@ -605,7 +681,8 @@ export default function AdminOrders() {
         'Customer Name', 'Customer Phone', 'Shipping Name', 'Shipping Phone',
         'Shipping Address', 'City', 'State', 'Postal Code', 'Country',
         'Item Name', 'Item Size', 'Item Color', 'Item Quantity', 'Item Price',
-        'Subtotal', 'Shipping Fee', 'Total', 'Notes'
+        'Subtotal', 'Shipping Fee', 'Total', 'Notes',
+        'Courier', 'Tracking Code', 'Tracking URL', 'Courier Status'
       ];
 
       const rows: string[][] = [];
@@ -627,7 +704,8 @@ export default function AdminOrders() {
             shippingAddr.city || '', shippingAddr.state || '',
             shippingAddr.postal_code || '', shippingAddr.country || '',
             '', '', '', '', '',
-            String(order.subtotal), String(order.shipping_fee), String(order.total), order.notes || ''
+            String(order.subtotal), String(order.shipping_fee), String(order.total), order.notes || '',
+            order.courier_name || '', order.courier_tracking_code || '', order.courier_tracking_url || '', order.courier_status || ''
           ]);
         } else {
           items.forEach((item, index) => {
@@ -651,7 +729,11 @@ export default function AdminOrders() {
               index === 0 ? String(order.subtotal) : '',
               index === 0 ? String(order.shipping_fee) : '',
               index === 0 ? String(order.total) : '',
-              index === 0 ? (order.notes || '') : ''
+              index === 0 ? (order.notes || '') : '',
+              index === 0 ? (order.courier_name || '') : '',
+              index === 0 ? (order.courier_tracking_code || '') : '',
+              index === 0 ? (order.courier_tracking_url || '') : '',
+              index === 0 ? (order.courier_status || '') : ''
             ]);
           });
         }
@@ -697,6 +779,22 @@ export default function AdminOrders() {
       case 'failed': return 'bg-red-100 text-red-800 border-red-200';
       case 'refunded': return 'bg-blue-100 text-blue-800 border-blue-200';
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getCourierStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'delivered':
+      case 'partial_delivered':
+        return 'bg-green-100 text-green-800 border-green-200';
+      case 'in_review':
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'cancelled':
+      case 'hold':
+        return 'bg-red-100 text-red-800 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -837,14 +935,14 @@ export default function AdminOrders() {
               <div className="space-y-4">
                 {/* Bulk Action Bar */}
                 {selectedOrderIds.size > 0 && (
-                  <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                  <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex-wrap">
                     <div className="flex items-center gap-2">
                       <CheckSquare className="h-4 w-4 text-primary" />
                       <span className="font-medium text-sm">
                         {selectedOrderIds.size} order{selectedOrderIds.size > 1 ? 's' : ''} selected
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 ml-auto">
+                    <div className="flex items-center gap-2 ml-auto flex-wrap">
                       <span className="text-sm text-muted-foreground">Update to:</span>
                       <Select onValueChange={openBulkUpdateDialog}>
                         <SelectTrigger className="w-[140px] h-8">
@@ -858,6 +956,14 @@ export default function AdminOrders() {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBulkSendToCourier}
+                      >
+                        <Truck className="h-3.5 w-3.5 mr-1" />
+                        Send to Courier
+                      </Button>
                       <Button 
                         variant="destructive" 
                         size="sm"
@@ -892,6 +998,7 @@ export default function AdminOrders() {
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Payment</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Courier</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
                     </tr>
@@ -957,6 +1064,28 @@ export default function AdminOrders() {
                             </Select>
                           </div>
                         </td>
+                        <td className="py-3 px-2">
+                          {order.courier_tracking_code ? (
+                            <div className="flex flex-col gap-1">
+                              <a
+                                href={order.courier_tracking_url || '#'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-600 hover:underline flex items-center gap-1"
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                {order.courier_tracking_code}
+                              </a>
+                              {order.courier_status && (
+                                <Badge variant="outline" className={`text-[10px] capitalize w-fit ${getCourierStatusColor(order.courier_status)}`}>
+                                  {order.courier_status.replace(/_/g, ' ')}
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </td>
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}
                         </td>
@@ -979,6 +1108,25 @@ export default function AdminOrders() {
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit Order
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              {!order.courier_consignment_id ? (
+                                <DropdownMenuItem 
+                                  onClick={() => handleSendToCourier(order.id)}
+                                  disabled={courierLoading.has(order.id)}
+                                >
+                                  <Truck className="h-4 w-4 mr-2" />
+                                  {courierLoading.has(order.id) ? 'Sending...' : 'Send to Courier'}
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem 
+                                  onClick={() => handleSyncCourierStatus(order.id)}
+                                  disabled={courierLoading.has(order.id)}
+                                >
+                                  <RefreshCw className="h-4 w-4 mr-2" />
+                                  {courierLoading.has(order.id) ? 'Syncing...' : 'Sync Courier Status'}
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
                               {statusOptions.map((option) => (
                                 <DropdownMenuItem
                                   key={option.value}
@@ -1059,7 +1207,6 @@ export default function AdminOrders() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {/* Bulk Trash Actions */}
                     {selectedTrashIds.size > 0 && (
                       <div className="flex items-center gap-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
                         <div className="flex items-center gap-2">
@@ -1208,6 +1355,68 @@ export default function AdminOrders() {
                     </SelectContent>
                   </Select>
                 </div>
+              </div>
+
+              {/* Courier Section */}
+              <div>
+                <h3 className="font-semibold mb-2 flex items-center gap-2">
+                  <Truck className="h-4 w-4" />
+                  Courier Information
+                </h3>
+                {selectedOrder.courier_consignment_id ? (
+                  <div className="bg-muted/50 p-3 rounded-lg space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Courier</span>
+                      <span className="font-medium capitalize">{selectedOrder.courier_name || 'Steadfast'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Consignment ID</span>
+                      <span className="font-medium">{selectedOrder.courier_consignment_id}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground">Tracking Code</span>
+                      <a
+                        href={selectedOrder.courier_tracking_url || '#'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline flex items-center gap-1 font-medium"
+                      >
+                        {selectedOrder.courier_tracking_code}
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    {selectedOrder.courier_status && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-muted-foreground">Courier Status</span>
+                        <Badge variant="outline" className={`capitalize ${getCourierStatusColor(selectedOrder.courier_status)}`}>
+                          {selectedOrder.courier_status.replace(/_/g, ' ')}
+                        </Badge>
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full mt-2"
+                      onClick={() => handleSyncCourierStatus(selectedOrder.id)}
+                      disabled={courierLoading.has(selectedOrder.id)}
+                    >
+                      <RefreshCw className={`h-3.5 w-3.5 mr-1 ${courierLoading.has(selectedOrder.id) ? 'animate-spin' : ''}`} />
+                      Sync Courier Status
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="bg-muted/50 p-3 rounded-lg">
+                    <p className="text-sm text-muted-foreground mb-2">Not yet sent to courier</p>
+                    <Button
+                      size="sm"
+                      onClick={() => handleSendToCourier(selectedOrder.id)}
+                      disabled={courierLoading.has(selectedOrder.id)}
+                    >
+                      <Truck className="h-3.5 w-3.5 mr-1" />
+                      {courierLoading.has(selectedOrder.id) ? 'Sending...' : 'Send to Courier'}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               <div>

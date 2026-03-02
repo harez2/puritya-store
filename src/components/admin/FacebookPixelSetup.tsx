@@ -13,10 +13,12 @@ import { toast } from 'sonner';
 interface FacebookPixelSetupProps {
   pixelId: string;
   capiEnabled: boolean;
+  capiAccessToken: string;
   catalogId: string;
   catalogEnabled: boolean;
   onPixelIdChange: (value: string) => void;
   onCapiEnabledChange: (value: boolean) => void;
+  onCapiAccessTokenChange: (value: string) => void;
   onCatalogIdChange: (value: string) => void;
   onCatalogEnabledChange: (value: boolean) => void;
 }
@@ -24,13 +26,16 @@ interface FacebookPixelSetupProps {
 export function FacebookPixelSetup({
   pixelId,
   capiEnabled,
+  capiAccessToken,
   catalogId,
   catalogEnabled,
   onPixelIdChange,
   onCapiEnabledChange,
+  onCapiAccessTokenChange,
   onCatalogIdChange,
   onCatalogEnabledChange,
 }: FacebookPixelSetupProps) {
+  const [showToken, setShowToken] = useState(false);
   const isPixelConfigured = pixelId.trim().length > 0;
   const isCatalogConfigured = catalogId.trim().length > 0;
 
@@ -172,15 +177,53 @@ export function FacebookPixelSetup({
           </div>
 
           {capiEnabled && (
-            <Alert>
-              <Shield className="h-4 w-4" />
-              <AlertTitle>Access Token Configured Securely</AlertTitle>
-              <AlertDescription>
-                Your Facebook Conversions API access token is stored securely as a server-side environment variable
-                (FACEBOOK_CAPI_ACCESS_TOKEN). This protects your token from being exposed in client-side code or browser requests.
-                To update the token, please contact your administrator to update the edge function secret in the backend settings.
-              </AlertDescription>
-            </Alert>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="capi-token">Conversions API Access Token</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      id="capi-token"
+                      type={showToken ? 'text' : 'password'}
+                      value={capiAccessToken}
+                      onChange={(e) => onCapiAccessTokenChange(e.target.value.trim())}
+                      placeholder="Enter your Facebook CAPI access token"
+                      className="font-mono pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => setShowToken(!showToken)}
+                    >
+                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Generate your access token in{' '}
+                  <a
+                    href="https://business.facebook.com/events_manager"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Facebook Events Manager → Settings → Conversions API
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </p>
+              </div>
+
+              <Alert>
+                <Shield className="h-4 w-4" />
+                <AlertTitle>Token Security</AlertTitle>
+                <AlertDescription>
+                  Your access token is stored securely in the database and only accessed server-side 
+                  by the Conversions API edge function. It is never exposed in client-side code.
+                </AlertDescription>
+              </Alert>
+            </div>
           )}
         </CardContent>
       </Card>

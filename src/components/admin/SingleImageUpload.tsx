@@ -65,23 +65,7 @@ export function SingleImageUpload({ image, onImageChange, folder = 'categories' 
     }
   };
 
-  const removeImage = async () => {
-    if (!image) return;
-    
-    try {
-      const url = new URL(image);
-      const pathMatch = url.pathname.match(/\/product-images\/(.+)$/);
-      
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-        await supabase.storage
-          .from('product-images')
-          .remove([filePath]);
-      }
-    } catch (error) {
-      console.error('Error deleting image from storage:', error);
-    }
-
+  const removeImage = () => {
     onImageChange(null);
   };
 

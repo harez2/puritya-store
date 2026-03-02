@@ -75,23 +75,7 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
     }
   };
 
-  const removeImage = async (index: number) => {
-    const imageUrl = images[index];
-    
-    try {
-      const url = new URL(imageUrl);
-      const pathMatch = url.pathname.match(/\/product-images\/(.+)$/);
-      
-      if (pathMatch) {
-        const filePath = pathMatch[1];
-        await supabase.storage
-          .from('product-images')
-          .remove([filePath]);
-      }
-    } catch (error) {
-      console.error('Error deleting image from storage:', error);
-    }
-
+  const removeImage = (index: number) => {
     const newImages = images.filter((_, i) => i !== index);
     onImagesChange(newImages);
   };

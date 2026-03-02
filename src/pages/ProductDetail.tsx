@@ -2,7 +2,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Heart, Minus, Plus, ShoppingBag, Zap, ChevronDown, ChevronUp } from 'lucide-react';
+import { Heart, Minus, Plus, ShoppingBag, Zap, ChevronDown, ChevronUp, Share2, Copy, Check } from 'lucide-react';
+import { getShareUrl } from '@/lib/og-share';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Layout from '@/components/layout/Layout';
@@ -37,6 +38,7 @@ export default function ProductDetail() {
   const [buyingNow, setBuyingNow] = useState(false);
   const [showQuickCheckout, setShowQuickCheckout] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   // Must call useMemo before any early returns to follow Rules of Hooks
   const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
@@ -418,11 +420,27 @@ export default function ProductDetail() {
               color={selectedColor || undefined}
             />
 
-            {/* Shipping Info */}
-            <div className="mt-8 p-4 bg-secondary rounded-lg text-sm">
-              <p className="text-muted-foreground">
-                🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available
-              </p>
+            {/* Share & Shipping Info */}
+            <div className="mt-8 space-y-3">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => {
+                  const shareUrl = getShareUrl(`/product/${product.slug}`);
+                  navigator.clipboard.writeText(shareUrl);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+              >
+                {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+                {copied ? 'Link Copied!' : 'Copy Share Link'}
+              </Button>
+              <div className="p-4 bg-secondary rounded-lg text-sm">
+                <p className="text-muted-foreground">
+                  🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available
+                </p>
+              </div>
             </div>
           </motion.div>
         </div>

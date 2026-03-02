@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin, Clock, ShoppingBag } from 'lucide-react';
+import { Calendar, ArrowLeft, Twitter, Facebook, Linkedin, Clock, ShoppingBag, Copy, Check } from 'lucide-react';
+import { getShareUrl } from '@/lib/og-share';
 import Layout from '@/components/layout/Layout';
 import PageBreadcrumb, { BreadcrumbItemType } from '@/components/layout/PageBreadcrumb';
 import { supabase, Product } from '@/lib/supabase';
@@ -42,6 +43,7 @@ export default function BlogDetail() {
   const [relatedPosts, setRelatedPosts] = useState<RelatedPost[]>([]);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
   // Must call useMemo before any early returns
   const breadcrumbItems = useMemo((): BreadcrumbItemType[] => {
@@ -256,7 +258,7 @@ export default function BlogDetail() {
             <div className="flex items-center gap-2">
               <span className="text-sm text-muted-foreground mr-1">Share:</span>
               <a
-                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(canonicalUrl)}&text=${encodeURIComponent(blog.title)}`}
+                href={`https://twitter.com/intent/tweet?url=${encodeURIComponent(getShareUrl(`/blog/${blog.slug}`))}&text=${encodeURIComponent(blog.title)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
@@ -265,7 +267,7 @@ export default function BlogDetail() {
                 <Twitter className="h-4 w-4" />
               </a>
               <a
-                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(canonicalUrl)}`}
+                href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl(`/blog/${blog.slug}`))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
@@ -274,7 +276,7 @@ export default function BlogDetail() {
                 <Facebook className="h-4 w-4" />
               </a>
               <a
-                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(canonicalUrl)}`}
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getShareUrl(`/blog/${blog.slug}`))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
@@ -282,6 +284,17 @@ export default function BlogDetail() {
               >
                 <Linkedin className="h-4 w-4" />
               </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(getShareUrl(`/blog/${blog.slug}`));
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="p-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+                aria-label="Copy share link"
+              >
+                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              </button>
             </div>
           </div>
         </header>

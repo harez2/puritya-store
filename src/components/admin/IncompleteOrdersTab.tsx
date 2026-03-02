@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag, Pencil, Download } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Phone, Trash2, EyeOff, ArrowRightCircle, CalendarIcon, X, ShoppingBag, Pencil, Download, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Calendar } from '@/components/ui/calendar';
 import {
   Popover,
@@ -94,6 +95,8 @@ export function IncompleteOrdersTab() {
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [orderToDelete, setOrderToDelete] = useState<IncompleteOrder | null>(null);
   const [orderToHide, setOrderToHide] = useState<IncompleteOrder | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -195,6 +198,79 @@ export function IncompleteOrdersTab() {
     }
   };
 
+  // Bulk operations
+  const toggleSelection = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) newSet.delete(id);
+      else newSet.add(id);
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredOrders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOrders.map(o => o.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('incomplete_orders')
+        .delete()
+        .in('id', Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} order(s) deleted`);
+      setSelectedIds(new Set());
+      setIsBulkDeleteOpen(false);
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete orders');
+    }
+  };
+
+  const handleBulkHide = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('incomplete_orders')
+        .update({ status: 'hidden', last_updated_at: new Date().toISOString() })
+        .in('id', Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} order(s) hidden`);
+      setSelectedIds(new Set());
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to hide orders');
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    if (selectedIds.size === 0) return;
+    try {
+      const { error } = await supabase
+        .from('incomplete_orders')
+        .update({ status: 'pending', last_updated_at: new Date().toISOString() })
+        .in('id', Array.from(selectedIds));
+
+      if (error) throw error;
+
+      toast.success(`${selectedIds.size} order(s) restored to pending`);
+      setSelectedIds(new Set());
+      fetchOrders();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to restore orders');
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       (order.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
@@ -232,22 +308,9 @@ export function IncompleteOrdersTab() {
       }
 
       const headers = [
-        'Date',
-        'Time',
-        'Customer Name',
-        'Phone',
-        'Email',
-        'Address',
-        'Shipping Location',
-        'Payment Method',
-        'Items',
-        'Item Details',
-        'Subtotal',
-        'Shipping Fee',
-        'Total',
-        'Source',
-        'Status',
-        'Notes',
+        'Date', 'Time', 'Customer Name', 'Phone', 'Email', 'Address',
+        'Shipping Location', 'Payment Method', 'Items', 'Item Details',
+        'Subtotal', 'Shipping Fee', 'Total', 'Source', 'Status', 'Notes',
       ];
 
       const csvRows = filteredOrders.map(order => {
@@ -258,19 +321,12 @@ export function IncompleteOrdersTab() {
         return [
           format(new Date(order.created_at), 'yyyy-MM-dd'),
           format(new Date(order.created_at), 'HH:mm:ss'),
-          order.full_name || '',
-          order.phone || '',
-          order.email || '',
-          order.address?.replace(/,/g, ';') || '',
-          order.shipping_location || '',
-          order.payment_method || '',
-          order.cart_items.length.toString(),
-          itemsSummary.replace(/,/g, ';'),
-          order.subtotal.toString(),
-          order.shipping_fee.toString(),
-          order.total.toString(),
-          order.source || '',
-          order.status || '',
+          order.full_name || '', order.phone || '', order.email || '',
+          order.address?.replace(/,/g, ';') || '', order.shipping_location || '',
+          order.payment_method || '', order.cart_items.length.toString(),
+          itemsSummary.replace(/,/g, ';'), order.subtotal.toString(),
+          order.shipping_fee.toString(), order.total.toString(),
+          order.source || '', order.status || '',
           order.notes?.replace(/,/g, ';').replace(/\n/g, ' ') || '',
         ];
       });
@@ -289,7 +345,6 @@ export function IncompleteOrdersTab() {
       document.body.appendChild(link);
       link.click();
       
-      // Cleanup with small delay to ensure download starts
       setTimeout(() => {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
@@ -407,12 +462,48 @@ export function IncompleteOrdersTab() {
         {filteredOrders.length} incomplete order{filteredOrders.length !== 1 ? 's' : ''} found
       </p>
 
+      {/* Bulk Action Bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckSquare className="h-4 w-4 text-primary" />
+            <span className="font-medium text-sm">
+              {selectedIds.size} order{selectedIds.size > 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <Button size="sm" variant="outline" onClick={handleBulkHide}>
+              <EyeOff className="h-3.5 w-3.5 mr-1" />
+              Hide
+            </Button>
+            <Button size="sm" variant="outline" onClick={handleBulkRestore}>
+              <Eye className="h-3.5 w-3.5 mr-1" />
+              Restore
+            </Button>
+            <Button size="sm" variant="destructive" onClick={() => setIsBulkDeleteOpen(true)}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" />
+              Delete ({selectedIds.size})
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Orders Table */}
       <div className="border rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-muted/50">
               <tr>
+                <th className="px-4 py-3 w-10">
+                  <Checkbox
+                    checked={filteredOrders.length > 0 && selectedIds.size === filteredOrders.length}
+                    onCheckedChange={toggleSelectAll}
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Date/Time</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Customer</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">Items</th>
@@ -425,13 +516,20 @@ export function IncompleteOrdersTab() {
             <tbody className="divide-y divide-border">
               {filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                     No incomplete orders found
                   </td>
                 </tr>
               ) : (
                 filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-muted/50">
+                  <tr key={order.id} className={`hover:bg-muted/50 ${selectedIds.has(order.id) ? 'bg-primary/5' : ''}`}>
+                    <td className="px-4 py-3">
+                      <Checkbox
+                        checked={selectedIds.has(order.id)}
+                        onCheckedChange={() => toggleSelection(order.id)}
+                        aria-label={`Select order ${order.full_name || order.phone || ''}`}
+                      />
+                    </td>
                     <td className="px-4 py-3">
                       <div className="text-sm">
                         {format(new Date(order.created_at), 'MMM dd, yyyy')}
@@ -584,6 +682,24 @@ export function IncompleteOrdersTab() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={isBulkDeleteOpen} onOpenChange={setIsBulkDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete {selectedIds.size} incomplete order{selectedIds.size > 1 ? 's' : ''}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. All selected orders will be permanently removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete {selectedIds.size} Order{selectedIds.size > 1 ? 's' : ''}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

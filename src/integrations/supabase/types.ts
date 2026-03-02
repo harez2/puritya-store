@@ -551,6 +551,11 @@ export type Database = {
       }
       orders: {
         Row: {
+          courier_consignment_id: string | null
+          courier_name: string | null
+          courier_status: string | null
+          courier_tracking_code: string | null
+          courier_tracking_url: string | null
           created_at: string
           deleted_at: string | null
           id: string
@@ -571,6 +576,11 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          courier_consignment_id?: string | null
+          courier_name?: string | null
+          courier_status?: string | null
+          courier_tracking_code?: string | null
+          courier_tracking_url?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string
@@ -591,6 +601,11 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          courier_consignment_id?: string | null
+          courier_name?: string | null
+          courier_status?: string | null
+          courier_tracking_code?: string | null
+          courier_tracking_url?: string | null
           created_at?: string
           deleted_at?: string | null
           id?: string

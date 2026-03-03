@@ -30,6 +30,31 @@ export default function AdminSettings() {
   const { settings, updateSetting } = useSiteSettings();
   const [productSettings, setProductSettings] = useState<ProductSettings>(defaultProductSettings);
   const [loading, setLoading] = useState(true);
+  const [storeName, setStoreName] = useState('');
+  const [storeEmail, setStoreEmail] = useState('');
+  const [storePhone, setStorePhone] = useState('');
+  const [savingStore, setSavingStore] = useState(false);
+
+  useEffect(() => {
+    setStoreName(settings.store_name || '');
+    setStoreEmail(settings.contact_email || '');
+    setStorePhone(settings.contact_phone || '');
+  }, [settings.store_name, settings.contact_email, settings.contact_phone]);
+
+  const handleSaveStoreInfo = async () => {
+    setSavingStore(true);
+    try {
+      await updateSetting('store_name', storeName);
+      await updateSetting('contact_email', storeEmail);
+      await updateSetting('contact_phone', storePhone);
+      toast.success('Store information saved');
+    } catch (error) {
+      console.error('Error saving store info:', error);
+      toast.error('Failed to save store information');
+    } finally {
+      setSavingStore(false);
+    }
+  };
 
   useEffect(() => {
     fetchProductSettings();
@@ -105,15 +130,15 @@ export default function AdminSettings() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="storeName">Store Name</Label>
-                  <Input id="storeName" defaultValue="Puritya" />
+                  <Input id="storeName" value={storeName} onChange={(e) => setStoreName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="storeEmail">Contact Email</Label>
-                  <Input id="storeEmail" type="email" defaultValue="contact@puritya.com" />
+                  <Input id="storeEmail" type="email" value={storeEmail} onChange={(e) => setStoreEmail(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="storePhone">Phone Number</Label>
-                  <Input id="storePhone" defaultValue="+880 1234-567890" />
+                  <Input id="storePhone" value={storePhone} onChange={(e) => setStorePhone(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
@@ -121,7 +146,9 @@ export default function AdminSettings() {
                 </div>
               </div>
               <Separator />
-              <Button>Save Changes</Button>
+              <Button onClick={handleSaveStoreInfo} disabled={savingStore}>
+                {savingStore ? 'Saving...' : 'Save Changes'}
+              </Button>
             </CardContent>
           </Card>
 

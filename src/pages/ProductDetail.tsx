@@ -495,11 +495,13 @@ export default function ProductDetail() {
                   {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
                 </Button>
               </div>
-              <div className="p-4 bg-secondary rounded-lg text-sm">
-                <p className="text-muted-foreground">
-                  🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available
-                </p>
-              </div>
+              {settings.product_delivery_banner_enabled && (
+                <div className="p-4 bg-secondary rounded-lg text-sm">
+                  <p className="text-muted-foreground">
+                    {settings.product_delivery_banner_text || '🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available'}
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

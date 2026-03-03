@@ -269,6 +269,10 @@ export interface SiteSettings {
 
   // Homepage Sections
   homepage_sections: HomepageSection[];
+
+  // Product Page Delivery Banner
+  product_delivery_banner_enabled: boolean;
+  product_delivery_banner_text: string;
 }
 
 export interface CustomThemePreset {
@@ -481,6 +485,9 @@ const defaultSettings: SiteSettings = {
       settings: { limit: 3, showViewAll: true, background: 'default' },
     },
   ],
+  // Product Page Delivery Banner
+  product_delivery_banner_enabled: true,
+  product_delivery_banner_text: '🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available',
 };
 
 interface SiteSettingsContextType {

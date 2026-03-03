@@ -177,11 +177,6 @@ export function useOtpVerification(): UseOtpVerificationReturn {
           provider: otpSettings.otp_provider,
           otp_message_template: otpSettings.otp_message_template,
           otp_expiry_minutes: otpSettings.otp_expiry_minutes,
-          bulksms_api_key: otpSettings.bulksms_api_key,
-          bulksms_sender_id: otpSettings.bulksms_sender_id,
-          reve_api_key: otpSettings.reve_api_key,
-          reve_api_secret: otpSettings.reve_api_secret,
-          reve_sender_id: otpSettings.reve_sender_id,
         },
       });
 

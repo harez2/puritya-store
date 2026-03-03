@@ -10,13 +10,6 @@ interface SendOtpRequest {
   phone: string;
   session_id: string;
   provider?: 'bulksmsbd' | 'reve_system';
-  // Provider credentials (from site settings)
-  bulksms_api_key?: string;
-  bulksms_sender_id?: string;
-  reve_api_key?: string;
-  reve_api_secret?: string;
-  reve_sender_id?: string;
-  // OTP settings
   otp_message_template?: string;
   otp_expiry_minutes?: number;
 }
@@ -35,6 +28,12 @@ const formatBangladeshPhone = (phone: string): string => {
   return formatted;
 };
 
+const fetchWithTimeout = (url: string, options: RequestInit = {}, timeoutMs = 10000): Promise<Response> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(timeout));
+};
+
 const sendViaBulkSmsBd = async (
   phone: string,
   message: string,
@@ -42,19 +41,25 @@ const sendViaBulkSmsBd = async (
   senderId: string
 ): Promise<{ success: boolean; error?: string }> => {
   const encodedMessage = encodeURIComponent(message);
-  const apiUrl = `http://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=${phone}&senderid=${senderId}&message=${encodedMessage}`;
+  const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=${phone}&senderid=${senderId}&message=${encodedMessage}`;
 
   console.log(`Sending OTP to ${phone} via BulkSMSBD`);
 
-  const response = await fetch(apiUrl, { method: "GET" });
-  const responseText = await response.text();
-  console.log("BulkSMSBD Response:", responseText);
+  try {
+    const response = await fetchWithTimeout(apiUrl, { method: "GET" });
+    const responseText = await response.text();
+    console.log("BulkSMSBD Response:", responseText);
 
-  if (!response.ok) {
-    return { success: false, error: `BulkSMSBD error: ${responseText}` };
+    if (!response.ok) {
+      return { success: false, error: `BulkSMSBD error: ${responseText}` };
+    }
+    return { success: true };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return { success: false, error: "SMS API request timed out (10s)" };
+    }
+    throw err;
   }
-
-  return { success: true };
 };
 
 const sendViaReveSystem = async (
@@ -64,11 +69,6 @@ const sendViaReveSystem = async (
   apiSecret: string,
   senderId: string
 ): Promise<{ success: boolean; error?: string }> => {
-  // Reve System SMS API implementation
-  const apiUrl = "http://api.revesms.com/smsapi";
-  
-  console.log(`Sending OTP to ${phone} via Reve System`);
-
   const params = new URLSearchParams({
     api_key: apiKey,
     type: "text",
@@ -77,28 +77,35 @@ const sendViaReveSystem = async (
     msg: message,
   });
 
-  const response = await fetch(`${apiUrl}?${params.toString()}`, { method: "GET" });
-  const responseText = await response.text();
-  console.log("Reve System Response:", responseText);
+  console.log(`Sending OTP to ${phone} via Reve System`);
 
-  if (!response.ok) {
-    return { success: false, error: `Reve System error: ${responseText}` };
-  }
-
-  // Check for success in response (Reve typically returns JSON or specific success codes)
   try {
-    const result = JSON.parse(responseText);
-    if (result.status === "FAILED" || result.error) {
-      return { success: false, error: result.error || "SMS sending failed" };
-    }
-  } catch {
-    // If not JSON, check for error patterns in text
-    if (responseText.toLowerCase().includes("error") || responseText.toLowerCase().includes("failed")) {
-      return { success: false, error: responseText };
-    }
-  }
+    const response = await fetchWithTimeout(`https://api.revesms.com/smsapi?${params.toString()}`, { method: "GET" });
+    const responseText = await response.text();
+    console.log("Reve System Response:", responseText);
 
-  return { success: true };
+    if (!response.ok) {
+      return { success: false, error: `Reve System error: ${responseText}` };
+    }
+
+    try {
+      const result = JSON.parse(responseText);
+      if (result.status === "FAILED" || result.error) {
+        return { success: false, error: result.error || "SMS sending failed" };
+      }
+    } catch {
+      if (responseText.toLowerCase().includes("error") || responseText.toLowerCase().includes("failed")) {
+        return { success: false, error: responseText };
+      }
+    }
+
+    return { success: true };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      return { success: false, error: "SMS API request timed out (10s)" };
+    }
+    throw err;
+  }
 };
 
 const handler = async (req: Request): Promise<Response> => {
@@ -111,12 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
       phone,
       session_id,
       provider = 'bulksmsbd',
-      bulksms_api_key,
-      bulksms_sender_id,
-      reve_api_key,
-      reve_api_secret,
-      reve_sender_id,
-      otp_message_template = "Your Puritya verification code is: {otp}. Valid for 5 minutes.",
+      otp_message_template = "Your verification code is: {otp}. Valid for 5 minutes.",
       otp_expiry_minutes = 5,
     }: SendOtpRequest = await req.json();
 
@@ -127,32 +129,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Format phone number
     const formattedPhone = formatBangladeshPhone(phone);
 
-    // Initialize Supabase client
+    // Initialize Supabase client with service role
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Rate limiting: Check recent OTPs for this phone (max 3 in 10 minutes)
+    // Read SMS credentials server-side from site_settings
+    const { data: otpSettingsRow } = await supabase
+      .from("site_settings")
+      .select("value")
+      .eq("key", "otp_settings")
+      .maybeSingle();
+
+    const siteOtpSettings = (otpSettingsRow?.value && typeof otpSettingsRow.value === 'object')
+      ? otpSettingsRow.value as Record<string, unknown>
+      : {};
+
+    // Rate limiting: max 3 in 10 minutes
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-    const { data: recentOtps, error: countError } = await supabase
+    const { data: recentOtps } = await supabase
       .from("otp_verifications")
       .select("id")
       .eq("phone", formattedPhone)
       .gte("created_at", tenMinutesAgo);
 
-    if (countError) {
-      console.error("Error checking rate limit:", countError);
-    }
-
     if (recentOtps && recentOtps.length >= 3) {
       return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: "Too many OTP requests. Please wait 10 minutes before trying again." 
-        }),
+        JSON.stringify({ success: false, error: "Too many OTP requests. Please wait 10 minutes before trying again." }),
         { status: 429, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -161,7 +166,7 @@ const handler = async (req: Request): Promise<Response> => {
     const otpCode = generateOtp();
     const expiresAt = new Date(Date.now() + otp_expiry_minutes * 60 * 1000).toISOString();
 
-    // Store OTP in database
+    // Store OTP
     const { error: insertError } = await supabase
       .from("otp_verifications")
       .insert({
@@ -181,16 +186,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Prepare message
     const message = otp_message_template.replace("{otp}", otpCode);
 
-    // Send OTP via selected provider
+    // Send OTP via selected provider using server-side credentials
     let sendResult: { success: boolean; error?: string };
 
     if (provider === 'reve_system') {
-      const apiKey = reve_api_key || Deno.env.get("REVE_API_KEY");
-      const apiSecret = reve_api_secret || Deno.env.get("REVE_API_SECRET");
-      const senderId = reve_sender_id || Deno.env.get("REVE_SENDER_ID");
+      const apiKey = (siteOtpSettings.reve_api_key as string) || Deno.env.get("REVE_API_KEY") || "";
+      const apiSecret = (siteOtpSettings.reve_api_secret as string) || Deno.env.get("REVE_API_SECRET") || "";
+      const senderId = (siteOtpSettings.reve_sender_id as string) || Deno.env.get("REVE_SENDER_ID") || "";
 
       if (!apiKey || !senderId) {
         return new Response(
@@ -199,11 +203,10 @@ const handler = async (req: Request): Promise<Response> => {
         );
       }
 
-      sendResult = await sendViaReveSystem(formattedPhone, message, apiKey, apiSecret || "", senderId);
+      sendResult = await sendViaReveSystem(formattedPhone, message, apiKey, apiSecret, senderId);
     } else {
-      // Default: BulkSMSBD
-      const apiKey = bulksms_api_key || Deno.env.get("BULKSMS_API_KEY");
-      const senderId = bulksms_sender_id || Deno.env.get("BULKSMS_SENDER_ID");
+      const apiKey = (siteOtpSettings.bulksms_api_key as string) || Deno.env.get("BULKSMS_API_KEY") || "";
+      const senderId = (siteOtpSettings.bulksms_sender_id as string) || Deno.env.get("BULKSMS_SENDER_ID") || "";
 
       if (!apiKey || !senderId) {
         return new Response(
@@ -216,7 +219,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     if (!sendResult.success) {
-      // Delete the OTP record since SMS failed
       await supabase
         .from("otp_verifications")
         .delete()
@@ -230,11 +232,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: "OTP sent successfully",
-        expires_at: expiresAt,
-      }),
+      JSON.stringify({ success: true, message: "OTP sent successfully", expires_at: expiresAt }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: unknown) {

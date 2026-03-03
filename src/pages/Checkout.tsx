@@ -91,8 +91,11 @@ export default function Checkout() {
     notes: '',
   });
 
-  // Shipping fees based on location
-  const shippingFee = shippingLocation === 'inside_dhaka' ? 60 : 120;
+  // Shipping fees based on admin-configured settings, with fallback
+  const shippingOptions = settings.shipping_options as { inside_dhaka?: number; outside_dhaka?: number } | undefined;
+  const insideDhakaFee = shippingOptions?.inside_dhaka ?? 60;
+  const outsideDhakaFee = shippingOptions?.outside_dhaka ?? 120;
+  const shippingFee = shippingLocation === 'inside_dhaka' ? insideDhakaFee : outsideDhakaFee;
   const total = subtotal + shippingFee;
 
   // Helper to create data layer products
@@ -774,7 +777,7 @@ export default function Checkout() {
                         <span className="font-medium">Inside Dhaka</span>
                       </Label>
                     </div>
-                    <span className="font-semibold">৳60</span>
+                    <span className="font-semibold">৳{insideDhakaFee}</span>
                   </div>
                   <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${shippingLocation === 'outside_dhaka' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
                     <div className="flex items-center space-x-3">
@@ -783,7 +786,7 @@ export default function Checkout() {
                         <span className="font-medium">Outside Dhaka</span>
                       </Label>
                     </div>
-                    <span className="font-semibold">৳120</span>
+                    <span className="font-semibold">৳{outsideDhakaFee}</span>
                   </div>
                 </RadioGroup>
               </div>

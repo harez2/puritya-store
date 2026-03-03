@@ -222,7 +222,7 @@ function ProductsSection({ content, onCheckout }: { content: any; onCheckout?: (
   const { data: products = [] } = useQuery({
     queryKey: ['landing-products', productIds],
     queryFn: async () => {
-      let query = supabase.from('products').select('*, categories(name, slug)');
+      let query = supabase.from('products').select('*, categories(name, slug)').is('deleted_at', null);
       
       if (productIds.length > 0) {
         query = query.in('id', productIds);

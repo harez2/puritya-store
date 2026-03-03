@@ -129,7 +129,7 @@ serve(async (req) => {
 
     // Send to Facebook Conversions API
     const fbResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${pixel_id}/events?access_token=${accessToken}`,
+      `https://graph.facebook.com/v21.0/${pixel_id}/events?access_token=${accessToken}`,
       {
         method: "POST",
         headers: {

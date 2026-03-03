@@ -103,10 +103,12 @@ async function sendServerEvent(
     });
 
     if (error) {
-      console.error('Facebook CAPI error:', error);
+      // Silently log - don't break the page
+      console.warn('Facebook CAPI warning:', error.message || error);
     }
   } catch (err) {
-    console.error('Failed to send Facebook server event:', err);
+    // Silently fail - CAPI errors should never affect user experience
+    console.warn('Facebook CAPI unavailable');
   }
 }
 

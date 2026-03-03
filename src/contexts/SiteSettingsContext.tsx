@@ -232,6 +232,10 @@ export interface SiteSettings {
   gtm_container_id: string;
   gtm_enabled: boolean;
 
+  // Google Analytics 4
+  ga_measurement_id: string;
+  ga_enabled: boolean;
+
   // Shipping Options
   shipping_options: ShippingOption[];
 
@@ -405,6 +409,8 @@ const defaultSettings: SiteSettings = {
   facebook_catalog_enabled: false,
   gtm_container_id: '',
   gtm_enabled: false,
+  ga_measurement_id: '',
+  ga_enabled: false,
   shipping_options: [
     { id: '1', name: 'Inside Dhaka', price: 60, enabled: true },
     { id: '2', name: 'Outside Dhaka', price: 120, enabled: true },

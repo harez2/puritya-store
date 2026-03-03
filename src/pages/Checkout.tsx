@@ -63,7 +63,9 @@ export default function Checkout() {
   const enabledPaymentMethods = (settings.payment_methods || []).filter(m => m.enabled);
   const defaultMethod = enabledPaymentMethods.find(m => m.isDefault) || enabledPaymentMethods[0];
   
-  const [shippingLocation, setShippingLocation] = useState<'inside_dhaka' | 'outside_dhaka'>('inside_dhaka');
+  // Get enabled shipping options from settings (same array format as QuickCheckout)
+  const shippingOptions = (settings.shipping_options || []).filter((opt: any) => opt.enabled);
+  const [selectedShipping, setSelectedShipping] = useState(shippingOptions[0]?.id || '');
   const [paymentMethod, setPaymentMethod] = useState<string>(defaultMethod?.type || 'cod');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
@@ -82,7 +84,7 @@ export default function Checkout() {
     paymentMethod: string;
     orderDate: string;
   } | null>(null);
-  
+
   const [form, setForm] = useState<ShippingForm>({
     full_name: '',
     email: '',
@@ -91,11 +93,26 @@ export default function Checkout() {
     notes: '',
   });
 
-  // Shipping fees based on admin-configured settings, with fallback
-  const shippingOptions = settings.shipping_options as { inside_dhaka?: number; outside_dhaka?: number } | undefined;
-  const insideDhakaFee = shippingOptions?.inside_dhaka ?? 60;
-  const outsideDhakaFee = shippingOptions?.outside_dhaka ?? 120;
-  const shippingFee = shippingLocation === 'inside_dhaka' ? insideDhakaFee : outsideDhakaFee;
+  const selectedShippingOption = shippingOptions.find((opt: any) => opt.id === selectedShipping);
+  
+  // Calculate shipping fee with conditions (same logic as QuickCheckout)
+  const calculateShippingFee = () => {
+    if (!selectedShippingOption) return 0;
+    const basePrice = selectedShippingOption.price;
+    if (selectedShippingOption.freeShippingThreshold && subtotal >= selectedShippingOption.freeShippingThreshold) {
+      return 0;
+    }
+    if (selectedShippingOption.discountThreshold && 
+        selectedShippingOption.discountAmount && 
+        subtotal >= selectedShippingOption.discountThreshold) {
+      return Math.max(0, basePrice - selectedShippingOption.discountAmount);
+    }
+    return basePrice;
+  };
+  
+  const shippingFee = calculateShippingFee();
+  const originalShippingFee = selectedShippingOption?.price || 0;
+  const hasShippingDiscount = shippingFee < originalShippingFee;
   const total = subtotal + shippingFee;
 
   // Helper to create data layer products
@@ -151,10 +168,10 @@ export default function Checkout() {
   useEffect(() => {
     if (items.length > 0 && form.address.trim()) {
       const dataLayerProducts = getDataLayerProducts();
-      const shippingTier = shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka';
+      const shippingTier = selectedShippingOption?.name || 'Standard';
       trackAddShippingInfo(dataLayerProducts, total, shippingTier, 'BDT');
     }
-  }, [shippingLocation, form.address]);
+  }, [selectedShipping, form.address]);
 
   // Track payment info when payment method changes
   useEffect(() => {
@@ -171,7 +188,7 @@ export default function Checkout() {
       phone: form.phone,
       email: form.email,
       address: form.address,
-      shipping_location: shippingLocation,
+      shipping_location: selectedShippingOption?.name,
       payment_method: paymentMethod,
       notes: form.notes,
       cart_items: items.map(item => ({
@@ -191,7 +208,7 @@ export default function Checkout() {
       total,
       source: 'checkout',
     });
-  }, [form, shippingLocation, paymentMethod, items, subtotal, shippingFee, total, captureFormData]);
+  }, [form, selectedShipping, paymentMethod, items, subtotal, shippingFee, total, captureFormData]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const newForm = { ...form, [e.target.name]: e.target.value };
@@ -203,7 +220,7 @@ export default function Checkout() {
       phone: newForm.phone,
       email: newForm.email,
       address: newForm.address,
-      shipping_location: shippingLocation,
+      shipping_location: selectedShippingOption?.name,
       payment_method: paymentMethod,
       notes: newForm.notes,
       cart_items: items.map(item => ({
@@ -313,8 +330,8 @@ export default function Checkout() {
         phone: form.phone.trim(),
         address_line1: form.address.trim(),
         address_line2: null,
-        city: shippingLocation === 'inside_dhaka' ? 'Dhaka' : 'Outside Dhaka',
-        state: shippingLocation === 'inside_dhaka' ? 'Dhaka Division' : 'Other',
+        city: selectedShippingOption?.name || 'Unknown',
+        state: selectedShippingOption?.name || 'Unknown',
         postal_code: '',
         country: 'Bangladesh',
       };
@@ -337,7 +354,7 @@ export default function Checkout() {
           full_name: form.full_name.trim(),
           phone: form.phone.trim(),
           address: form.address.trim(),
-          location: shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka',
+          location: selectedShippingOption?.name || 'Standard',
         },
         paymentMethod: paymentLabel,
         orderDate: new Date().toLocaleString('en-BD', { 
@@ -769,25 +786,21 @@ export default function Checkout() {
               {/* Shipping Location */}
               <div className="bg-card border border-border rounded-lg p-6">
                 <h2 className="font-display text-xl mb-6">Shipping Location</h2>
-                <RadioGroup value={shippingLocation} onValueChange={(val) => setShippingLocation(val as 'inside_dhaka' | 'outside_dhaka')}>
-                  <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${shippingLocation === 'inside_dhaka' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="inside_dhaka" id="inside_dhaka" />
-                      <Label htmlFor="inside_dhaka" className="cursor-pointer">
-                        <span className="font-medium">Inside Dhaka</span>
-                      </Label>
+                <RadioGroup value={selectedShipping} onValueChange={setSelectedShipping}>
+                  {shippingOptions.map((option: any, index: number) => (
+                    <div 
+                      key={option.id}
+                      className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors ${index > 0 ? 'mt-3' : ''} ${selectedShipping === option.id ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <RadioGroupItem value={option.id} id={`shipping_${option.id}`} />
+                        <Label htmlFor={`shipping_${option.id}`} className="cursor-pointer">
+                          <span className="font-medium">{option.name}</span>
+                        </Label>
+                      </div>
+                      <span className="font-semibold">{formatPrice(option.price)}</span>
                     </div>
-                    <span className="font-semibold">৳{insideDhakaFee}</span>
-                  </div>
-                  <div className={`flex items-center justify-between p-4 border rounded-lg cursor-pointer transition-colors mt-3 ${shippingLocation === 'outside_dhaka' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary'}`}>
-                    <div className="flex items-center space-x-3">
-                      <RadioGroupItem value="outside_dhaka" id="outside_dhaka" />
-                      <Label htmlFor="outside_dhaka" className="cursor-pointer">
-                        <span className="font-medium">Outside Dhaka</span>
-                      </Label>
-                    </div>
-                    <span className="font-semibold">৳{outsideDhakaFee}</span>
-                  </div>
+                  ))}
                 </RadioGroup>
               </div>
 
@@ -898,7 +911,7 @@ export default function Checkout() {
                     <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Delivery ({shippingLocation === 'inside_dhaka' ? 'Inside Dhaka' : 'Outside Dhaka'})</span>
+                    <span>Delivery ({selectedShippingOption?.name || 'Standard'})</span>
                     <span>৳{shippingFee}</span>
                   </div>
                   <div className="border-t border-border pt-3 flex justify-between font-semibold text-lg">

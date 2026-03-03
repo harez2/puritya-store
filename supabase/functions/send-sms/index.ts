@@ -46,7 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
     const encodedMessage = encodeURIComponent(message);
 
     // Build the API URL
-    const apiUrl = `http://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=${formattedPhone}&senderid=${senderId}&message=${encodedMessage}`;
+    const apiUrl = `https://bulksmsbd.net/api/smsapi?api_key=${apiKey}&type=text&number=${formattedPhone}&senderid=${senderId}&message=${encodedMessage}`;
 
     console.log(`Sending SMS to ${formattedPhone}`);
 

@@ -13,11 +13,18 @@ export function initDataLayer() {
   }
 }
 
-// Push event to data layer
+// Push event to data layer (also fires gtag if GA4 is loaded)
 export function pushToDataLayer(data: Record<string, any>) {
   if (typeof window !== 'undefined') {
     window.dataLayer = window.dataLayer || [];
     window.dataLayer.push(data);
+
+    // Also send to GA4 gtag if available
+    if (typeof window.gtag === 'function' && data.event) {
+      const { event, ...params } = data;
+      window.gtag('event', event, params);
+    }
+
     console.log('[DataLayer] Event pushed:', data);
   }
 }

@@ -11,6 +11,7 @@ import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { FacebookPixelProvider } from "@/components/FacebookPixelProvider";
 import { DataLayerProvider } from "@/components/DataLayerProvider";
 import { GoogleTagManagerProvider } from "@/components/GoogleTagManagerProvider";
+import { GoogleAnalyticsProvider } from "@/components/GoogleAnalyticsProvider";
 import { SitePopup } from "@/components/SitePopup";
 import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { captureUtmParams } from "@/hooks/useUtmTracking";
@@ -83,6 +84,7 @@ const App = () => (
                 <ScrollToTop />
                 <DataLayerProvider>
                   <GoogleTagManagerProvider>
+                    <GoogleAnalyticsProvider>
                     <FacebookPixelProvider>
                       <SitePopup />
                       <FloatingChatButton />
@@ -129,6 +131,7 @@ const App = () => (
                         <Route path="*" element={<NotFound />} />
                       </Routes>
                     </FacebookPixelProvider>
+                    </GoogleAnalyticsProvider>
                   </GoogleTagManagerProvider>
                 </DataLayerProvider>
               </BrowserRouter>

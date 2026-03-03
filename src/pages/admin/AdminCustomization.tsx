@@ -19,6 +19,7 @@ import { CustomScriptsEditor } from '@/components/admin/CustomScriptsEditor';
 import { ThemePresets, ThemePreset, THEME_PRESETS } from '@/components/admin/ThemePresets';
 import { FacebookPixelSetup } from '@/components/admin/FacebookPixelSetup';
 import { GoogleTagManagerSetup } from '@/components/admin/GoogleTagManagerSetup';
+import { GoogleAnalyticsSetup } from '@/components/admin/GoogleAnalyticsSetup';
 import { HeroSlideEditor } from '@/components/admin/HeroSlideEditor';
 import { HomepageSectionsEditor } from '@/components/admin/HomepageSectionsEditor';
 import { DesignModeSelector } from '@/components/admin/DesignModeSelector';
@@ -47,6 +48,7 @@ const SECTION_TITLES: Record<string, string> = {
   'scripts': 'Scripts',
   'facebook': 'Facebook Pixel',
   'gtm': 'Google Tag Manager',
+  'ga': 'Google Analytics',
   'seo': 'SEO',
 };
 
@@ -1280,6 +1282,16 @@ export default function AdminCustomization() {
             enabled={localSettings.gtm_enabled || false}
             onContainerIdChange={(value) => handleChange('gtm_container_id', value)}
             onEnabledChange={(value) => handleChange('gtm_enabled', value)}
+          />
+        );
+
+      case 'ga':
+        return (
+          <GoogleAnalyticsSetup
+            measurementId={localSettings.ga_measurement_id || ''}
+            enabled={localSettings.ga_enabled || false}
+            onMeasurementIdChange={(value) => handleChange('ga_measurement_id', value)}
+            onEnabledChange={(value) => handleChange('ga_enabled', value)}
           />
         );
 

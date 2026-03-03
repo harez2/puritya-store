@@ -54,7 +54,7 @@ export default function Checkout() {
     initiateUddoktapayPayment,
   } = usePaymentGateway();
   const { sendOrderSms } = useSendOrderSms();
-  const { isOtpEnabled, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
+  const { isOtpRequired, isVerified: otpVerified, verifiedPhone } = useOtpVerification();
   const { captureFormData, markAsConverted, saveImmediately, rotateSession } = useIncompleteOrderCapture('checkout');
   
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -271,7 +271,7 @@ export default function Checkout() {
     if (!validateForm()) return;
     
     // Check if OTP verification is required
-    if (isOtpEnabled && !otpVerified) {
+    if (isOtpRequired) {
       setShowOtpModal(true);
       return;
     }

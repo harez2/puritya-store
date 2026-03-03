@@ -128,6 +128,8 @@ export interface SiteSettings {
 
   // Branding
   store_name: string;
+  contact_email: string;
+  contact_phone: string;
   store_tagline: string;
   logo_url: string;
   logo_size: number; // 32 to 80px (height)
@@ -300,6 +302,8 @@ const defaultSettings: SiteSettings = {
   button_style: 'standard',
   
   store_name: 'Puritya',
+  contact_email: '',
+  contact_phone: '',
   store_tagline: 'Curated feminine fashion imported from around the world',
   logo_url: '',
   logo_size: 56, // default 56px height

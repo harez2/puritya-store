@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Zap } from 'lucide-react';
 import {
   Sheet,
@@ -68,8 +68,9 @@ export function ProductQuickEdit({
   });
 
   // Update form when product changes
-  useState(() => {
-    if (product) {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (product && open) {
       setFormData({
         name: product.name,
         price: product.price,
@@ -81,7 +82,7 @@ export function ProductQuickEdit({
         category_id: product.category_id || '',
       });
     }
-  });
+  }, [product, open]);
 
   // Reset form when sheet opens with new product
   const handleOpenChange = (newOpen: boolean) => {

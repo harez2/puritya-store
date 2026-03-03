@@ -166,6 +166,33 @@ export default function AdminSettings() {
                   disabled={loading}
                 />
               </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="deliveryBanner">Delivery Info Banner</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Show delivery information banner on product pages
+                  </p>
+                </div>
+                <Switch
+                  id="deliveryBanner"
+                  checked={settings.product_delivery_banner_enabled}
+                  onCheckedChange={(checked) => updateSetting('product_delivery_banner_enabled', checked)}
+                />
+              </div>
+              {settings.product_delivery_banner_enabled && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="deliveryBannerText">Banner Text</Label>
+                    <Input
+                      id="deliveryBannerText"
+                      value={settings.product_delivery_banner_text}
+                      onChange={(e) => updateSetting('product_delivery_banner_text', e.target.value)}
+                      placeholder="🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available"
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
 

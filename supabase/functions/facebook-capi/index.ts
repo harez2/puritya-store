@@ -44,24 +44,20 @@ serve(async (req) => {
   try {
     const { pixel_id, event_data } = await req.json();
 
-    // Try environment variable first, then fallback to database
-    let accessToken = Deno.env.get("FACEBOOK_CAPI_ACCESS_TOKEN");
+    // Read access token from admin panel settings (site_settings table)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
     
-    if (!accessToken) {
-      // Fallback: read from site_settings table
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabaseClient = createClient(supabaseUrl, supabaseServiceKey);
-      
-      const { data: tokenSetting } = await supabaseClient
-        .from("site_settings")
-        .select("value")
-        .eq("key", "facebook_capi_access_token")
-        .single();
-      
-      if (tokenSetting?.value && typeof tokenSetting.value === "string" && tokenSetting.value.trim()) {
-        accessToken = tokenSetting.value.trim();
-      }
+    const { data: tokenSetting } = await supabaseClient
+      .from("site_settings")
+      .select("value")
+      .eq("key", "facebook_capi_access_token")
+      .single();
+    
+    let accessToken: string | null = null;
+    if (tokenSetting?.value && typeof tokenSetting.value === "string" && tokenSetting.value.trim()) {
+      accessToken = tokenSetting.value.trim();
     }
     
     if (!accessToken) {

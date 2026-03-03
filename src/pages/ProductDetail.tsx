@@ -59,6 +59,7 @@ export default function ProductDetail() {
           .from('products')
           .select('*, category:categories(*)')
           .eq('slug', slug)
+          .is('deleted_at', null)
           .maybeSingle();
         setProduct(data);
         if (data?.sizes?.length) setSelectedSize(data.sizes[0]);
@@ -105,6 +106,7 @@ export default function ProductDetail() {
             .select('*, category:categories(*)')
             .eq('category_id', data.category_id)
             .neq('id', data.id)
+            .is('deleted_at', null)
             .limit(4);
           setRelatedProducts(related || []);
         }

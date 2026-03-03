@@ -83,6 +83,7 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
         .from('products')
         .select('id, name, price, images, sizes, colors, in_stock')
         .eq('in_stock', true)
+        .is('deleted_at', null)
         .order('name');
 
       if (error) throw error;

@@ -49,7 +49,8 @@ export function useRecentlyViewed() {
       const { data } = await supabase
         .from('products')
         .select('*, category:categories(*)')
-        .in('id', ids);
+        .in('id', ids)
+        .is('deleted_at', null);
 
       if (data) {
         // Sort by the order in localStorage

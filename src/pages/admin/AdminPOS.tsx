@@ -163,6 +163,7 @@ export default function AdminPOS() {
           .from('products')
           .select('id, name, price, compare_at_price, images, sizes, colors, in_stock, category_id')
           .eq('in_stock', true)
+          .is('deleted_at', null)
           .order('name'),
         supabase.from('categories').select('id, name').order('name'),
       ]);

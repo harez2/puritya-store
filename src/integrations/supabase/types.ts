@@ -987,6 +987,7 @@ export type Database = {
           colors: string[] | null
           compare_at_price: number | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           display_order: number
           featured: boolean | null
@@ -1011,6 +1012,7 @@ export type Database = {
           colors?: string[] | null
           compare_at_price?: number | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           display_order?: number
           featured?: boolean | null
@@ -1035,6 +1037,7 @@ export type Database = {
           colors?: string[] | null
           compare_at_price?: number | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           display_order?: number
           featured?: boolean | null

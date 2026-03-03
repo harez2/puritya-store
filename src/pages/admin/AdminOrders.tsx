@@ -1019,7 +1019,12 @@ export default function AdminOrders() {
                         </td>
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
                         <td className="py-3 px-2">
-                          <span className="text-sm">{order.shipping_address?.full_name || '—'}</span>
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium">{order.shipping_address?.full_name || '—'}</span>
+                            {(order.shipping_address?.phone) && (
+                              <span className="text-xs text-muted-foreground">{order.shipping_address.phone}</span>
+                            )}
+                          </div>
                         </td>
                         <td className="py-3 px-2 text-muted-foreground">
                           <div className="flex flex-col">

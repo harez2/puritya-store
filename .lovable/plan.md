@@ -1,45 +1,50 @@
 
 
-## Issues Found
+## Plan: Hero Section Admin Enhancements
 
-### 1. Shipping fees are hardcoded, ignoring admin settings
-The checkout page hardcodes shipping fees at ৳60 (Inside Dhaka) and ৳120 (Outside Dhaka) on line 95, but the admin has configured them as ৳80 and ৳150 in `shipping_options` site settings. The UI also hardcodes these values on lines 777 and 786. This means orders are charged incorrect shipping.
+### What's missing today
+1. **Single hero**: Button URLs are hardcoded (`/shop` and `/shop?filter=new`) — no admin fields to customize them. Also no secondary button text/link fields, and no way to toggle badge/subtitle/buttons on/off.
+2. **Single hero**: No "image link URL" field — clicking the hero image doesn't navigate anywhere.
+3. **Slider slides**: No "image link URL" field — each slide's background image can't link to a page independently of the CTA buttons.
 
-### 2. OTP edge function uses HTTP (not HTTPS) for BulkSMSBD API
-The `send-otp` function calls `http://bulksmsbd.net/api/smsapi` (line in edge function). Many environments block or delay plain HTTP requests. This could cause timeouts or failures, making OTP delivery unreliable.
+### Changes
 
-### 3. OTP credentials sent from client-side (security + latency issue)
-The OTP hook reads credentials from `site_settings` (publicly readable) and sends them in the request body to the edge function. This is both a security risk (API keys exposed to client) and adds latency since the client must first fetch settings, then send them. The edge function should read credentials from secrets or the database directly using the service role key.
+#### 1. Extend `SiteSettings` interface (`SiteSettingsContext.tsx`)
+Add new fields to single hero settings:
+- `hero_cta_link: string` (primary button URL, default `/shop`)
+- `hero_secondary_cta_text: string`
+- `hero_secondary_cta_link: string`
+- `hero_image_link: string` (clicking the hero image navigates here)
+- `hero_show_badge: boolean`
+- `hero_show_subtitle: boolean`
+- `hero_show_cta: boolean`
+- `hero_show_secondary_cta: boolean`
 
-### 4. send-sms function also uses HTTP
-Same issue as send-otp -- `http://bulksmsbd.net` instead of HTTPS.
+Add to `HeroSlide` interface:
+- `image_link?: string` (optional URL the entire slide links to when clicked)
 
----
+Set proper defaults in the settings initialization.
 
-## Plan
+#### 2. Update admin panel — Single Hero section (`AdminCustomization.tsx`)
+- Add toggle switches for badge, subtitle, primary CTA, and secondary CTA visibility
+- Add input fields for primary button link, secondary button text, secondary button link
+- Add an "Image Link URL" input (the URL the hero image/background links to)
+- Reorganize into logical groups
 
-### Task 1: Fix shipping fees to use admin-configured values
-**File: `src/pages/Checkout.tsx`**
-- Replace the hardcoded `shippingFee` calculation (line 95) to read from `settings.shipping_options`
-- Update the UI display on lines 777 and 786 to show dynamic prices from settings
-- Fall back to current hardcoded values if no shipping options are configured
+#### 3. Update admin panel — Slider slides (`SortableHeroSlide.tsx`)
+- Add an "Image Link URL" input field in each slide's desktop settings so admins can set a URL the entire slide links to (separate from the CTA buttons)
 
-### Task 2: Fix OTP edge function for reliability
-**File: `supabase/functions/send-otp/index.ts`**
-- Change `http://bulksmsbd.net` to `https://bulksmsbd.net`
-- Change `http://api.revesms.com` to `https://api.revesms.com`
-- Remove client-sent credentials from the request body; instead have the edge function read `bulksms_api_key`, `bulksms_sender_id` (and reve equivalents) from Supabase secrets or by querying `site_settings` with the service role key directly
-- Add a timeout to the SMS API fetch call (e.g., 10 seconds) to prevent hanging
+#### 4. Update storefront hero rendering (`Index.tsx`)
+- Respect the new toggle fields (`hero_show_badge`, `hero_show_subtitle`, etc.)
+- Use `hero_cta_link` instead of hardcoded `/shop`
+- Use `hero_secondary_cta_text` / `hero_secondary_cta_link` instead of hardcoded "New Arrivals" / `/shop?filter=new`
+- If `hero_image_link` is set, wrap the hero section in a clickable link
 
-### Task 3: Update send-sms function similarly
-**File: `supabase/functions/send-sms/index.ts`**
-- Change `http://bulksmsbd.net` to `https://bulksmsbd.net`
+#### 5. Update slider rendering (`HeroSlider.tsx`)
+- If a slide has `image_link` set and no CTA buttons visible, make the entire slide clickable
+- If CTA buttons exist alongside `image_link`, make the background image area clickable (excluding the text overlay)
 
-### Task 4: Simplify OTP hook (client-side)
-**File: `src/hooks/useOtpVerification.ts`**
-- Stop sending SMS provider credentials in the `sendOtp` request body (only send `phone`, `session_id`, `otp_message_template`, `otp_expiry_minutes`)
-- The edge function will handle credentials server-side
-
-### Task 5: Redeploy edge functions
-- Deploy updated `send-otp` and `send-sms` functions
+### Technical notes
+- All new fields default to current hardcoded values for backward compatibility
+- No database changes needed — these are stored in the existing `site_settings` JSON
 

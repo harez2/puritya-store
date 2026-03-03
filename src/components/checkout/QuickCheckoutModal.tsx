@@ -94,7 +94,7 @@ export default function QuickCheckoutModal({
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
 
-  const { isOtpEnabled, isVerified: otpVerified } = useOtpVerification();
+  const { isOtpRequired, isVerified: otpVerified } = useOtpVerification();
   const { captureFormData, markAsConverted, saveImmediately, rotateSession } = useIncompleteOrderCapture('quick_buy');
 
   // Get enabled shipping options from settings
@@ -320,7 +320,7 @@ export default function QuickCheckoutModal({
     if (!validateForm()) return;
 
     // Check if OTP verification is required
-    if (isOtpEnabled && !otpVerified) {
+    if (isOtpRequired) {
       setShowOtpModal(true);
       return;
     }

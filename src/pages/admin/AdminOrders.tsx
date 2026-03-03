@@ -55,6 +55,8 @@ import { toast } from 'sonner';
 import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
+import { generateInvoice } from '@/components/admin/OrderInvoice';
 
 interface Order {
   id: string;
@@ -116,6 +118,7 @@ export default function AdminOrders() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { sendOrderSms } = useSendOrderSms();
+  const { settings } = useSiteSettings();
   const [orders, setOrders] = useState<Order[]>([]);
   const [trashedOrders, setTrashedOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1107,6 +1110,24 @@ export default function AdminOrders() {
                               }}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit Order
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={async () => {
+                                try {
+                                  const { data: items, error } = await supabase
+                                    .from('order_items')
+                                    .select('*')
+                                    .eq('order_id', order.id);
+                                  if (error) throw error;
+                                  generateInvoice(order, items || [], {
+                                    store_name: settings.store_name,
+                                    store_tagline: settings.store_tagline,
+                                  });
+                                } catch (err: any) {
+                                  toast.error('Failed to generate invoice');
+                                }
+                              }}>
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Invoice
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               {!order.courier_consignment_id ? (

@@ -25,6 +25,7 @@ import { checkIfCustomerBlocked } from '@/hooks/useBlockedCustomerCheck';
 import { useOtpVerification } from '@/hooks/useOtpVerification';
 import { useIncompleteOrderCapture } from '@/hooks/useIncompleteOrderCapture';
 import OtpVerificationModal from '@/components/checkout/OtpVerificationModal';
+import { generateOrderNumber, getOrderPrefix } from '@/lib/order-number';
 import {
   trackBeginCheckout,
   trackAddShippingInfo,
@@ -369,7 +370,8 @@ export default function QuickCheckoutModal({
         country: 'Bangladesh',
       };
 
-      const orderNum = 'PUR-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + Math.floor(1000 + Math.random() * 9000);
+      const orderPrefix = getOrderPrefix(settings.order_number_use_domain, settings.order_number_prefix);
+      const orderNum = generateOrderNumber(orderPrefix);
 
       const getPaymentMethodLabel = () => {
         switch (paymentMethod) {

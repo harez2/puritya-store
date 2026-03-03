@@ -998,7 +998,8 @@ export default function AdminOrders() {
                         />
                       </th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Payment</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Courier</th>
@@ -1017,8 +1018,14 @@ export default function AdminOrders() {
                           />
                         </td>
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
+                        <td className="py-3 px-2">
+                          <span className="text-sm">{order.shipping_address?.full_name || '—'}</span>
+                        </td>
                         <td className="py-3 px-2 text-muted-foreground">
-                          {format(new Date(order.created_at), 'MMM d, yyyy')}
+                          <div className="flex flex-col">
+                            <span className="text-sm">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
+                            <span className="text-xs">{format(new Date(order.created_at), 'hh:mm a')}</span>
+                          </div>
                         </td>
                         <td className="py-3 px-2">
                           <Select

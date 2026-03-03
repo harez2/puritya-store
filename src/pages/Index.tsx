@@ -50,12 +50,22 @@ export default function Index() {
         />
       ) : (
         <section className="relative h-[80vh] min-h-[600px] overflow-hidden">
-          <img
-            src={heroImageUrl}
-            alt={settings.store_name}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent" />
+          {settings.hero_image_link ? (
+            <Link to={settings.hero_image_link} className="absolute inset-0 z-0">
+              <img
+                src={heroImageUrl}
+                alt={settings.store_name}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+            </Link>
+          ) : (
+            <img
+              src={heroImageUrl}
+              alt={settings.store_name}
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-background/40 to-transparent pointer-events-none" />
           <div className="relative container mx-auto px-4 h-full flex items-center">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -63,9 +73,11 @@ export default function Index() {
               transition={{ duration: 0.8 }}
               className="max-w-xl"
             >
-              <span className="text-primary font-medium tracking-widest uppercase text-sm">
-                {settings.hero_badge}
-              </span>
+              {settings.hero_show_badge !== false && settings.hero_badge && (
+                <span className="text-primary font-medium tracking-widest uppercase text-sm">
+                  {settings.hero_badge}
+                </span>
+              )}
               <h1 className="font-display text-5xl md:text-7xl mt-4 mb-6 leading-tight">
                 {settings.hero_title.split(' ').map((word, i, arr) => (
                   <span key={i}>
@@ -79,18 +91,26 @@ export default function Index() {
                   </span>
                 ))}
               </h1>
-              <p className="text-lg text-muted-foreground mb-8 max-w-md">
-                {settings.hero_subtitle}
-              </p>
+              {settings.hero_show_subtitle !== false && settings.hero_subtitle && (
+                <p className="text-lg text-muted-foreground mb-8 max-w-md">
+                  {settings.hero_subtitle}
+                </p>
+              )}
               <div className="flex gap-4">
-                <Button size="lg" asChild>
-                  <Link to="/shop">
-                    {settings.hero_cta_text} <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-                <Button variant="outline" size="lg" asChild>
-                  <Link to="/shop?filter=new">New Arrivals</Link>
-                </Button>
+                {settings.hero_show_cta !== false && settings.hero_cta_text && (
+                  <Button size="lg" asChild>
+                    <Link to={settings.hero_cta_link || '/shop'}>
+                      {settings.hero_cta_text} <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
+                {settings.hero_show_secondary_cta !== false && (settings.hero_secondary_cta_text || 'New Arrivals') && (
+                  <Button variant="outline" size="lg" asChild>
+                    <Link to={settings.hero_secondary_cta_link || '/shop?filter=new'}>
+                      {settings.hero_secondary_cta_text || 'New Arrivals'}
+                    </Link>
+                  </Button>
+                )}
               </div>
             </motion.div>
           </div>

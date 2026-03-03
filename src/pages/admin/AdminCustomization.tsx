@@ -850,43 +850,7 @@ export default function AdminCustomization() {
                   <CardDescription>Customize your homepage hero banner (used when slider is disabled)</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="hero_badge">Badge Text</Label>
-                    <Input
-                      id="hero_badge"
-                      value={localSettings.hero_badge}
-                      onChange={(e) => handleChange('hero_badge', e.target.value)}
-                      placeholder="e.g., New Collection"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hero_title">Hero Title</Label>
-                    <Input
-                      id="hero_title"
-                      value={localSettings.hero_title}
-                      onChange={(e) => handleChange('hero_title', e.target.value)}
-                      placeholder="Your main headline"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
-                    <Textarea
-                      id="hero_subtitle"
-                      value={localSettings.hero_subtitle}
-                      onChange={(e) => handleChange('hero_subtitle', e.target.value)}
-                      placeholder="Supporting text for your headline"
-                      rows={3}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="hero_cta_text">Button Text</Label>
-                    <Input
-                      id="hero_cta_text"
-                      value={localSettings.hero_cta_text}
-                      onChange={(e) => handleChange('hero_cta_text', e.target.value)}
-                      placeholder="e.g., Shop Now"
-                    />
-                  </div>
+                  {/* Background Image */}
                   <div className="space-y-2">
                     <Label>Hero Background Image</Label>
                     <SingleImageUpload
@@ -898,6 +862,145 @@ export default function AdminCustomization() {
                       Recommended: 1920x1080 or larger, high quality image
                     </p>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_image_link">Image Link URL</Label>
+                    <Input
+                      id="hero_image_link"
+                      value={localSettings.hero_image_link || ''}
+                      onChange={(e) => handleChange('hero_image_link', e.target.value)}
+                      placeholder="/shop or https://example.com"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Clicking the hero background will navigate to this URL
+                    </p>
+                  </div>
+
+                  {/* Badge */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>Show Badge</Label>
+                      <p className="text-xs text-muted-foreground">Display the badge text above the title</p>
+                    </div>
+                    <Switch
+                      checked={localSettings.hero_show_badge !== false}
+                      onCheckedChange={(checked) => handleChange('hero_show_badge', checked)}
+                    />
+                  </div>
+                  {localSettings.hero_show_badge !== false && (
+                    <div className="space-y-2">
+                      <Label htmlFor="hero_badge">Badge Text</Label>
+                      <Input
+                        id="hero_badge"
+                        value={localSettings.hero_badge}
+                        onChange={(e) => handleChange('hero_badge', e.target.value)}
+                        placeholder="e.g., New Collection"
+                      />
+                    </div>
+                  )}
+
+                  {/* Title */}
+                  <div className="space-y-2">
+                    <Label htmlFor="hero_title">Hero Title</Label>
+                    <Input
+                      id="hero_title"
+                      value={localSettings.hero_title}
+                      onChange={(e) => handleChange('hero_title', e.target.value)}
+                      placeholder="Your main headline"
+                    />
+                  </div>
+
+                  {/* Subtitle */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>Show Subtitle</Label>
+                      <p className="text-xs text-muted-foreground">Display the subtitle text below the title</p>
+                    </div>
+                    <Switch
+                      checked={localSettings.hero_show_subtitle !== false}
+                      onCheckedChange={(checked) => handleChange('hero_show_subtitle', checked)}
+                    />
+                  </div>
+                  {localSettings.hero_show_subtitle !== false && (
+                    <div className="space-y-2">
+                      <Label htmlFor="hero_subtitle">Hero Subtitle</Label>
+                      <Textarea
+                        id="hero_subtitle"
+                        value={localSettings.hero_subtitle}
+                        onChange={(e) => handleChange('hero_subtitle', e.target.value)}
+                        placeholder="Supporting text for your headline"
+                        rows={3}
+                      />
+                    </div>
+                  )}
+
+                  {/* Primary CTA */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>Show Primary Button</Label>
+                      <p className="text-xs text-muted-foreground">Display the main call-to-action button</p>
+                    </div>
+                    <Switch
+                      checked={localSettings.hero_show_cta !== false}
+                      onCheckedChange={(checked) => handleChange('hero_show_cta', checked)}
+                    />
+                  </div>
+                  {localSettings.hero_show_cta !== false && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="hero_cta_text">Button Text</Label>
+                        <Input
+                          id="hero_cta_text"
+                          value={localSettings.hero_cta_text}
+                          onChange={(e) => handleChange('hero_cta_text', e.target.value)}
+                          placeholder="e.g., Shop Now"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hero_cta_link">Button Link</Label>
+                        <Input
+                          id="hero_cta_link"
+                          value={localSettings.hero_cta_link || '/shop'}
+                          onChange={(e) => handleChange('hero_cta_link', e.target.value)}
+                          placeholder="/shop"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Secondary CTA */}
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <div className="space-y-0.5">
+                      <Label>Show Secondary Button</Label>
+                      <p className="text-xs text-muted-foreground">Display an additional button next to the primary one</p>
+                    </div>
+                    <Switch
+                      checked={localSettings.hero_show_secondary_cta !== false}
+                      onCheckedChange={(checked) => handleChange('hero_show_secondary_cta', checked)}
+                    />
+                  </div>
+                  {localSettings.hero_show_secondary_cta !== false && (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="hero_secondary_cta_text">Secondary Button Text</Label>
+                        <Input
+                          id="hero_secondary_cta_text"
+                          value={localSettings.hero_secondary_cta_text || ''}
+                          onChange={(e) => handleChange('hero_secondary_cta_text', e.target.value)}
+                          placeholder="e.g., New Arrivals"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="hero_secondary_cta_link">Secondary Button Link</Label>
+                        <Input
+                          id="hero_secondary_cta_link"
+                          value={localSettings.hero_secondary_cta_link || ''}
+                          onChange={(e) => handleChange('hero_secondary_cta_link', e.target.value)}
+                          placeholder="/shop?filter=new"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}

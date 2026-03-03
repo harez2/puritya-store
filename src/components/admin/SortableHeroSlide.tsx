@@ -349,6 +349,18 @@ export function SortableHeroSlide({
                     />
                   </div>
                 </div>
+
+                <div className="space-y-2">
+                  <Label>Image Link URL</Label>
+                  <Input
+                    value={slide.image_link || ''}
+                    onChange={(e) => onUpdate({ image_link: e.target.value })}
+                    placeholder="/shop or https://example.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Clicking the slide background will navigate to this URL (separate from CTA buttons)
+                  </p>
+                </div>
               </TabsContent>
 
               <TabsContent value="mobile" className="space-y-4 mt-0">

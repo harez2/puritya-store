@@ -81,6 +81,7 @@ export interface HeroSlide {
   cta_link: string;
   secondary_cta_text: string;
   secondary_cta_link: string;
+  image_link?: string;
   // Mobile-specific overrides
   mobile_image_url?: string;
   mobile_title?: string;
@@ -154,7 +155,15 @@ export interface SiteSettings {
   hero_subtitle: string;
   hero_badge: string;
   hero_cta_text: string;
+  hero_cta_link: string;
   hero_image_url: string;
+  hero_image_link: string;
+  hero_secondary_cta_text: string;
+  hero_secondary_cta_link: string;
+  hero_show_badge: boolean;
+  hero_show_subtitle: boolean;
+  hero_show_cta: boolean;
+  hero_show_secondary_cta: boolean;
 
   // Hero Slider
   hero_slider: HeroSliderSettings;
@@ -306,7 +315,15 @@ const defaultSettings: SiteSettings = {
   hero_subtitle: 'Discover curated fashion pieces imported from around the world. Timeless elegance for the modern woman.',
   hero_badge: 'New Collection',
   hero_cta_text: 'Shop Now',
+  hero_cta_link: '/shop',
   hero_image_url: '',
+  hero_image_link: '',
+  hero_secondary_cta_text: 'New Arrivals',
+  hero_secondary_cta_link: '/shop?filter=new',
+  hero_show_badge: true,
+  hero_show_subtitle: true,
+  hero_show_cta: true,
+  hero_show_secondary_cta: true,
   hero_slider: {
     enabled: false,
     autoplay: true,

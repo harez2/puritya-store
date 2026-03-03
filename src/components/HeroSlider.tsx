@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -73,18 +73,38 @@ export function HeroSlider({ slides, autoplay = true, autoplayDelay = 5, storeNa
         cta_link: slide.cta_link,
         secondary_cta_text: slide.secondary_cta_text,
         secondary_cta_link: slide.secondary_cta_link,
+        image_link: slide.image_link,
       };
     }
     return slide;
   };
 
   const content = getContent(currentSlide);
+  const navigate = useNavigate();
+
+  const handleSlideClick = (e: React.MouseEvent) => {
+    if (content.image_link) {
+      // Don't navigate if clicking on buttons/links inside the slide
+      const target = e.target as HTMLElement;
+      if (target.closest('a') || target.closest('button')) return;
+      
+      if (content.image_link.startsWith('http')) {
+        window.open(content.image_link, '_blank');
+      } else {
+        navigate(content.image_link);
+      }
+    }
+  };
 
   return (
     <section 
-      className="relative h-[80vh] min-h-[500px] md:min-h-[600px] overflow-hidden"
+      className={cn(
+        "relative h-[80vh] min-h-[500px] md:min-h-[600px] overflow-hidden",
+        content.image_link && "cursor-pointer"
+      )}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
+      onClick={handleSlideClick}
     >
       <AnimatePresence mode="wait">
         <motion.div

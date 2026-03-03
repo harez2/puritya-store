@@ -248,7 +248,7 @@ export function useOtpVerification(): UseOtpVerificationReturn {
   }, []);
 
   // Calculate if OTP is actually required (considering bypass for logged-in users)
-  const canBypass = otpSettings?.otp_bypass_logged_in_users && isLoggedIn && !!userProfile?.phone;
+  const canBypass = otpSettings?.otp_bypass_logged_in_users && isLoggedIn;
   const isOtpRequired = (otpSettings?.otp_verification_enabled ?? false) && !canBypass && !isVerified;
 
   return {

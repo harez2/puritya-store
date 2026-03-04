@@ -109,6 +109,33 @@ export function EditOrderDialog({
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
 
+  // Custom item state
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [customItemQty, setCustomItemQty] = useState('1');
+
+  const addCustomItem = () => {
+    const name = customItemName.trim();
+    const price = parseFloat(customItemPrice);
+    const qty = parseInt(customItemQty) || 1;
+    if (!name) { toast.error('Please enter item name'); return; }
+    if (isNaN(price) || price < 0) { toast.error('Please enter a valid price'); return; }
+    setOrderItems([...orderItems, {
+      product_id: `custom-${Date.now()}`,
+      product_name: name,
+      product_image: null,
+      quantity: qty,
+      price,
+      size: null,
+      color: null,
+    }]);
+    setCustomItemName('');
+    setCustomItemPrice('');
+    setCustomItemQty('1');
+    setShowCustomItem(false);
+  };
+
   useEffect(() => {
     if (order && open) {
       loadOrderData();
@@ -130,7 +157,7 @@ export function EditOrderDialog({
 
       const mappedItems: OrderItem[] = (items || []).map(item => ({
         id: item.id,
-        product_id: item.product_id,
+        product_id: item.product_id || `custom-${item.id}`,
         product_name: item.product_name,
         product_image: item.product_image,
         quantity: item.quantity,
@@ -343,7 +370,7 @@ export function EditOrderDialog({
             .from('order_items')
             .insert({
               order_id: order.id,
-              product_id: item.product_id,
+              product_id: item.product_id.startsWith('custom-') ? null : item.product_id,
               product_name: item.product_name,
               product_image: item.product_image,
               quantity: item.quantity,
@@ -527,15 +554,54 @@ export function EditOrderDialog({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="font-medium">Order Items</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowProductSearch(!showProductSearch)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Product
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowProductSearch(!showProductSearch)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Product
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowCustomItem(!showCustomItem)}
+                  >
+                    <Plus className="h-4 w-4 mr-1" />
+                    Custom Item
+                  </Button>
+                </div>
               </div>
+
+              {showCustomItem && (
+                <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                  <Input
+                    placeholder="Item name (e.g. Custom embroidery)"
+                    value={customItemName}
+                    onChange={(e) => setCustomItemName(e.target.value)}
+                  />
+                  <div className="grid grid-cols-2 gap-3">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Price"
+                      value={customItemPrice}
+                      onChange={(e) => setCustomItemPrice(e.target.value)}
+                    />
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Qty"
+                      value={customItemQty}
+                      onChange={(e) => setCustomItemQty(e.target.value)}
+                    />
+                  </div>
+                  <Button size="sm" onClick={addCustomItem}>
+                    Add Item
+                  </Button>
+                </div>
+              )}
 
               {showProductSearch && (
                 <div className="relative">

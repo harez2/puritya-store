@@ -1,34 +1,36 @@
 
 
-## Plan: Client-Side Image Optimization with WebP Conversion
+## Plan: Add Custom Product Item for Manual Orders
 
 ### Problem
-Product images are uploaded in their original format (PNG, JPEG, etc.) without any optimization, causing slow page loads.
+Admins need to add ad-hoc items (custom customer demands) to manual orders and when editing existing orders. These items have no corresponding product in the catalog and should not appear on the storefront.
 
-### Solution
-Create a shared utility function that uses the browser's Canvas API to:
-1. Resize images to a max dimension (e.g., 1920px) while maintaining aspect ratio
-2. Convert all images to WebP format with configurable quality (0.85 default — visually lossless)
-3. Apply this optimization in all three upload components before uploading to storage
+### Approach
+No database changes needed -- `order_items.product_id` is already nullable. Custom items will be stored as regular order items with `product_id = null` and a custom name/price. The invoice already renders `product_name` from order items, so custom items will appear correctly there automatically.
 
-### Technical Details
+### Changes
 
-**New file: `src/lib/image-optimizer.ts`**
-- `optimizeImage(file: File, options?)` → returns optimized `File` as WebP
-- Uses `createImageBitmap` + `OffscreenCanvas` (or regular Canvas fallback) to resize and convert
-- Options: `maxWidth` (1920), `maxHeight` (1920), `quality` (0.85)
-- Output filename changes extension to `.webp`
+**1. `src/pages/admin/AdminPOS.tsx`**
+- Add a "Custom Item" button in the cart/right panel
+- When clicked, show inline fields: Item Name, Unit Price, Quantity
+- Add to `orderItems` with a fake product object (id = `custom-{timestamp}`) or restructure the OrderItem interface to support custom items
+- On submit, insert with `product_id: null` and the custom name/price
 
-**Modified files:**
-1. **`src/components/admin/ProductImageUpload.tsx`**
-   - Import `optimizeImage`, call it on each file before `uploadImage()`
-   - Change file extension in `uploadImage` to always use `.webp`
+**2. `src/components/admin/ManualOrderDialog.tsx`**
+- Add a "Custom Item" button alongside the product search
+- Show inline form: name, price, quantity
+- Custom items added to orderItems with `product_id: null`
 
-2. **`src/components/admin/SingleImageUpload.tsx`**
-   - Same pattern — optimize before upload
+**3. `src/components/admin/EditOrderDialog.tsx`**
+- Add a "Custom Item" button next to "Add Product"
+- Same inline form for name, price, quantity
+- Custom items saved with `product_id: null`
+- Existing custom items (product_id is null) should render with an editable name/price
 
-3. **`src/components/admin/PopupImageUpload.tsx`**
-   - Same pattern — optimize before upload
-
-All three upload components will process images client-side before uploading, so no backend changes are needed. The Canvas `toBlob('image/webp', quality)` API handles both conversion and compression natively in the browser.
+### How it works for the user
+- In POS, Manual Order, or Edit Order, the admin clicks "Add Custom Item"
+- Enters a name (e.g., "Custom embroidery service"), price, and quantity
+- The item appears in the order like any other product
+- On the invoice PDF, it shows the custom item name and pricing
+- These items never appear on the storefront since they are not in the products table
 

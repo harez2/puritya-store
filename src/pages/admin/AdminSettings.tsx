@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
-import { Store, Shield, Package, MapPin, Ban, Users, ExternalLink, Hash } from 'lucide-react';
+import { Store, Shield, Package, MapPin, Ban, Users, ExternalLink, Hash, Bell } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -26,9 +26,26 @@ const defaultProductSettings: ProductSettings = {
   colorsEnabled: true,
 };
 
+interface NotificationSettings {
+  enabled: boolean;
+  soundEnabled: boolean;
+  browserEnabled: boolean;
+  smsEnabled: boolean;
+  adminPhone: string;
+}
+
+const defaultNotificationSettings: NotificationSettings = {
+  enabled: true,
+  soundEnabled: true,
+  browserEnabled: true,
+  smsEnabled: false,
+  adminPhone: '',
+};
+
 export default function AdminSettings() {
   const { settings, updateSetting } = useSiteSettings();
   const [productSettings, setProductSettings] = useState<ProductSettings>(defaultProductSettings);
+  const [notifSettings, setNotifSettings] = useState<NotificationSettings>(defaultNotificationSettings);
   const [loading, setLoading] = useState(true);
   const [storeName, setStoreName] = useState('');
   const [storeEmail, setStoreEmail] = useState('');
@@ -58,7 +75,44 @@ export default function AdminSettings() {
 
   useEffect(() => {
     fetchProductSettings();
+    fetchNotificationSettings();
   }, []);
+
+  const fetchNotificationSettings = async () => {
+    try {
+      const { data } = await supabase
+        .from('site_settings')
+        .select('value')
+        .eq('key', 'admin_notification_settings')
+        .maybeSingle();
+      if (data?.value) {
+        setNotifSettings({ ...defaultNotificationSettings, ...(data.value as unknown as NotificationSettings) });
+      }
+    } catch (error) {
+      console.error('Error fetching notification settings:', error);
+    }
+  };
+
+  const updateNotifSetting = async (key: keyof NotificationSettings, value: boolean | string) => {
+    const updated = { ...notifSettings, [key]: value };
+    setNotifSettings(updated);
+    try {
+      const { error } = await supabase
+        .from('site_settings')
+        .upsert({
+          key: 'admin_notification_settings',
+          category: 'notifications',
+          value: updated,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'key' });
+      if (error) throw error;
+      toast.success('Notification settings updated');
+    } catch (error) {
+      console.error('Error updating notification settings:', error);
+      toast.error('Failed to update notification settings');
+      setNotifSettings(notifSettings);
+    }
+  };
 
   const fetchProductSettings = async () => {
     try {
@@ -284,6 +338,98 @@ export default function AdminSettings() {
                   </span>
                 </p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Order Notifications */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Bell className="h-5 w-5 text-primary" />
+                <CardTitle>Order Notifications</CardTitle>
+              </div>
+              <CardDescription>
+                Get notified when new orders come in
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="notifEnabled">Enable Notifications</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Master toggle for all new order notifications
+                  </p>
+                </div>
+                <Switch
+                  id="notifEnabled"
+                  checked={notifSettings.enabled}
+                  onCheckedChange={(checked) => updateNotifSetting('enabled', checked)}
+                />
+              </div>
+
+              {notifSettings.enabled && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="soundEnabled">Sound Alert</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Play a chime sound when a new order arrives
+                      </p>
+                    </div>
+                    <Switch
+                      id="soundEnabled"
+                      checked={notifSettings.soundEnabled}
+                      onCheckedChange={(checked) => updateNotifSetting('soundEnabled', checked)}
+                    />
+                  </div>
+
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="browserEnabled">Browser Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Show desktop push notifications (requires browser permission)
+                      </p>
+                    </div>
+                    <Switch
+                      id="browserEnabled"
+                      checked={notifSettings.browserEnabled}
+                      onCheckedChange={(checked) => updateNotifSetting('browserEnabled', checked)}
+                    />
+                  </div>
+
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="smsEnabled">SMS Notifications</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Send an SMS to the admin phone number for each new order
+                      </p>
+                    </div>
+                    <Switch
+                      id="smsEnabled"
+                      checked={notifSettings.smsEnabled}
+                      onCheckedChange={(checked) => updateNotifSetting('smsEnabled', checked)}
+                    />
+                  </div>
+
+                  {notifSettings.smsEnabled && (
+                    <div className="space-y-2">
+                      <Label htmlFor="adminPhone">Admin Phone Number</Label>
+                      <Input
+                        id="adminPhone"
+                        value={notifSettings.adminPhone}
+                        onChange={(e) => updateNotifSetting('adminPhone', e.target.value)}
+                        placeholder="e.g., 01XXXXXXXXX"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        This number will receive SMS alerts for every new order
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
 

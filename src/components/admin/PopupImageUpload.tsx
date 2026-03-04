@@ -3,6 +3,7 @@ import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/image-optimizer';
 
 interface PopupImageUploadProps {
   image: string | null;
@@ -50,7 +51,8 @@ export function PopupImageUpload({ image, onImageChange }: PopupImageUploadProps
     setUploading(true);
 
     try {
-      const url = await uploadImage(file);
+      const optimizedFile = await optimizeImage(file);
+      const url = await uploadImage(optimizedFile);
       onImageChange(url);
       toast.success('Image uploaded successfully');
     } catch (error: any) {

@@ -3,6 +3,7 @@ import { Upload, X, Image as ImageIcon, Loader2, GripVertical } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { optimizeImage } from '@/lib/image-optimizer';
 
 interface ProductImageUploadProps {
   images: string[];
@@ -56,7 +57,8 @@ export function ProductImageUpload({ images, onImagesChange }: ProductImageUploa
           continue;
         }
 
-        const url = await uploadImage(file);
+        const optimizedFile = await optimizeImage(file);
+        const url = await uploadImage(optimizedFile);
         newImages.push(url);
       }
 

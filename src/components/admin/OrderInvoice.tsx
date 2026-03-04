@@ -59,12 +59,14 @@ export async function generateInvoice(
 
   let headerY = 18;
 
-  // Logo
+  // Logo or Store name
+  let hasLogo = false;
   if (settings.logo_url) {
     const logoBase64 = await loadImageAsBase64(settings.logo_url);
     if (logoBase64) {
       try {
         doc.addImage(logoBase64, 'PNG', L, 12, 30, 30);
+        hasLogo = true;
         headerY = 18;
       } catch {
         // logo failed, continue without
@@ -72,19 +74,19 @@ export async function generateInvoice(
     }
   }
 
-  const textLeft = settings.logo_url ? L + 35 : L;
+  if (!hasLogo) {
+    // Show store name and tagline only when no logo
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(30, 30, 30);
+    doc.text(settings.store_name || 'Store', L, headerY + 4);
 
-  // Header - Store name
-  doc.setFontSize(18);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(30, 30, 30);
-  doc.text(settings.store_name || 'Store', textLeft, headerY + 4);
-
-  if (settings.store_tagline) {
-    doc.setFontSize(8);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(120, 120, 120);
-    doc.text(settings.store_tagline, textLeft, headerY + 10);
+    if (settings.store_tagline) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(120, 120, 120);
+      doc.text(settings.store_tagline, L, headerY + 10);
+    }
   }
 
   // Invoice title
@@ -216,8 +218,12 @@ export async function generateInvoice(
     doc.text(order.notes, L, totalsY + 5, { maxWidth: 160 });
   }
 
-  // Open in new tab
+  // Save with order number as filename
   const pdfBlob = doc.output('blob');
   const url = URL.createObjectURL(pdfBlob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.target = '_blank';
+  // Also open in new tab
   window.open(url, '_blank');
 }

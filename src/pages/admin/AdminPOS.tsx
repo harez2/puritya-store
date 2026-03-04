@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Minus, X, Search, ShoppingCart, RotateCcw } from 'lucide-react';
+import { Plus, Minus, X, Search, ShoppingCart, RotateCcw, Percent, Tag } from 'lucide-react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,8 @@ interface OrderItem {
   quantity: number;
   size: string | null;
   color: string | null;
+  itemDiscount: number;
+  itemDiscountType: 'percentage' | 'fixed';
 }
 
 export default function AdminPOS() {
@@ -90,6 +92,10 @@ export default function AdminPOS() {
   const [variantSize, setVariantSize] = useState<string | null>(null);
   const [variantColor, setVariantColor] = useState<string | null>(null);
 
+  // Discount state
+  const [orderDiscountType, setOrderDiscountType] = useState<'percentage' | 'fixed'>('fixed');
+  const [orderDiscountValue, setOrderDiscountValue] = useState(0);
+
   // Custom item state
   const [showCustomItem, setShowCustomItem] = useState(false);
   const [customItemName, setCustomItemName] = useState('');
@@ -113,7 +119,7 @@ export default function AdminPOS() {
       in_stock: true,
       category_id: null,
     };
-    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null }]);
+    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null, itemDiscount: 0, itemDiscountType: 'fixed' }]);
     setCustomItemName('');
     setCustomItemPrice('');
     setCustomItemQty('1');
@@ -253,7 +259,7 @@ export default function AdminPOS() {
         )
       );
     } else {
-      setOrderItems([...orderItems, { product, quantity: 1, size, color }]);
+      setOrderItems([...orderItems, { product, quantity: 1, size, color, itemDiscount: 0, itemDiscountType: 'fixed' }]);
     }
   };
 
@@ -276,11 +282,34 @@ export default function AdminPOS() {
     return hasDiscount ? Number(product.compare_at_price) : Number(product.price);
   };
 
+  const getItemFinalPrice = (item: OrderItem) => {
+    const basePrice = getDisplayPrice(item.product) * item.quantity;
+    if (item.itemDiscount <= 0) return basePrice;
+    if (item.itemDiscountType === 'percentage') {
+      return basePrice * (1 - Math.min(item.itemDiscount, 100) / 100);
+    }
+    return Math.max(0, basePrice - item.itemDiscount);
+  };
+
   const subtotal = orderItems.reduce(
-    (sum, item) => sum + getDisplayPrice(item.product) * item.quantity,
+    (sum, item) => sum + getItemFinalPrice(item),
     0
   );
-  const total = subtotal + shippingFee;
+
+  const orderDiscountAmount = orderDiscountType === 'percentage'
+    ? subtotal * (Math.min(orderDiscountValue, 100) / 100)
+    : Math.min(orderDiscountValue, subtotal);
+
+  const discountedSubtotal = subtotal - (orderDiscountValue > 0 ? orderDiscountAmount : 0);
+  const total = discountedSubtotal + shippingFee;
+
+  const updateItemDiscount = (index: number, discount: number, discountType: 'percentage' | 'fixed') => {
+    setOrderItems(items =>
+      items.map((item, i) =>
+        i === index ? { ...item, itemDiscount: discount, itemDiscountType: discountType } : item
+      )
+    );
+  };
 
   const resetForm = () => {
     setOrderItems([]);
@@ -297,6 +326,8 @@ export default function AdminPOS() {
     setPaymentStatus('pending');
     setShippingFee(0);
     setOrderSource('admin_manual');
+    setOrderDiscountType('fixed');
+    setOrderDiscountValue(0);
     setSearchQuery('');
     setSelectedCategory('all');
     setPhoneLookupDone(false);
@@ -337,14 +368,14 @@ export default function AdminPOS() {
         .insert({
           order_number: orderNumber,
           user_id: null,
-          subtotal,
+          subtotal: discountedSubtotal,
           shipping_fee: shippingFee,
           total,
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
           order_source: orderSource,
-          notes: notes.trim() || null,
+          notes: [notes.trim(), orderDiscountValue > 0 ? `Order Discount: ${orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`} (-৳${orderDiscountAmount.toFixed(0)})` : ''].filter(Boolean).join(' | ') || null,
           shipping_address: {
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -364,10 +395,10 @@ export default function AdminPOS() {
       const orderItemsData = orderItems.map((item) => ({
         order_id: order.id,
         product_id: item.product.id.startsWith('custom-') ? null : item.product.id,
-        product_name: item.product.name,
+        product_name: item.product.name + (item.itemDiscount > 0 ? ` [Discount: ${item.itemDiscountType === 'percentage' ? `${item.itemDiscount}%` : `৳${item.itemDiscount}`}]` : ''),
         product_image: item.product.id.startsWith('custom-') ? null : (item.product.images?.[0] || null),
         quantity: item.quantity,
-        price: getDisplayPrice(item.product),
+        price: getItemFinalPrice(item) / item.quantity,
         size: item.size,
         color: item.color,
       }));
@@ -646,8 +677,37 @@ export default function AdminPOS() {
                             <Plus className="h-3 w-3" />
                           </Button>
                           <span className="ml-auto text-sm font-medium">
-                            {formatCurrency(getDisplayPrice(item.product) * item.quantity)}
+                            {item.itemDiscount > 0 && (
+                              <span className="text-xs text-muted-foreground line-through mr-1">
+                                {formatCurrency(getDisplayPrice(item.product) * item.quantity)}
+                              </span>
+                            )}
+                            {formatCurrency(getItemFinalPrice(item))}
                           </span>
+                        </div>
+                        {/* Per-item discount */}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
+                          <Input
+                            type="number"
+                            min="0"
+                            placeholder="Discount"
+                            value={item.itemDiscount || ''}
+                            onChange={(e) => updateItemDiscount(index, Number(e.target.value) || 0, item.itemDiscountType)}
+                            className="h-6 text-xs w-16 px-1"
+                          />
+                          <Select
+                            value={item.itemDiscountType}
+                            onValueChange={(v: 'percentage' | 'fixed') => updateItemDiscount(index, item.itemDiscount, v)}
+                          >
+                            <SelectTrigger className="h-6 w-14 text-xs px-1">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="fixed">৳</SelectItem>
+                              <SelectItem value="percentage">%</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
                       <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => removeItem(index)}>
@@ -838,6 +898,29 @@ export default function AdminPOS() {
                     className="h-9"
                   />
                 </div>
+                {/* Order-level discount */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Order Discount</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={orderDiscountValue || ''}
+                      onChange={(e) => setOrderDiscountValue(Number(e.target.value) || 0)}
+                      placeholder="Amount"
+                      className="h-9"
+                    />
+                    <Select value={orderDiscountType} onValueChange={(v: 'percentage' | 'fixed') => setOrderDiscountType(v)}>
+                      <SelectTrigger className="h-9 w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">৳</SelectItem>
+                        <SelectItem value="percentage">%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Order Notes</Label>
                   <Textarea
@@ -858,6 +941,12 @@ export default function AdminPOS() {
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
+              {orderDiscountValue > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount ({orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`})</span>
+                  <span>-{formatCurrency(orderDiscountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-muted-foreground">
                 <span>Shipping</span>
                 <span>{formatCurrency(shippingFee)}</span>

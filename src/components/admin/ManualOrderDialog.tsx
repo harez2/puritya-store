@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Minus, X, Search } from 'lucide-react';
+import { Plus, Minus, X, Search, Tag } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +39,8 @@ interface OrderItem {
   quantity: number;
   size: string | null;
   color: string | null;
+  itemDiscount: number;
+  itemDiscountType: 'percentage' | 'fixed';
 }
 
 interface ManualOrderDialogProps {
@@ -71,6 +73,10 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
   const [shippingFee, setShippingFee] = useState(0);
   const [orderSource, setOrderSource] = useState('admin_manual');
 
+  // Discount state
+  const [orderDiscountType, setOrderDiscountType] = useState<'percentage' | 'fixed'>('fixed');
+  const [orderDiscountValue, setOrderDiscountValue] = useState(0);
+
   // Custom item state
   const [showCustomItem, setShowCustomItem] = useState(false);
   const [customItemName, setCustomItemName] = useState('');
@@ -92,7 +98,7 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
       colors: null,
       in_stock: true,
     };
-    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null }]);
+    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null, itemDiscount: 0, itemDiscountType: 'fixed' }]);
     setCustomItemName('');
     setCustomItemPrice('');
     setCustomItemQty('1');
@@ -147,6 +153,8 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
           quantity: 1,
           size: product.sizes?.[0] || null,
           color: product.colors?.[0] || null,
+          itemDiscount: 0,
+          itemDiscountType: 'fixed',
         },
       ]);
     }
@@ -184,11 +192,34 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
     setOrderItems(items => items.filter(item => item.product.id !== productId));
   };
 
+  const getItemFinalPrice = (item: OrderItem) => {
+    const basePrice = item.product.price * item.quantity;
+    if (item.itemDiscount <= 0) return basePrice;
+    if (item.itemDiscountType === 'percentage') {
+      return basePrice * (1 - Math.min(item.itemDiscount, 100) / 100);
+    }
+    return Math.max(0, basePrice - item.itemDiscount);
+  };
+
   const subtotal = orderItems.reduce(
-    (sum, item) => sum + item.product.price * item.quantity,
+    (sum, item) => sum + getItemFinalPrice(item),
     0
   );
-  const total = subtotal + shippingFee;
+
+  const orderDiscountAmount = orderDiscountType === 'percentage'
+    ? subtotal * (Math.min(orderDiscountValue, 100) / 100)
+    : Math.min(orderDiscountValue, subtotal);
+
+  const discountedSubtotal = subtotal - (orderDiscountValue > 0 ? orderDiscountAmount : 0);
+  const total = discountedSubtotal + shippingFee;
+
+  const updateItemDiscount = (productId: string, discount: number, discountType: 'percentage' | 'fixed') => {
+    setOrderItems(items =>
+      items.map(item =>
+        item.product.id === productId ? { ...item, itemDiscount: discount, itemDiscountType: discountType } : item
+      )
+    );
+  };
 
   const resetForm = () => {
     setOrderItems([]);
@@ -205,6 +236,8 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
     setPaymentStatus('pending');
     setShippingFee(0);
     setOrderSource('admin_manual');
+    setOrderDiscountType('fixed');
+    setOrderDiscountValue(0);
     setSearchQuery('');
   };
 
@@ -242,14 +275,14 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
         .insert({
           order_number: orderNumber,
           user_id: null, // Manual order, no user
-          subtotal,
+          subtotal: discountedSubtotal,
           shipping_fee: shippingFee,
           total,
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
           order_source: orderSource,
-          notes: notes.trim() || null,
+          notes: [notes.trim(), orderDiscountValue > 0 ? `Order Discount: ${orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`} (-৳${orderDiscountAmount.toFixed(0)})` : ''].filter(Boolean).join(' | ') || null,
           shipping_address: {
             full_name: fullName.trim(),
             phone: phone.trim(),
@@ -270,10 +303,10 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
       const orderItemsData = orderItems.map(item => ({
         order_id: order.id,
         product_id: item.product.id.startsWith('custom-') ? null : item.product.id,
-        product_name: item.product.name,
+        product_name: item.product.name + (item.itemDiscount > 0 ? ` [Discount: ${item.itemDiscountType === 'percentage' ? `${item.itemDiscount}%` : `৳${item.itemDiscount}`}]` : ''),
         product_image: item.product.id.startsWith('custom-') ? null : (item.product.images?.[0] || null),
         quantity: item.quantity,
-        price: item.product.price,
+        price: getItemFinalPrice(item) / item.quantity,
         size: item.size,
         color: item.color,
       }));
@@ -485,8 +518,37 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
                         </Select>
                       )}
                       <span className="ml-auto font-medium">
-                        {formatCurrency(item.product.price * item.quantity)}
+                        {item.itemDiscount > 0 && (
+                          <span className="text-xs text-muted-foreground line-through mr-1">
+                            {formatCurrency(item.product.price * item.quantity)}
+                          </span>
+                        )}
+                        {formatCurrency(getItemFinalPrice(item))}
                       </span>
+                    </div>
+                    {/* Per-item discount */}
+                    <div className="flex items-center gap-2">
+                      <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <Input
+                        type="number"
+                        min="0"
+                        placeholder="Discount"
+                        value={item.itemDiscount || ''}
+                        onChange={(e) => updateItemDiscount(item.product.id, Number(e.target.value) || 0, item.itemDiscountType)}
+                        className="h-7 text-xs w-20 px-1"
+                      />
+                      <Select
+                        value={item.itemDiscountType}
+                        onValueChange={(v: 'percentage' | 'fixed') => updateItemDiscount(item.product.id, item.itemDiscount, v)}
+                      >
+                        <SelectTrigger className="h-7 w-16 text-xs px-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="fixed">৳</SelectItem>
+                          <SelectItem value="percentage">%</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 ))}
@@ -631,6 +693,27 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
                   onChange={(e) => setShippingFee(Number(e.target.value) || 0)}
                 />
               </div>
+              <div className="space-y-2">
+                <Label>Order Discount</Label>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={orderDiscountValue || ''}
+                    onChange={(e) => setOrderDiscountValue(Number(e.target.value) || 0)}
+                    placeholder="Amount"
+                  />
+                  <Select value={orderDiscountType} onValueChange={(v: 'percentage' | 'fixed') => setOrderDiscountType(v)}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="fixed">৳</SelectItem>
+                      <SelectItem value="percentage">%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Order Notes</Label>
@@ -643,12 +726,17 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
             </div>
           </div>
 
-          {/* Order Summary */}
           <div className="border-t pt-4 space-y-2">
             <div className="flex justify-between text-muted-foreground">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
+            {orderDiscountValue > 0 && (
+              <div className="flex justify-between text-green-600">
+                <span>Discount ({orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`})</span>
+                <span>-{formatCurrency(orderDiscountAmount)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-muted-foreground">
               <span>Shipping</span>
               <span>{formatCurrency(shippingFee)}</span>

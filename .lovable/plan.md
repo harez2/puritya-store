@@ -1,36 +1,38 @@
 
 
-## Plan: Add Custom Product Item for Manual Orders
+## Plan: Fix Invoice Currency, Alignment, and Add Logo
 
-### Problem
-Admins need to add ad-hoc items (custom customer demands) to manual orders and when editing existing orders. These items have no corresponding product in the catalog and should not appear on the storefront.
-
-### Approach
-No database changes needed -- `order_items.product_id` is already nullable. Custom items will be stored as regular order items with `product_id = null` and a custom name/price. The invoice already renders `product_name` from order items, so custom items will appear correctly there automatically.
+### Issues (from screenshot)
+1. Currency shows as `৳` symbol — should show `BDT` text prefix
+2. Content alignment/spacing needs improvement (address text wrapping, totals alignment)
+3. No store logo in the invoice header
 
 ### Changes
 
-**1. `src/pages/admin/AdminPOS.tsx`**
-- Add a "Custom Item" button in the cart/right panel
-- When clicked, show inline fields: Item Name, Unit Price, Quantity
-- Add to `orderItems` with a fake product object (id = `custom-{timestamp}`) or restructure the OrderItem interface to support custom items
-- On submit, insert with `product_id: null` and the custom name/price
+**File: `src/components/admin/OrderInvoice.tsx`**
 
-**2. `src/components/admin/ManualOrderDialog.tsx`**
-- Add a "Custom Item" button alongside the product search
-- Show inline form: name, price, quantity
-- Custom items added to orderItems with `product_id: null`
+1. **Currency**: Change default from `'৳'` to `'BDT '` (with space). Format prices without `.00` decimals (use `.toFixed(0)` since BDT doesn't use decimals).
 
-**3. `src/components/admin/EditOrderDialog.tsx`**
-- Add a "Custom Item" button next to "Add Product"
-- Same inline form for name, price, quantity
-- Custom items saved with `product_id: null`
-- Existing custom items (product_id is null) should render with an editable name/price
+2. **Add Logo**: Accept `logo_url` in `InvoiceSettings`. If provided, load the image via `fetch` → base64, then place it top-left using `doc.addImage()`. Shift store name below the logo.
 
-### How it works for the user
-- In POS, Manual Order, or Edit Order, the admin clicks "Add Custom Item"
-- Enters a name (e.g., "Custom embroidery service"), price, and quantity
-- The item appears in the order like any other product
-- On the invoice PDF, it shows the custom item name and pricing
-- These items never appear on the storefront since they are not in the products table
+3. **Alignment/Spacing fixes**:
+   - Increase left margin from 14 to 20 for better padding
+   - Wrap long address lines using `maxWidth` parameter on `doc.text()`
+   - Improve totals section spacing — align labels and values consistently
+   - Add more vertical space between sections (Bill To, table, totals)
+
+**File: `src/pages/admin/AdminOrders.tsx`**
+
+4. Pass `logo_url` and `currency_symbol` from settings to `generateInvoice`:
+   ```typescript
+   generateInvoice(order, items || [], {
+     store_name: settings.store_name,
+     store_tagline: settings.store_tagline,
+     logo_url: settings.logo_url,
+     currency_symbol: 'BDT ',
+   });
+   ```
+
+### Technical Detail: Logo Loading
+Since jsPDF requires base64 image data, the logo URL will be fetched as a blob, converted to base64 via `FileReader`, then added with `doc.addImage()`. If the fetch fails (CORS, missing URL), the invoice still generates without a logo — graceful fallback.
 

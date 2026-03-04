@@ -70,6 +70,34 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [shippingFee, setShippingFee] = useState(0);
 
+  // Custom item state
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [customItemQty, setCustomItemQty] = useState('1');
+
+  const addCustomItem = () => {
+    const name = customItemName.trim();
+    const price = parseFloat(customItemPrice);
+    const qty = parseInt(customItemQty) || 1;
+    if (!name) { toast.error('Please enter item name'); return; }
+    if (isNaN(price) || price < 0) { toast.error('Please enter a valid price'); return; }
+    const fakeProduct: Product = {
+      id: `custom-${Date.now()}`,
+      name,
+      price,
+      images: null,
+      sizes: null,
+      colors: null,
+      in_stock: true,
+    };
+    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null }]);
+    setCustomItemName('');
+    setCustomItemPrice('');
+    setCustomItemQty('1');
+    setShowCustomItem(false);
+  };
+
   useEffect(() => {
     if (open) {
       fetchProducts();
@@ -239,9 +267,9 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
       // Create order items
       const orderItemsData = orderItems.map(item => ({
         order_id: order.id,
-        product_id: item.product.id,
+        product_id: item.product.id.startsWith('custom-') ? null : item.product.id,
         product_name: item.product.name,
-        product_image: item.product.images?.[0] || null,
+        product_image: item.product.id.startsWith('custom-') ? null : (item.product.images?.[0] || null),
         quantity: item.quantity,
         price: item.product.price,
         size: item.size,
@@ -303,6 +331,45 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
                 className="pl-9"
               />
             </div>
+
+            {/* Add Custom Item */}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCustomItem(!showCustomItem)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Custom Item
+            </Button>
+
+            {showCustomItem && (
+              <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                <Input
+                  placeholder="Item name (e.g. Custom embroidery)"
+                  value={customItemName}
+                  onChange={(e) => setCustomItemName(e.target.value)}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Price"
+                    value={customItemPrice}
+                    onChange={(e) => setCustomItemPrice(e.target.value)}
+                  />
+                  <Input
+                    type="number"
+                    min="1"
+                    placeholder="Qty"
+                    value={customItemQty}
+                    onChange={(e) => setCustomItemQty(e.target.value)}
+                  />
+                </div>
+                <Button size="sm" onClick={addCustomItem}>
+                  Add Item
+                </Button>
+              </div>
+            )}
 
             {searchQuery && (
               <ScrollArea className="h-40 border rounded-md p-2">

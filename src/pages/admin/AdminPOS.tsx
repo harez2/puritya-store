@@ -89,6 +89,36 @@ export default function AdminPOS() {
   const [variantSize, setVariantSize] = useState<string | null>(null);
   const [variantColor, setVariantColor] = useState<string | null>(null);
 
+  // Custom item state
+  const [showCustomItem, setShowCustomItem] = useState(false);
+  const [customItemName, setCustomItemName] = useState('');
+  const [customItemPrice, setCustomItemPrice] = useState('');
+  const [customItemQty, setCustomItemQty] = useState('1');
+
+  const addCustomItem = () => {
+    const name = customItemName.trim();
+    const price = parseFloat(customItemPrice);
+    const qty = parseInt(customItemQty) || 1;
+    if (!name) { toast.error('Please enter item name'); return; }
+    if (isNaN(price) || price < 0) { toast.error('Please enter a valid price'); return; }
+    const fakeProduct: Product = {
+      id: `custom-${Date.now()}`,
+      name,
+      price,
+      compare_at_price: null,
+      images: null,
+      sizes: null,
+      colors: null,
+      in_stock: true,
+      category_id: null,
+    };
+    setOrderItems([...orderItems, { product: fakeProduct, quantity: qty, size: null, color: null }]);
+    setCustomItemName('');
+    setCustomItemPrice('');
+    setCustomItemQty('1');
+    setShowCustomItem(false);
+  };
+
   const lookupPhone = async (phoneValue: string) => {
     const trimmed = phoneValue.trim().replace(/\s/g, '');
     if (trimmed.length < 5) return;
@@ -331,9 +361,9 @@ export default function AdminPOS() {
 
       const orderItemsData = orderItems.map((item) => ({
         order_id: order.id,
-        product_id: item.product.id,
+        product_id: item.product.id.startsWith('custom-') ? null : item.product.id,
         product_name: item.product.name,
-        product_image: item.product.images?.[0] || null,
+        product_image: item.product.id.startsWith('custom-') ? null : (item.product.images?.[0] || null),
         quantity: item.quantity,
         price: getDisplayPrice(item.product),
         size: item.size,
@@ -538,6 +568,49 @@ export default function AdminPOS() {
           <ScrollArea className="flex-1 min-h-0">
             <div className="p-4 space-y-4">
               {/* Cart Items */}
+              {/* Add Custom Item Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={() => setShowCustomItem(!showCustomItem)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add Custom Item
+              </Button>
+
+              {showCustomItem && (
+                <div className="border rounded-md p-3 space-y-2 bg-muted/30">
+                  <Input
+                    placeholder="Item name (e.g. Custom embroidery)"
+                    value={customItemName}
+                    onChange={(e) => setCustomItemName(e.target.value)}
+                    className="h-8"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      placeholder="Price"
+                      value={customItemPrice}
+                      onChange={(e) => setCustomItemPrice(e.target.value)}
+                      className="h-8"
+                    />
+                    <Input
+                      type="number"
+                      min="1"
+                      placeholder="Qty"
+                      value={customItemQty}
+                      onChange={(e) => setCustomItemQty(e.target.value)}
+                      className="h-8"
+                    />
+                  </div>
+                  <Button size="sm" className="w-full" onClick={addCustomItem}>
+                    Add Item
+                  </Button>
+                </div>
+              )}
+
               {orderItems.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   Click products to add them

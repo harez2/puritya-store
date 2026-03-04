@@ -1,38 +1,44 @@
 
 
-## Plan: Fix Invoice Currency, Alignment, and Add Logo
+## New Order Notification System
 
-### Issues (from screenshot)
-1. Currency shows as `৳` symbol — should show `BDT` text prefix
-2. Content alignment/spacing needs improvement (address text wrapping, totals alignment)
-3. No store logo in the invoice header
+### Overview
+Implement a real-time notification system that alerts admins when new orders arrive, using three channels: browser push notifications, SMS, and an in-dashboard sound alert.
 
-### Changes
+### Technical Approach
 
-**File: `src/components/admin/OrderInvoice.tsx`**
+**1. Enable Realtime on the `orders` table**
+- Add `orders` to the `supabase_realtime` publication via a migration so Postgres changes are broadcast.
 
-1. **Currency**: Change default from `'৳'` to `'BDT '` (with space). Format prices without `.00` decimals (use `.toFixed(0)` since BDT doesn't use decimals).
+**2. Create a `useNewOrderNotification` hook**
+- Subscribe to `postgres_changes` on `orders` table for `INSERT` events.
+- On new order:
+  - **Sound alert**: Play a notification sound (use a short audio file or the Web Audio API to generate a beep).
+  - **Browser notification**: Use the `Notification` API (`Notification.requestPermission()` on mount, then `new Notification(...)` on event).
+  - **SMS**: Call the existing `sendOrderSms` logic but send to the admin's configured phone number instead of the customer. Fetch the admin notification phone from `site_settings` (key: `admin_notification_settings`).
+- Show a sonner toast in the admin panel as well.
 
-2. **Add Logo**: Accept `logo_url` in `InvoiceSettings`. If provided, load the image via `fetch` → base64, then place it top-left using `doc.addImage()`. Shift store name below the logo.
+**3. Add Admin Notification Settings UI**
+- In `AdminSettings.tsx`, add a section for "Order Notifications" with:
+  - Toggle: Enable/disable new order notifications
+  - Admin phone number input (for SMS alerts)
+  - Toggle: Enable/disable sound
+  - Toggle: Enable/disable browser notifications
+  - Toggle: Enable/disable SMS notifications
+- Store as a `site_settings` row with key `admin_notification_settings`.
 
-3. **Alignment/Spacing fixes**:
-   - Increase left margin from 14 to 20 for better padding
-   - Wrap long address lines using `maxWidth` parameter on `doc.text()`
-   - Improve totals section spacing — align labels and values consistently
-   - Add more vertical space between sections (Bill To, table, totals)
+**4. Integrate the hook into `AdminLayout`**
+- Call `useNewOrderNotification()` inside `AdminLayout` so it runs on every admin page.
+- Request browser notification permission on first load.
 
-**File: `src/pages/admin/AdminOrders.tsx`**
+### Files to Create/Modify
+- **New**: `src/hooks/useNewOrderNotification.ts` — realtime subscription + notification logic
+- **Migration**: Enable realtime on `orders` table
+- **Edit**: `src/components/admin/AdminLayout.tsx` — mount the hook
+- **Edit**: `src/pages/admin/AdminSettings.tsx` — add notification settings section
 
-4. Pass `logo_url` and `currency_symbol` from settings to `generateInvoice`:
-   ```typescript
-   generateInvoice(order, items || [], {
-     store_name: settings.store_name,
-     store_tagline: settings.store_tagline,
-     logo_url: settings.logo_url,
-     currency_symbol: 'BDT ',
-   });
-   ```
-
-### Technical Detail: Logo Loading
-Since jsPDF requires base64 image data, the logo URL will be fetched as a blob, converted to base64 via `FileReader`, then added with `doc.addImage()`. If the fetch fails (CORS, missing URL), the invoice still generates without a logo — graceful fallback.
+### Notification Content
+- Sound: Short chime/beep via Web Audio API (no external audio file needed)
+- Browser: Title "New Order!", body with order number and total
+- SMS: "New order #{order_number} received! Total: ৳{total}. Customer: {customer_name}"
 

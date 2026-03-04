@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Pencil, Plus, Trash2, Search, Loader2 } from 'lucide-react';
+import { Pencil, Plus, Trash2, Search, Loader2, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -98,6 +98,11 @@ export function EditOrderDialog({
   // Shipping fee
   const [shippingFee, setShippingFee] = useState(0);
 
+  // Discount state
+  const [orderDiscountType, setOrderDiscountType] = useState<'percentage' | 'fixed'>('fixed');
+  const [orderDiscountValue, setOrderDiscountValue] = useState(0);
+  const [itemDiscounts, setItemDiscounts] = useState<Record<number, { value: number; type: 'percentage' | 'fixed' }>>({});
+
   // Product search for adding items
   const [productSearch, setProductSearch] = useState('');
   const [searchResults, setSearchResults] = useState<Product[]>([]);
@@ -192,8 +197,22 @@ export function EditOrderDialog({
   };
 
   // Calculate totals
-  const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const total = subtotal + shippingFee;
+  const getItemFinalPrice = (item: OrderItem, index: number) => {
+    const basePrice = item.price * item.quantity;
+    const disc = itemDiscounts[index];
+    if (!disc || disc.value <= 0) return basePrice;
+    if (disc.type === 'percentage') return basePrice * (1 - Math.min(disc.value, 100) / 100);
+    return Math.max(0, basePrice - disc.value);
+  };
+
+  const subtotal = orderItems.reduce((sum, item, index) => sum + getItemFinalPrice(item, index), 0);
+
+  const orderDiscountAmount = orderDiscountType === 'percentage'
+    ? subtotal * (Math.min(orderDiscountValue, 100) / 100)
+    : Math.min(orderDiscountValue, subtotal);
+
+  const discountedSubtotal = subtotal - (orderDiscountValue > 0 ? orderDiscountAmount : 0);
+  const total = discountedSubtotal + shippingFee;
 
   const searchProducts = async (query: string) => {
     if (query.length < 2) {
@@ -323,9 +342,9 @@ export function EditOrderDialog({
         .from('orders')
         .update({
           shipping_address: shippingAddress,
-          notes: notes.trim() || null,
+          notes: [notes.trim(), orderDiscountValue > 0 ? `Order Discount: ${orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`} (-৳${orderDiscountAmount.toFixed(0)})` : ''].filter(Boolean).join(' | ') || null,
           payment_method: paymentMethod || null,
-          subtotal,
+          subtotal: discountedSubtotal,
           shipping_fee: shippingFee,
           total,
           updated_at: new Date().toISOString(),
@@ -349,38 +368,42 @@ export function EditOrderDialog({
       }
 
       // Update existing items and insert new ones
-      for (const item of orderItems) {
-        if (item.id) {
-          // Update existing
-          const { error: updateError } = await supabase
-            .from('order_items')
-            .update({
-              product_name: item.product_name,
-              product_image: item.product_image,
-              quantity: item.quantity,
-              size: item.size,
-              color: item.color,
-              price: item.price,
-            })
-            .eq('id', item.id);
-          if (updateError) throw updateError;
-        } else {
-          // Insert new
-          const { error: insertError } = await supabase
-            .from('order_items')
-            .insert({
-              order_id: order.id,
-              product_id: item.product_id.startsWith('custom-') ? null : item.product_id,
-              product_name: item.product_name,
-              product_image: item.product_image,
-              quantity: item.quantity,
-              size: item.size,
-              color: item.color,
-              price: item.price,
-            });
-          if (insertError) throw insertError;
+        for (const [idx, item] of orderItems.entries()) {
+          const disc = itemDiscounts[idx];
+          const finalPricePerUnit = getItemFinalPrice(item, idx) / item.quantity;
+          const discountLabel = disc && disc.value > 0 
+            ? ` [Discount: ${disc.type === 'percentage' ? `${disc.value}%` : `৳${disc.value}`}]` 
+            : '';
+
+          if (item.id) {
+            const { error: updateError } = await supabase
+              .from('order_items')
+              .update({
+                product_name: item.product_name + discountLabel,
+                product_image: item.product_image,
+                quantity: item.quantity,
+                size: item.size,
+                color: item.color,
+                price: finalPricePerUnit,
+              })
+              .eq('id', item.id);
+            if (updateError) throw updateError;
+          } else {
+            const { error: insertError } = await supabase
+              .from('order_items')
+              .insert({
+                order_id: order.id,
+                product_id: item.product_id.startsWith('custom-') ? null : item.product_id,
+                product_name: item.product_name + discountLabel,
+                product_image: item.product_image,
+                quantity: item.quantity,
+                size: item.size,
+                color: item.color,
+                price: finalPricePerUnit,
+              });
+            if (insertError) throw insertError;
+          }
         }
-      }
 
       toast.success('Order updated successfully');
       onSaved();
@@ -536,6 +559,27 @@ export function EditOrderDialog({
                     onChange={(e) => setShippingFee(parseFloat(e.target.value) || 0)}
                     placeholder="Shipping fee"
                   />
+                </div>
+                <div className="space-y-2">
+                  <Label>Order Discount</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      value={orderDiscountValue || ''}
+                      onChange={(e) => setOrderDiscountValue(Number(e.target.value) || 0)}
+                      placeholder="Amount"
+                    />
+                    <Select value={orderDiscountType} onValueChange={(v: 'percentage' | 'fixed') => setOrderDiscountType(v)}>
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed">৳</SelectItem>
+                        <SelectItem value="percentage">%</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
@@ -704,36 +748,77 @@ export function EditOrderDialog({
                   </div>
                 ) : (
                   orderItems.map((item, index) => (
-                    <div key={item.id || index} className="p-3 flex items-center gap-3">
-                      {item.product_image ? (
-                        <img src={item.product_image} alt="" className="w-12 h-12 object-cover rounded" />
-                      ) : (
-                        <div className="w-12 h-12 bg-muted rounded" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm truncate">{item.product_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {formatCurrency(item.price)} each
-                          {item.size && ` • Size: ${item.size}`}
-                          {item.color && ` • Color: ${item.color}`}
+                    <div key={item.id || index} className="p-3 space-y-2">
+                      <div className="flex items-center gap-3">
+                        {item.product_image ? (
+                          <img src={item.product_image} alt="" className="w-12 h-12 object-cover rounded" />
+                        ) : (
+                          <div className="w-12 h-12 bg-muted rounded" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-sm truncate">{item.product_name}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {formatCurrency(item.price)} each
+                            {item.size && ` • Size: ${item.size}`}
+                            {item.color && ` • Color: ${item.color}`}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min={1}
+                            value={item.quantity}
+                            onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 1)}
+                            className="w-16 h-8 text-center"
+                          />
+                          <span className="text-sm font-medium w-20 text-right">
+                            {itemDiscounts[index]?.value > 0 && (
+                              <span className="text-xs text-muted-foreground line-through mr-1">
+                                {formatCurrency(item.price * item.quantity)}
+                              </span>
+                            )}
+                            {formatCurrency(getItemFinalPrice(item, index))}
+                          </span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive"
+                            onClick={() => removeItem(index)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      {/* Per-item discount */}
+                      <div className="flex items-center gap-2 pl-15">
+                        <Tag className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-muted-foreground">Discount:</span>
                         <Input
                           type="number"
-                          min={1}
-                          value={item.quantity}
-                          onChange={(e) => updateItemQuantity(index, parseInt(e.target.value) || 1)}
-                          className="w-16 h-8 text-center"
+                          min="0"
+                          placeholder="0"
+                          value={itemDiscounts[index]?.value || ''}
+                          onChange={(e) => setItemDiscounts(prev => ({
+                            ...prev,
+                            [index]: { value: Number(e.target.value) || 0, type: prev[index]?.type || 'fixed' }
+                          }))}
+                          className="h-7 text-xs w-20 px-1"
                         />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={() => removeItem(index)}
+                        <Select
+                          value={itemDiscounts[index]?.type || 'fixed'}
+                          onValueChange={(v: 'percentage' | 'fixed') => setItemDiscounts(prev => ({
+                            ...prev,
+                            [index]: { value: prev[index]?.value || 0, type: v }
+                          }))}
                         >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                          <SelectTrigger className="h-7 w-16 text-xs px-1">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="fixed">৳</SelectItem>
+                            <SelectItem value="percentage">%</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
                   ))
@@ -747,6 +832,12 @@ export function EditOrderDialog({
                 <span>Subtotal</span>
                 <span>{formatCurrency(subtotal)}</span>
               </div>
+              {orderDiscountValue > 0 && (
+                <div className="flex justify-between text-sm text-green-600">
+                  <span>Discount ({orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`})</span>
+                  <span>-{formatCurrency(orderDiscountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-sm">
                 <span>Shipping</span>
                 <span>{formatCurrency(shippingFee)}</span>

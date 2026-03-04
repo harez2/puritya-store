@@ -806,6 +806,14 @@ export function SiteSettingsProvider({ children }: { children: React.ReactNode }
     await fetchSettings();
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'hsl(0 0% 100%)' }}>
+        <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin opacity-30" />
+      </div>
+    );
+  }
+
   return (
     <SiteSettingsContext.Provider value={{ settings, loading, updateSetting, updateSettings, refreshSettings }}>
       {children}

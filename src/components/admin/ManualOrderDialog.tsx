@@ -69,6 +69,7 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [shippingFee, setShippingFee] = useState(0);
+  const [orderSource, setOrderSource] = useState('admin_manual');
 
   // Custom item state
   const [showCustomItem, setShowCustomItem] = useState(false);
@@ -203,6 +204,7 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
     setPaymentMethod('cod');
     setPaymentStatus('pending');
     setShippingFee(0);
+    setOrderSource('admin_manual');
     setSearchQuery('');
   };
 
@@ -246,7 +248,7 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
-          order_source: 'admin_manual',
+          order_source: orderSource,
           notes: notes.trim() || null,
           shipping_address: {
             full_name: fullName.trim(),
@@ -600,6 +602,23 @@ export function ManualOrderDialog({ open, onOpenChange, onOrderCreated }: Manual
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="paid">Paid</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Order Source</Label>
+                <Select value={orderSource} onValueChange={setOrderSource}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="admin_manual">Admin Manual</SelectItem>
+                    <SelectItem value="facebook">Facebook</SelectItem>
+                    <SelectItem value="instagram">Instagram</SelectItem>
+                    <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                    <SelectItem value="tiktok">TikTok</SelectItem>
+                    <SelectItem value="phone_call">Phone Call</SelectItem>
+                    <SelectItem value="other">Other</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

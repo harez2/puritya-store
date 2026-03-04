@@ -76,6 +76,7 @@ export default function AdminPOS() {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [shippingFee, setShippingFee] = useState(0);
+  const [orderSource, setOrderSource] = useState('admin_manual');
   const [customerOpen, setCustomerOpen] = useState(true);
 
   // Phone lookup state
@@ -295,6 +296,7 @@ export default function AdminPOS() {
     setPaymentMethod('cod');
     setPaymentStatus('pending');
     setShippingFee(0);
+    setOrderSource('admin_manual');
     setSearchQuery('');
     setSelectedCategory('all');
     setPhoneLookupDone(false);
@@ -341,7 +343,7 @@ export default function AdminPOS() {
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
-          order_source: 'admin_manual',
+          order_source: orderSource,
           notes: notes.trim() || null,
           shipping_address: {
             full_name: fullName.trim(),
@@ -808,6 +810,23 @@ export default function AdminPOS() {
                       </SelectContent>
                     </Select>
                   </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Order Source</Label>
+                  <Select value={orderSource} onValueChange={setOrderSource}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin_manual">Admin Manual</SelectItem>
+                      <SelectItem value="facebook">Facebook</SelectItem>
+                      <SelectItem value="instagram">Instagram</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="tiktok">TikTok</SelectItem>
+                      <SelectItem value="phone_call">Phone Call</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Shipping Fee (BDT)</Label>

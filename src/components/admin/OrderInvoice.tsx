@@ -65,7 +65,9 @@ export async function generateInvoice(
     const logoBase64 = await loadImageAsBase64(settings.logo_url);
     if (logoBase64) {
       try {
-        doc.addImage(logoBase64, 'PNG', L, 12, 30, 30);
+        // Auto-detect format from base64 data
+        const format = logoBase64.includes('image/png') ? 'PNG' : 'JPEG';
+        doc.addImage(logoBase64, format, L, 12, 30, 30);
         hasLogo = true;
         headerY = 18;
       } catch {
@@ -75,18 +77,11 @@ export async function generateInvoice(
   }
 
   if (!hasLogo) {
-    // Show store name and tagline only when no logo
+    // Show store name only when no logo
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(30, 30, 30);
     doc.text(settings.store_name || 'Store', L, headerY + 4);
-
-    if (settings.store_tagline) {
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(120, 120, 120);
-      doc.text(settings.store_tagline, L, headerY + 10);
-    }
   }
 
   // Invoice title

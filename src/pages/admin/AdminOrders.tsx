@@ -1130,9 +1130,11 @@ export default function AdminOrders() {
                                     .select('*')
                                     .eq('order_id', order.id);
                                   if (error) throw error;
-                                  generateInvoice(order, items || [], {
+                                  await generateInvoice(order, items || [], {
                                     store_name: settings.store_name,
                                     store_tagline: settings.store_tagline,
+                                    logo_url: settings.logo_url,
+                                    currency_symbol: 'BDT ',
                                   });
                                 } catch (err: any) {
                                   toast.error('Failed to generate invoice');

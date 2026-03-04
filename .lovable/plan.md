@@ -1,22 +1,34 @@
 
 
-## Plan: Make Product Page Delivery Banner Configurable
+## Plan: Client-Side Image Optimization with WebP Conversion
 
 ### Problem
-The delivery info text ("🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available") on the product detail page is hardcoded. No way to toggle it off or change the content.
+Product images are uploaded in their original format (PNG, JPEG, etc.) without any optimization, causing slow page loads.
 
-### Changes
+### Solution
+Create a shared utility function that uses the browser's Canvas API to:
+1. Resize images to a max dimension (e.g., 1920px) while maintaining aspect ratio
+2. Convert all images to WebP format with configurable quality (0.85 default — visually lossless)
+3. Apply this optimization in all three upload components before uploading to storage
 
-#### 1. Add settings fields (`SiteSettingsContext.tsx`)
-- `product_delivery_banner_enabled: boolean` (default `true`)
-- `product_delivery_banner_text: string` (default `🚚 Free delivery on orders over ৳5,000 • Cash on Delivery available`)
+### Technical Details
 
-#### 2. Add admin controls (`AdminSettings.tsx`)
-Under the Product Options card, add:
-- Toggle: "Show Delivery Info Banner" to enable/disable
-- Text input (when enabled): editable banner text
+**New file: `src/lib/image-optimizer.ts`**
+- `optimizeImage(file: File, options?)` → returns optimized `File` as WebP
+- Uses `createImageBitmap` + `OffscreenCanvas` (or regular Canvas fallback) to resize and convert
+- Options: `maxWidth` (1920), `maxHeight` (1920), `quality` (0.85)
+- Output filename changes extension to `.webp`
 
-#### 3. Update product page (`ProductDetail.tsx`, ~line 498)
-- Read settings; conditionally render the banner
-- Display the custom text instead of the hardcoded string
+**Modified files:**
+1. **`src/components/admin/ProductImageUpload.tsx`**
+   - Import `optimizeImage`, call it on each file before `uploadImage()`
+   - Change file extension in `uploadImage` to always use `.webp`
+
+2. **`src/components/admin/SingleImageUpload.tsx`**
+   - Same pattern — optimize before upload
+
+3. **`src/components/admin/PopupImageUpload.tsx`**
+   - Same pattern — optimize before upload
+
+All three upload components will process images client-side before uploading, so no backend changes are needed. The Canvas `toBlob('image/webp', quality)` API handles both conversion and compression natively in the browser.
 

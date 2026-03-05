@@ -34,13 +34,24 @@ Deno.serve(async (req) => {
     const url = new URL(req.url);
     const format = url.searchParams.get('format') || 'xml';
     
-    // Get store URL from query params or use default
-    const storeUrl = url.searchParams.get('store_url') || 'https://puritya-store.lovable.app';
-    
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Get store URL: DB setting > query param > hardcoded default
+    let storeUrl = 'https://puritya-store.lovable.app';
+    const { data: storeUrlSetting } = await supabase
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'store_url')
+      .maybeSingle();
+    
+    if (storeUrlSetting?.value && typeof storeUrlSetting.value === 'string' && storeUrlSetting.value.trim()) {
+      storeUrl = storeUrlSetting.value.trim().replace(/\/$/, '');
+    } else if (url.searchParams.get('store_url')) {
+      storeUrl = url.searchParams.get('store_url')!.replace(/\/$/, '');
+    }
 
     // Fetch all products
     const { data: products, error: productsError } = await supabase

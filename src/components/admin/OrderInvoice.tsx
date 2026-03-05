@@ -294,8 +294,6 @@ export async function generateInvoice(
     doc.text(cfg.footerText, 105, totalsY, { align: 'center', maxWidth: 160 });
   }
 
-  // Open in new tab
-  const pdfBlob = doc.output('blob');
-  const url = URL.createObjectURL(pdfBlob);
-  window.open(url, '_blank');
+  // Download with order number as filename
+  doc.save(`${order.order_number}.pdf`);
 }

@@ -1,44 +1,29 @@
 
 
-## New Order Notification System
+## Fix Facebook Product Feed Domain
 
-### Overview
-Implement a real-time notification system that alerts admins when new orders arrive, using three channels: browser push notifications, SMS, and an in-dashboard sound alert.
+### Problem
+The Facebook product feed edge function hardcodes `https://puritya-store.lovable.app` as the default store URL. When you deploy to your own domain, product links in the catalog still point to the Lovable subdomain.
 
-### Technical Approach
+### Solution
+Store your custom domain as a site setting (`store_url`) and have the feed function read it from the database instead of using a hardcode.
 
-**1. Enable Realtime on the `orders` table**
-- Add `orders` to the `supabase_realtime` publication via a migration so Postgres changes are broadcast.
+### Changes
 
-**2. Create a `useNewOrderNotification` hook**
-- Subscribe to `postgres_changes` on `orders` table for `INSERT` events.
-- On new order:
-  - **Sound alert**: Play a notification sound (use a short audio file or the Web Audio API to generate a beep).
-  - **Browser notification**: Use the `Notification` API (`Notification.requestPermission()` on mount, then `new Notification(...)` on event).
-  - **SMS**: Call the existing `sendOrderSms` logic but send to the admin's configured phone number instead of the customer. Fetch the admin notification phone from `site_settings` (key: `admin_notification_settings`).
-- Show a sonner toast in the admin panel as well.
+**1. Add Store URL setting to Admin Settings**
+- Add a "Store URL / Domain" input field in the admin settings (e.g., under General or Branding section) that saves to `site_settings` with key `store_url`.
+- Default display: `https://puritya-store.lovable.app`
 
-**3. Add Admin Notification Settings UI**
-- In `AdminSettings.tsx`, add a section for "Order Notifications" with:
-  - Toggle: Enable/disable new order notifications
-  - Admin phone number input (for SMS alerts)
-  - Toggle: Enable/disable sound
-  - Toggle: Enable/disable browser notifications
-  - Toggle: Enable/disable SMS notifications
-- Store as a `site_settings` row with key `admin_notification_settings`.
+**2. Update the `facebook-feed` edge function**
+- Instead of defaulting to the Lovable subdomain, fetch the `store_url` from `site_settings` table.
+- Fall back to the `store_url` query parameter, then to the current hardcoded default.
+- This way all product links (`{storeUrl}/product/{slug}`) will use your custom domain automatically.
 
-**4. Integrate the hook into `AdminLayout`**
-- Call `useNewOrderNotification()` inside `AdminLayout` so it runs on every admin page.
-- Request browser notification permission on first load.
+**3. Update Feed URL display in admin**
+- In `FacebookPixelSetup.tsx`, append `?store_url=...` to the displayed feed URLs is no longer needed since the function will read from DB directly. No change needed there.
 
-### Files to Create/Modify
-- **New**: `src/hooks/useNewOrderNotification.ts` — realtime subscription + notification logic
-- **Migration**: Enable realtime on `orders` table
-- **Edit**: `src/components/admin/AdminLayout.tsx` — mount the hook
-- **Edit**: `src/pages/admin/AdminSettings.tsx` — add notification settings section
-
-### Notification Content
-- Sound: Short chime/beep via Web Audio API (no external audio file needed)
-- Browser: Title "New Order!", body with order number and total
-- SMS: "New order #{order_number} received! Total: ৳{total}. Customer: {customer_name}"
+### Files to Modify
+- `supabase/functions/facebook-feed/index.ts` — read `store_url` from `site_settings` table as primary source
+- `src/pages/admin/AdminSettings.tsx` — add Store URL input field
+- `src/contexts/SiteSettingsContext.tsx` — ensure `store_url` is part of settings type (if needed)
 

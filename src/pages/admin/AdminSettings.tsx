@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import ShippingOptionsEditor from '@/components/admin/ShippingOptionsEditor';
 import PaymentSettingsEditor from '@/components/admin/PaymentSettingsEditor';
 import SmsSettingsEditor from '@/components/admin/SmsSettingsEditor';
+import InvoiceSettingsEditor from '@/components/admin/InvoiceSettingsEditor';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { Link } from 'react-router-dom';
 import { getDomainPrefix } from '@/lib/order-number';
@@ -458,6 +459,9 @@ export default function AdminSettings() {
 
           {/* SMS Notifications */}
           <SmsSettingsEditor />
+
+          {/* Invoice Customization */}
+          <InvoiceSettingsEditor />
 
           {/* Order Tracking Settings */}
           <Card>

@@ -56,7 +56,7 @@ import { format, startOfDay, endOfDay, isWithinInterval, formatDistanceToNow } f
 import { cn } from '@/lib/utils';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
-import { generateInvoice } from '@/components/admin/OrderInvoice';
+import { generateInvoice, InvoiceConfig, defaultInvoiceConfig } from '@/components/admin/OrderInvoice';
 
 interface Order {
   id: string;
@@ -1125,17 +1125,18 @@ export default function AdminOrders() {
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={async () => {
                                 try {
-                                  const { data: items, error } = await supabase
-                                    .from('order_items')
-                                    .select('*')
-                                    .eq('order_id', order.id);
+                                  const [{ data: items, error }, { data: invoiceCfg }] = await Promise.all([
+                                    supabase.from('order_items').select('*').eq('order_id', order.id),
+                                    supabase.from('site_settings').select('value').eq('key', 'invoice_settings').maybeSingle(),
+                                  ]);
                                   if (error) throw error;
+                                  const cfg = invoiceCfg?.value ? { ...defaultInvoiceConfig, ...(invoiceCfg.value as unknown as InvoiceConfig) } : defaultInvoiceConfig;
                                   await generateInvoice(order, items || [], {
                                     store_name: settings.store_name,
                                     store_tagline: settings.store_tagline,
                                     logo_url: settings.logo_url,
                                     currency_symbol: 'BDT ',
-                                  });
+                                  }, cfg);
                                 } catch (err: any) {
                                   toast.error('Failed to generate invoice');
                                 }

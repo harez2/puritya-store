@@ -1,29 +1,46 @@
 
 
-## Fix Facebook Product Feed Domain
+## Invoice Customization System
 
-### Problem
-The Facebook product feed edge function hardcodes `https://puritya-store.lovable.app` as the default store URL. When you deploy to your own domain, product links in the catalog still point to the Lovable subdomain.
-
-### Solution
-Store your custom domain as a site setting (`store_url`) and have the feed function read it from the database instead of using a hardcode.
+### Overview
+Two changes: (1) Add a total quantity summary row to the invoice table, and (2) build an admin Invoice Customization section where admins can toggle on/off each invoice element.
 
 ### Changes
 
-**1. Add Store URL setting to Admin Settings**
-- Add a "Store URL / Domain" input field in the admin settings (e.g., under General or Branding section) that saves to `site_settings` with key `store_url`.
-- Default display: `https://puritya-store.lovable.app`
+**1. Add total quantity row to invoice (`OrderInvoice.tsx`)**
+- After the items table body, add a summary row showing "Total Items" with the sum of all quantities.
+- This appears as a bold footer row in the autoTable output.
 
-**2. Update the `facebook-feed` edge function**
-- Instead of defaulting to the Lovable subdomain, fetch the `store_url` from `site_settings` table.
-- Fall back to the `store_url` query parameter, then to the current hardcoded default.
-- This way all product links (`{storeUrl}/product/{slug}`) will use your custom domain automatically.
+**2. Create Invoice Settings UI (`InvoiceSettingsEditor.tsx`)**
+- New component with toggles for each invoice element:
+  - Show Logo / Store Name
+  - Show Invoice Number
+  - Show Date
+  - Show Order Status
+  - Show Payment Status
+  - Show Bill To (customer info)
+  - Show Payment Method
+  - Show Items Table
+  - Show Total Quantity Row
+  - Show Subtotal
+  - Show Shipping Fee
+  - Show Total
+  - Show Notes
+  - Custom Footer Text (text input, e.g. "Thank you for your purchase!")
+- Stored as `invoice_settings` key in `site_settings` table.
 
-**3. Update Feed URL display in admin**
-- In `FacebookPixelSetup.tsx`, append `?store_url=...` to the displayed feed URLs is no longer needed since the function will read from DB directly. No change needed there.
+**3. Update `generateInvoice` to respect settings**
+- Accept an optional `invoiceConfig` parameter with the toggle values.
+- Conditionally render each section based on the config.
+- Default all toggles to `true` for backward compatibility.
 
-### Files to Modify
-- `supabase/functions/facebook-feed/index.ts` — read `store_url` from `site_settings` table as primary source
-- `src/pages/admin/AdminSettings.tsx` — add Store URL input field
-- `src/contexts/SiteSettingsContext.tsx` — ensure `store_url` is part of settings type (if needed)
+**4. Wire it up**
+- Add the `InvoiceSettingsEditor` card to `AdminSettings.tsx`.
+- Where `generateInvoice` is called, fetch `invoice_settings` from site settings and pass it through.
+
+### Files
+- **Edit**: `src/components/admin/OrderInvoice.tsx` — add total qty row + config-driven rendering
+- **New**: `src/components/admin/InvoiceSettingsEditor.tsx` — admin UI for invoice customization
+- **Edit**: `src/pages/admin/AdminSettings.tsx` — mount InvoiceSettingsEditor
+- **Edit**: Wherever `generateInvoice` is called — pass invoice settings
 

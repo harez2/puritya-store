@@ -50,13 +50,15 @@ export default function AdminSettings() {
   const [storeName, setStoreName] = useState('');
   const [storeEmail, setStoreEmail] = useState('');
   const [storePhone, setStorePhone] = useState('');
+  const [storeUrl, setStoreUrl] = useState('');
   const [savingStore, setSavingStore] = useState(false);
 
   useEffect(() => {
     setStoreName(settings.store_name || '');
     setStoreEmail(settings.contact_email || '');
     setStorePhone(settings.contact_phone || '');
-  }, [settings.store_name, settings.contact_email, settings.contact_phone]);
+    setStoreUrl(settings.store_url || '');
+  }, [settings.store_name, settings.contact_email, settings.contact_phone, settings.store_url]);
 
   const handleSaveStoreInfo = async () => {
     setSavingStore(true);
@@ -64,6 +66,9 @@ export default function AdminSettings() {
       await updateSetting('store_name', storeName);
       await updateSetting('contact_email', storeEmail);
       await updateSetting('contact_phone', storePhone);
+      if (storeUrl) {
+        await updateSetting('store_url', storeUrl);
+      }
       toast.success('Store information saved');
     } catch (error) {
       console.error('Error saving store info:', error);
@@ -197,6 +202,18 @@ export default function AdminSettings() {
                 <div className="space-y-2">
                   <Label htmlFor="currency">Currency</Label>
                   <Input id="currency" defaultValue="BDT" disabled />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor="storeUrl">Store URL / Domain</Label>
+                  <Input
+                    id="storeUrl"
+                    value={storeUrl}
+                    onChange={(e) => setStoreUrl(e.target.value)}
+                    placeholder="https://yourdomain.com"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Your store's public URL. Used in product feeds (e.g., Facebook Catalog) and other integrations.
+                  </p>
                 </div>
               </div>
               <Separator />

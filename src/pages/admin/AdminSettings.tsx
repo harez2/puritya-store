@@ -98,7 +98,12 @@ export default function AdminSettings() {
         .eq('key', 'admin_notification_settings')
         .maybeSingle();
       if (data?.value) {
-        setNotifSettings({ ...defaultNotificationSettings, ...(data.value as unknown as NotificationSettings) });
+        const raw = data.value as any;
+        // Backward compat: migrate legacy adminPhone to adminPhones array
+        if (raw.adminPhone && (!raw.adminPhones || raw.adminPhones.length === 0)) {
+          raw.adminPhones = [raw.adminPhone];
+        }
+        setNotifSettings({ ...defaultNotificationSettings, ...raw });
       }
     } catch (error) {
       console.error('Error fetching notification settings:', error);

@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.steadfast-courier]
 verify_jwt = false
+
+[functions.notify-admin-order]
+verify_jwt = false

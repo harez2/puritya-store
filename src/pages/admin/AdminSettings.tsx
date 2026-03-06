@@ -33,7 +33,11 @@ interface NotificationSettings {
   browserEnabled: boolean;
   smsEnabled: boolean;
   adminPhone: string;
+  adminPhones: string[];
+  adminSmsTemplate: string;
 }
+
+const DEFAULT_SMS_TEMPLATE = 'New order #{order_number} received! Total: ৳{total}. Customer: {customer_name}';
 
 const defaultNotificationSettings: NotificationSettings = {
   enabled: true,
@@ -41,6 +45,8 @@ const defaultNotificationSettings: NotificationSettings = {
   browserEnabled: true,
   smsEnabled: false,
   adminPhone: '',
+  adminPhones: [],
+  adminSmsTemplate: DEFAULT_SMS_TEMPLATE,
 };
 
 export default function AdminSettings() {

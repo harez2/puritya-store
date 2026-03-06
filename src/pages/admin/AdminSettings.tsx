@@ -2,6 +2,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
@@ -33,7 +34,11 @@ interface NotificationSettings {
   browserEnabled: boolean;
   smsEnabled: boolean;
   adminPhone: string;
+  adminPhones: string[];
+  adminSmsTemplate: string;
 }
+
+const DEFAULT_SMS_TEMPLATE = 'New order #{order_number} received! Total: ৳{total}. Customer: {customer_name}';
 
 const defaultNotificationSettings: NotificationSettings = {
   enabled: true,
@@ -41,6 +46,8 @@ const defaultNotificationSettings: NotificationSettings = {
   browserEnabled: true,
   smsEnabled: false,
   adminPhone: '',
+  adminPhones: [],
+  adminSmsTemplate: DEFAULT_SMS_TEMPLATE,
 };
 
 export default function AdminSettings() {
@@ -92,14 +99,19 @@ export default function AdminSettings() {
         .eq('key', 'admin_notification_settings')
         .maybeSingle();
       if (data?.value) {
-        setNotifSettings({ ...defaultNotificationSettings, ...(data.value as unknown as NotificationSettings) });
+        const raw = data.value as any;
+        // Backward compat: migrate legacy adminPhone to adminPhones array
+        if (raw.adminPhone && (!raw.adminPhones || raw.adminPhones.length === 0)) {
+          raw.adminPhones = [raw.adminPhone];
+        }
+        setNotifSettings({ ...defaultNotificationSettings, ...raw });
       }
     } catch (error) {
       console.error('Error fetching notification settings:', error);
     }
   };
 
-  const updateNotifSetting = async (key: keyof NotificationSettings, value: boolean | string) => {
+  const updateNotifSetting = async (key: keyof NotificationSettings, value: boolean | string | string[]) => {
     const updated = { ...notifSettings, [key]: value };
     setNotifSettings(updated);
     try {
@@ -433,17 +445,61 @@ export default function AdminSettings() {
                   </div>
 
                   {notifSettings.smsEnabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="adminPhone">Admin Phone Number</Label>
-                      <Input
-                        id="adminPhone"
-                        value={notifSettings.adminPhone}
-                        onChange={(e) => updateNotifSetting('adminPhone', e.target.value)}
-                        placeholder="e.g., 01XXXXXXXXX"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        This number will receive SMS alerts for every new order
-                      </p>
+                    <div className="space-y-4">
+                      {/* Multiple Admin Phone Numbers */}
+                      <div className="space-y-2">
+                        <Label>Admin Phone Numbers</Label>
+                        <p className="text-xs text-muted-foreground">
+                          These numbers will receive SMS alerts for every new order
+                        </p>
+                        {(notifSettings.adminPhones || []).map((phone, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              value={phone}
+                              onChange={(e) => {
+                                const updated = [...(notifSettings.adminPhones || [])];
+                                updated[index] = e.target.value;
+                                updateNotifSetting('adminPhones', updated);
+                              }}
+                              placeholder="e.g., 01XXXXXXXXX"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                const updated = (notifSettings.adminPhones || []).filter((_, i) => i !== index);
+                                updateNotifSetting('adminPhones', updated);
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = [...(notifSettings.adminPhones || []), ''];
+                            updateNotifSetting('adminPhones', updated);
+                          }}
+                        >
+                          + Add Phone Number
+                        </Button>
+                      </div>
+
+                      {/* Custom SMS Template */}
+                      <div className="space-y-2">
+                        <Label htmlFor="adminSmsTemplate">SMS Message Template</Label>
+                        <Textarea
+                          id="adminSmsTemplate"
+                          value={notifSettings.adminSmsTemplate || DEFAULT_SMS_TEMPLATE}
+                          onChange={(e) => updateNotifSetting('adminSmsTemplate', e.target.value)}
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Available placeholders: <code>{'{order_number}'}</code>, <code>{'{total}'}</code>, <code>{'{customer_name}'}</code>, <code>{'{phone}'}</code>, <code>{'{address}'}</code>
+                        </p>
+                      </div>
                     </div>
                   )}
                 </>

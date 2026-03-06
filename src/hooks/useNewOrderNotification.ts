@@ -7,8 +7,12 @@ interface NotificationSettings {
   soundEnabled: boolean;
   browserEnabled: boolean;
   smsEnabled: boolean;
-  adminPhone: string;
+  adminPhone: string; // legacy single phone
+  adminPhones: string[]; // new: multiple phones
+  adminSmsTemplate: string;
 }
+
+const DEFAULT_TEMPLATE = 'New order #{order_number} received! Total: ৳{total}. Customer: {customer_name}';
 
 const defaultSettings: NotificationSettings = {
   enabled: true,
@@ -16,6 +20,8 @@ const defaultSettings: NotificationSettings = {
   browserEnabled: true,
   smsEnabled: false,
   adminPhone: '',
+  adminPhones: [],
+  adminSmsTemplate: DEFAULT_TEMPLATE,
 };
 
 function playNotificationSound() {
@@ -26,7 +32,6 @@ function playNotificationSound() {
     oscillator.connect(gain);
     gain.connect(ctx.destination);
 
-    // Play a pleasant two-tone chime
     oscillator.type = 'sine';
     oscillator.frequency.setValueAtTime(830, ctx.currentTime);
     oscillator.frequency.setValueAtTime(1050, ctx.currentTime + 0.15);
@@ -39,7 +44,32 @@ function playNotificationSound() {
   }
 }
 
-async function sendAdminSms(phone: string, orderNumber: string, total: number, customerName: string) {
+function resolvePhones(s: NotificationSettings): string[] {
+  // Use adminPhones array if available, else fall back to legacy single adminPhone
+  if (s.adminPhones && s.adminPhones.length > 0) {
+    return s.adminPhones.filter(p => p.trim());
+  }
+  if (s.adminPhone && s.adminPhone.trim()) {
+    return [s.adminPhone.trim()];
+  }
+  return [];
+}
+
+function buildMessage(template: string, order: any): string {
+  const shippingAddress = order.shipping_address as any;
+  const customerName = shippingAddress?.full_name || 'Guest';
+  const customerPhone = shippingAddress?.phone || '';
+  const address = [shippingAddress?.address_line1, shippingAddress?.city].filter(Boolean).join(', ') || '';
+
+  return template
+    .replace(/\{order_number\}/g, order.order_number || 'N/A')
+    .replace(/\{total\}/g, (order.total || 0).toLocaleString())
+    .replace(/\{customer_name\}/g, customerName)
+    .replace(/\{phone\}/g, customerPhone)
+    .replace(/\{address\}/g, address);
+}
+
+async function sendAdminSms(phone: string, message: string) {
   try {
     const { data: settingsData } = await supabase
       .from('site_settings')
@@ -55,8 +85,6 @@ async function sendAdminSms(phone: string, orderNumber: string, total: number, c
     } | null;
 
     if (!smsSettings?.enabled) return;
-
-    const message = `New order #${orderNumber} received! Total: ৳${total.toLocaleString()}. Customer: ${customerName}`;
 
     const requestBody: { phone: string; message: string; customApiKey?: string; customSenderId?: string } = {
       phone,
@@ -77,7 +105,6 @@ async function sendAdminSms(phone: string, orderNumber: string, total: number, c
 export function useNewOrderNotification() {
   const settingsRef = useRef<NotificationSettings>(defaultSettings);
 
-  // Fetch notification settings
   useEffect(() => {
     async function fetchSettings() {
       const { data } = await supabase
@@ -93,7 +120,6 @@ export function useNewOrderNotification() {
     fetchSettings();
   }, []);
 
-  // Request browser notification permission
   useEffect(() => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
@@ -110,12 +136,10 @@ export function useNewOrderNotification() {
     const shippingAddress = order.shipping_address as any;
     const customerName = shippingAddress?.full_name || 'Guest';
 
-    // Sound
     if (s.soundEnabled) {
       playNotificationSound();
     }
 
-    // Browser notification
     if (s.browserEnabled && 'Notification' in window && Notification.permission === 'granted') {
       new Notification('🛒 New Order!', {
         body: `Order #${orderNumber} — ৳${total.toLocaleString()} from ${customerName}`,
@@ -123,19 +147,19 @@ export function useNewOrderNotification() {
       });
     }
 
-    // Toast
     toast.success(`New Order #${orderNumber}`, {
       description: `৳${total.toLocaleString()} from ${customerName}`,
       duration: 5000,
     });
 
-    // SMS
-    if (s.smsEnabled && s.adminPhone) {
-      sendAdminSms(s.adminPhone, orderNumber, total, customerName);
+    if (s.smsEnabled) {
+      const phones = resolvePhones(s);
+      const template = s.adminSmsTemplate || DEFAULT_TEMPLATE;
+      const message = buildMessage(template, order);
+      phones.forEach(phone => sendAdminSms(phone, message));
     }
   }, []);
 
-  // Subscribe to realtime
   useEffect(() => {
     const channel = supabase
       .channel('admin-new-orders')

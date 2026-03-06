@@ -444,17 +444,61 @@ export default function AdminSettings() {
                   </div>
 
                   {notifSettings.smsEnabled && (
-                    <div className="space-y-2">
-                      <Label htmlFor="adminPhone">Admin Phone Number</Label>
-                      <Input
-                        id="adminPhone"
-                        value={notifSettings.adminPhone}
-                        onChange={(e) => updateNotifSetting('adminPhone', e.target.value)}
-                        placeholder="e.g., 01XXXXXXXXX"
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        This number will receive SMS alerts for every new order
-                      </p>
+                    <div className="space-y-4">
+                      {/* Multiple Admin Phone Numbers */}
+                      <div className="space-y-2">
+                        <Label>Admin Phone Numbers</Label>
+                        <p className="text-xs text-muted-foreground">
+                          These numbers will receive SMS alerts for every new order
+                        </p>
+                        {(notifSettings.adminPhones || []).map((phone, index) => (
+                          <div key={index} className="flex gap-2">
+                            <Input
+                              value={phone}
+                              onChange={(e) => {
+                                const updated = [...(notifSettings.adminPhones || [])];
+                                updated[index] = e.target.value;
+                                updateNotifSetting('adminPhones', updated);
+                              }}
+                              placeholder="e.g., 01XXXXXXXXX"
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => {
+                                const updated = (notifSettings.adminPhones || []).filter((_, i) => i !== index);
+                                updateNotifSetting('adminPhones', updated);
+                              }}
+                            >
+                              ✕
+                            </Button>
+                          </div>
+                        ))}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const updated = [...(notifSettings.adminPhones || []), ''];
+                            updateNotifSetting('adminPhones', updated);
+                          }}
+                        >
+                          + Add Phone Number
+                        </Button>
+                      </div>
+
+                      {/* Custom SMS Template */}
+                      <div className="space-y-2">
+                        <Label htmlFor="adminSmsTemplate">SMS Message Template</Label>
+                        <Textarea
+                          id="adminSmsTemplate"
+                          value={notifSettings.adminSmsTemplate || DEFAULT_SMS_TEMPLATE}
+                          onChange={(e) => updateNotifSetting('adminSmsTemplate', e.target.value)}
+                          rows={3}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Available placeholders: <code>{'{order_number}'}</code>, <code>{'{total}'}</code>, <code>{'{customer_name}'}</code>, <code>{'{phone}'}</code>, <code>{'{address}'}</code>
+                        </p>
+                      </div>
                     </div>
                   )}
                 </>

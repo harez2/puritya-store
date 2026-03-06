@@ -110,7 +110,7 @@ export default function AdminSettings() {
     }
   };
 
-  const updateNotifSetting = async (key: keyof NotificationSettings, value: boolean | string) => {
+  const updateNotifSetting = async (key: keyof NotificationSettings, value: boolean | string | string[]) => {
     const updated = { ...notifSettings, [key]: value };
     setNotifSettings(updated);
     try {

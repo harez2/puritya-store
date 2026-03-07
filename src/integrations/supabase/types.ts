@@ -1152,6 +1152,101 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_campaign_recipients: {
+        Row: {
+          campaign_id: string
+          created_at: string
+          customer_name: string | null
+          error_message: string | null
+          id: string
+          phone: string
+          sent_at: string | null
+          status: string
+        }
+        Insert: {
+          campaign_id: string
+          created_at?: string
+          customer_name?: string | null
+          error_message?: string | null
+          id?: string
+          phone: string
+          sent_at?: string | null
+          status?: string
+        }
+        Update: {
+          campaign_id?: string
+          created_at?: string
+          customer_name?: string | null
+          error_message?: string | null
+          id?: string
+          phone?: string
+          sent_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sms_campaign_recipients_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "sms_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sms_campaigns: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          delivered_count: number
+          failed_count: number
+          id: string
+          message: string
+          name: string
+          scheduled_at: string | null
+          segment_filters: Json | null
+          sent_count: number
+          started_at: string | null
+          status: string
+          total_recipients: number
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          message: string
+          name: string
+          scheduled_at?: string | null
+          segment_filters?: Json | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
+          id?: string
+          message?: string
+          name?: string
+          scheduled_at?: string | null
+          segment_filters?: Json | null
+          sent_count?: number
+          started_at?: string | null
+          status?: string
+          total_recipients?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_permissions: {
         Row: {
           created_at: string
@@ -1286,6 +1381,17 @@ export type Database = {
           custom_message: string
           is_blocked: boolean
           reason: string
+        }[]
+      }
+      get_campaign_recipients: {
+        Args: { filters?: Json }
+        Returns: {
+          avg_order_value: number
+          city: string
+          customer_name: string
+          lifetime_value: number
+          order_count: number
+          phone: string
         }[]
       }
       has_permission: {

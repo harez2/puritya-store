@@ -71,6 +71,7 @@ export default function AdminSmsCampaigns() {
   const [maxLtv, setMaxLtv] = useState('');
   const [minAov, setMinAov] = useState('');
   const [maxAov, setMaxAov] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [matchedCustomers, setMatchedCustomers] = useState<MatchedCustomer[]>([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [creating, setCreating] = useState(false);

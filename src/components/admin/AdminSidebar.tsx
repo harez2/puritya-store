@@ -71,6 +71,7 @@ const mainNavItems = [
   { title: 'Blog Categories', url: '/admin/blog-categories', icon: Tags },
   { title: 'Newsletter', url: '/admin/newsletter', icon: Mail },
   { title: 'Popups', url: '/admin/popups', icon: MessageSquareText },
+  { title: 'SMS Campaigns', url: '/admin/sms-campaigns', icon: MessageSquare },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];

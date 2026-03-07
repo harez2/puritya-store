@@ -962,6 +962,40 @@ export default function AdminOrders() {
                       <Button
                         variant="outline"
                         size="sm"
+                        onClick={async () => {
+                          const ids = Array.from(selectedOrderIds);
+                          toast.info(`Generating ${ids.length} invoice(s)...`);
+                          try {
+                            const [{ data: allItems, error: itemsErr }, { data: invoiceCfg }] = await Promise.all([
+                              supabase.from('order_items').select('*').in('order_id', ids),
+                              supabase.from('site_settings').select('value').eq('key', 'invoice_settings').maybeSingle(),
+                            ]);
+                            if (itemsErr) throw itemsErr;
+                            const cfg = invoiceCfg?.value ? { ...defaultInvoiceConfig, ...(invoiceCfg.value as unknown as InvoiceConfig) } : defaultInvoiceConfig;
+                            const storeInfo = {
+                              store_name: settings.store_name,
+                              store_tagline: settings.store_tagline,
+                              logo_url: settings.logo_url,
+                              currency_symbol: 'BDT ',
+                            };
+                            for (const id of ids) {
+                              const order = orders.find(o => o.id === id);
+                              if (!order) continue;
+                              const items = (allItems || []).filter((i: any) => i.order_id === id);
+                              await generateInvoice(order, items, storeInfo, cfg);
+                            }
+                            toast.success(`${ids.length} invoice(s) downloaded`);
+                          } catch (err: any) {
+                            toast.error('Failed to generate invoices');
+                          }
+                        }}
+                      >
+                        <FileText className="h-3.5 w-3.5 mr-1" />
+                        Download Invoices
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
                         onClick={handleBulkSendToCourier}
                       >
                         <Truck className="h-3.5 w-3.5 mr-1" />

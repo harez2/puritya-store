@@ -104,6 +104,7 @@ export default function AdminSmsCampaigns() {
     if (maxLtv) filters.max_ltv = maxLtv;
     if (minAov) filters.min_aov = minAov;
     if (maxAov) filters.max_aov = maxAov;
+    if (orderStatusFilter) filters.order_status = orderStatusFilter;
 
     const { data, error } = await supabase.rpc('get_campaign_recipients', { filters });
     if (error) {

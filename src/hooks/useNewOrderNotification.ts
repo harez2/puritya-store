@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+// SMS notifications are handled server-side by the notify_admin_on_new_order database trigger.
 
 interface NotificationSettings {
   enabled: boolean;

@@ -45,64 +45,6 @@ function playNotificationSound() {
   }
 }
 
-function resolvePhones(s: NotificationSettings): string[] {
-  // Use adminPhones array if available, else fall back to legacy single adminPhone
-  if (s.adminPhones && s.adminPhones.length > 0) {
-    return s.adminPhones.filter(p => p.trim());
-  }
-  if (s.adminPhone && s.adminPhone.trim()) {
-    return [s.adminPhone.trim()];
-  }
-  return [];
-}
-
-function buildMessage(template: string, order: any): string {
-  const shippingAddress = order.shipping_address as any;
-  const customerName = shippingAddress?.full_name || 'Guest';
-  const customerPhone = shippingAddress?.phone || '';
-  const address = [shippingAddress?.address_line1, shippingAddress?.city].filter(Boolean).join(', ') || '';
-
-  return template
-    .replace(/\{order_number\}/g, order.order_number || 'N/A')
-    .replace(/\{total\}/g, (order.total || 0).toLocaleString())
-    .replace(/\{customer_name\}/g, customerName)
-    .replace(/\{phone\}/g, customerPhone)
-    .replace(/\{address\}/g, address);
-}
-
-async function sendAdminSms(phone: string, message: string) {
-  try {
-    const { data: settingsData } = await supabase
-      .from('site_settings')
-      .select('value')
-      .eq('key', 'sms_settings')
-      .maybeSingle();
-
-    const smsSettings = settingsData?.value as {
-      enabled?: boolean;
-      apiKey?: string;
-      senderId?: string;
-      useCustomApi?: boolean;
-    } | null;
-
-    if (!smsSettings?.enabled) return;
-
-    const requestBody: { phone: string; message: string; customApiKey?: string; customSenderId?: string } = {
-      phone,
-      message,
-    };
-
-    if (smsSettings.useCustomApi && smsSettings.apiKey && smsSettings.senderId) {
-      requestBody.customApiKey = smsSettings.apiKey;
-      requestBody.customSenderId = smsSettings.senderId;
-    }
-
-    await supabase.functions.invoke('send-sms', { body: requestBody });
-  } catch (e) {
-    console.error('Failed to send admin SMS notification:', e);
-  }
-}
-
 export function useNewOrderNotification() {
   const settingsRef = useRef<NotificationSettings>(defaultSettings);
 
@@ -153,12 +95,7 @@ export function useNewOrderNotification() {
       duration: 5000,
     });
 
-    if (s.smsEnabled) {
-      const phones = resolvePhones(s);
-      const template = s.adminSmsTemplate || DEFAULT_TEMPLATE;
-      const message = buildMessage(template, order);
-      phones.forEach(phone => sendAdminSms(phone, message));
-    }
+    // SMS is handled server-side by the database trigger, no client-side SMS here
   }, []);
 
   useEffect(() => {

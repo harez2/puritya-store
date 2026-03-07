@@ -318,9 +318,27 @@ export default function AdminSmsCampaigns() {
               <Card>
                 <CardHeader><CardTitle>Customer Segmentation</CardTitle></CardHeader>
                 <CardContent className="space-y-4">
-                  <div>
-                    <Label>City / Location</Label>
-                    <Input value={cityFilter} onChange={e => setCityFilter(e.target.value)} placeholder="e.g. Dhaka" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>City / Location</Label>
+                      <Input value={cityFilter} onChange={e => setCityFilter(e.target.value)} placeholder="e.g. Dhaka" />
+                    </div>
+                    <div>
+                      <Label>Order Status</Label>
+                      <Select value={orderStatusFilter} onValueChange={setOrderStatusFilter}>
+                        <SelectTrigger><SelectValue placeholder="All statuses" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Statuses</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                          <SelectItem value="confirmed">Confirmed</SelectItem>
+                          <SelectItem value="processing">Processing</SelectItem>
+                          <SelectItem value="shipped">Shipped</SelectItem>
+                          <SelectItem value="delivered">Delivered</SelectItem>
+                          <SelectItem value="cancelled">Cancelled</SelectItem>
+                          <SelectItem value="returned">Returned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>

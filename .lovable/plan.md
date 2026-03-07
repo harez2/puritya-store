@@ -1,46 +1,64 @@
 
 
-## Invoice Customization System
+## SMS Campaign Launcher — Plan
 
 ### Overview
-Two changes: (1) Add a total quantity summary row to the invoice table, and (2) build an admin Invoice Customization section where admins can toggle on/off each invoice element.
+Build a full SMS campaign management system in the admin panel: create/send campaigns (bulk or single), segment customers by location/order value/lifetime value, track campaign status, and download reports.
 
-### Changes
+### New Database Tables
 
-**1. Add total quantity row to invoice (`OrderInvoice.tsx`)**
-- After the items table body, add a summary row showing "Total Items" with the sum of all quantities.
-- This appears as a bold footer row in the autoTable output.
+**1. `sms_campaigns`** — stores each campaign
+- `id`, `name`, `message`, `status` (draft/sending/completed/failed), `total_recipients`, `sent_count`, `failed_count`, `delivered_count`, `segment_filters` (jsonb — stores filter criteria), `created_by` (uuid), `scheduled_at`, `started_at`, `completed_at`, `created_at`, `updated_at`
+- RLS: admin-only CRUD
 
-**2. Create Invoice Settings UI (`InvoiceSettingsEditor.tsx`)**
-- New component with toggles for each invoice element:
-  - Show Logo / Store Name
-  - Show Invoice Number
-  - Show Date
-  - Show Order Status
-  - Show Payment Status
-  - Show Bill To (customer info)
-  - Show Payment Method
-  - Show Items Table
-  - Show Total Quantity Row
-  - Show Subtotal
-  - Show Shipping Fee
-  - Show Total
-  - Show Notes
-  - Custom Footer Text (text input, e.g. "Thank you for your purchase!")
-- Stored as `invoice_settings` key in `site_settings` table.
+**2. `sms_campaign_recipients`** — individual send log per recipient
+- `id`, `campaign_id` (FK), `phone`, `customer_name`, `status` (pending/sent/failed/delivered), `error_message`, `sent_at`, `created_at`
+- RLS: admin-only read/write
 
-**3. Update `generateInvoice` to respect settings**
-- Accept an optional `invoiceConfig` parameter with the toggle values.
-- Conditionally render each section based on the config.
-- Default all toggles to `true` for backward compatibility.
+### New Edge Function
 
-**4. Wire it up**
-- Add the `InvoiceSettingsEditor` card to `AdminSettings.tsx`.
-- Where `generateInvoice` is called, fetch `invoice_settings` from site settings and pass it through.
+**`send-sms-campaign/index.ts`** — receives `campaign_id`, fetches recipients in `pending` status, sends SMS via BulkSMSBD (using stored API credentials from `sms_settings`), updates each recipient status, and updates campaign aggregates (`sent_count`, `failed_count`). Processes in batches to avoid timeouts.
 
-### Files
-- **Edit**: `src/components/admin/OrderInvoice.tsx` — add total qty row + config-driven rendering
-- **New**: `src/components/admin/InvoiceSettingsEditor.tsx` — admin UI for invoice customization
-- **Edit**: `src/pages/admin/AdminSettings.tsx` — mount InvoiceSettingsEditor
-- **Edit**: Wherever `generateInvoice` is called — pass invoice settings
+### New Admin Page
+
+**`src/pages/admin/AdminSmsCampaigns.tsx`** — main page with tabs:
+
+1. **Campaigns List** — table of all campaigns with status badges, recipient counts, dates, actions (view/delete)
+2. **Create Campaign** — form with:
+   - Campaign name, message textarea with placeholder support (`{customer_name}`)
+   - **Customer Segmentation Filters:**
+     - Delivery location (city extracted from `orders.shipping_address->>'city'`)
+     - Min/Max average order value
+     - Min/Max lifetime value (total spend)
+     - Option to select individual customers or "All customers"
+   - Preview matching customer count before sending
+   - Send now or schedule
+3. **Campaign Detail/Report** — shows per-recipient delivery status, sent/failed/delivered counts, allows CSV download of the report
+
+### Customer Segmentation Query
+Query `orders` table grouped by `shipping_address->>'phone'`, computing:
+- `SUM(total)` as lifetime value
+- `AVG(total)` as average order value  
+- `shipping_address->>'city'` for location filtering
+- Join with customer phone numbers to build recipient list
+
+This will be done via a database function `get_campaign_recipients(filters jsonb)` that returns matching phone numbers + names.
+
+### Sidebar & Routing
+- Add "SMS Campaigns" nav item with `MessageSquare` icon to `AdminSidebar.tsx`
+- Add route `/admin/sms-campaigns` in `App.tsx`
+
+### Report Download
+- CSV export of campaign recipients with columns: Name, Phone, Status, Sent At, Error
+- Filterable by status (sent/failed/delivered)
+
+### Files to Create
+- `src/pages/admin/AdminSmsCampaigns.tsx` — main page (list + create + detail views)
+- `supabase/functions/send-sms-campaign/index.ts` — edge function for batch sending
+- Migration for `sms_campaigns` + `sms_campaign_recipients` tables + `get_campaign_recipients` function
+
+### Files to Modify
+- `src/App.tsx` — add route
+- `src/components/admin/AdminSidebar.tsx` — add nav item
+- `supabase/config.toml` — register new edge function
 

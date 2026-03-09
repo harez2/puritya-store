@@ -370,11 +370,11 @@ export default function AdminCustomers() {
     }
   };
 
-  const totalCustomers = customers.length;
-  const registeredCustomers = customers.filter(c => !c.isGuest).length;
-  const guestCustomers = customers.filter(c => c.isGuest).length;
+  const totalCustomers = filteredCustomers.length;
+  const registeredCustomers = filteredCustomers.filter(c => !c.isGuest).length;
+  const guestCustomers = filteredCustomers.filter(c => c.isGuest).length;
   const averageLtv = totalCustomers > 0 
-    ? customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0) / totalCustomers 
+    ? filteredCustomers.reduce((sum, c) => sum + (c.totalSpent || 0), 0) / totalCustomers 
     : 0;
 
   return (

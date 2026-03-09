@@ -1139,7 +1139,7 @@ export default function AdminOrders() {
                             </Select>
                           </div>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden xl:table-cell">
                           {order.courier_tracking_code ? (
                             <div className="flex flex-col gap-1">
                               <a

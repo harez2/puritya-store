@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { generateInvoice, InvoiceConfig, defaultInvoiceConfig } from '@/components/admin/OrderInvoice';
+import { StatCard } from '@/components/admin/StatCard';
 
 interface Order {
   id: string;

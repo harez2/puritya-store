@@ -20,7 +20,7 @@ export function StatCard({ title, value, icon, trend, className }: StatCardProps
         <div className="flex items-start justify-between">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-3xl font-bold">{value}</p>
+            <p className="text-2xl sm:text-3xl font-bold">{value}</p>
             {trend && (
               <p className={cn(
                 "text-sm flex items-center gap-1",

@@ -964,14 +964,14 @@ export default function AdminOrders() {
               <div className="space-y-4">
                 {/* Bulk Action Bar */}
                 {selectedOrderIds.size > 0 && (
-                  <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
                     <div className="flex items-center gap-2">
                       <CheckSquare className="h-4 w-4 text-primary" />
                       <span className="font-medium text-sm">
                         {selectedOrderIds.size} order{selectedOrderIds.size > 1 ? 's' : ''} selected
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 ml-auto flex-wrap">
+                    <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                       <span className="text-sm text-muted-foreground">Update to:</span>
                       <Select onValueChange={openBulkUpdateDialog}>
                         <SelectTrigger className="w-[140px] h-8">

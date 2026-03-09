@@ -408,7 +408,7 @@ export default function AdminDashboard() {
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}
                         </td>
-                        <td className="py-3 px-2 text-center">
+                        <td className="py-3 px-2 text-center hidden sm:table-cell">
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">

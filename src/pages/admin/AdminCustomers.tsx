@@ -631,10 +631,10 @@ export default function AdminCustomers() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 border-t mt-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t mt-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>
-                        Showing {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
+                        {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
                       </span>
                       <Select value={itemsPerPage.toString()} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
                         <SelectTrigger className="w-[70px] h-8">

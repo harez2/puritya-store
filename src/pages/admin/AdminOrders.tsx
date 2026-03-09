@@ -805,18 +805,18 @@ export default function AdminOrders() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Orders</h1>
-            <p className="text-muted-foreground">View and manage customer orders</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Orders</h1>
+            <p className="text-sm text-muted-foreground">View and manage customer orders</p>
           </div>
-          <Button onClick={() => navigate('/admin/pos')}>
+          <Button onClick={() => navigate('/admin/pos')} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Create Order
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Orders"
             value={filteredOrders.length}
@@ -840,10 +840,10 @@ export default function AdminOrders() {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="orders">Order List</TabsTrigger>
-            <TabsTrigger value="incomplete">Incomplete Orders</TabsTrigger>
-            <TabsTrigger value="trash" className="flex items-center gap-1.5">
+          <TabsList className="w-full sm:w-auto flex">
+            <TabsTrigger value="orders" className="flex-1 sm:flex-none">Order List</TabsTrigger>
+            <TabsTrigger value="incomplete" className="flex-1 sm:flex-none">Incomplete</TabsTrigger>
+            <TabsTrigger value="trash" className="flex-1 sm:flex-none flex items-center gap-1.5">
               <Trash2 className="h-3.5 w-3.5" />
               Trash
               {trashedOrders.length > 0 && (
@@ -858,8 +858,8 @@ export default function AdminOrders() {
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
+              <div className="flex flex-col gap-3">
+                <div className="relative w-full sm:max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by order number..."
@@ -868,25 +868,27 @@ export default function AdminOrders() {
                     className="pl-9"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleExportCSV} variant="outline" disabled={filteredOrders.length === 0}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleExportCSV} variant="outline" disabled={filteredOrders.length === 0} className="w-full sm:w-auto">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
-              
+
               {/* Date Range Filters */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">Date range:</span>

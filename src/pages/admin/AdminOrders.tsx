@@ -1113,7 +1113,7 @@ export default function AdminOrders() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden lg:table-cell">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs font-medium text-muted-foreground capitalize">
                               {order.payment_method || 'N/A'}

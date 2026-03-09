@@ -379,19 +379,19 @@ export default function AdminCustomers() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer base</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Customers</h1>
+            <p className="text-sm text-muted-foreground">Manage your customer base</p>
           </div>
-          <Button onClick={exportCustomers} disabled={customers.length === 0}>
+          <Button onClick={exportCustomers} disabled={customers.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Customers"
             value={totalCustomers}

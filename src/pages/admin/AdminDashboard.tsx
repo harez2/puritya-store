@@ -354,11 +354,11 @@ export default function AdminDashboard() {
                     <tr className="border-b">
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Source</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden md:table-cell">Source</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Quick View</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Quick View</th>
                     </tr>
                   </thead>
                   <tbody>

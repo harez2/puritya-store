@@ -816,6 +816,29 @@ export default function AdminOrders() {
           </Button>
         </div>
 
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Orders"
+            value={orders.length}
+            icon={<ShoppingCart className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Pending Orders"
+            value={orders.filter(o => o.status === 'pending').length}
+            icon={<Clock className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Delivered"
+            value={orders.filter(o => o.status === 'delivered').length}
+            icon={<Package className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Total Revenue"
+            value={new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(orders.reduce((sum, o) => sum + Number(o.total), 0))}
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
+        </div>
+
         <Tabs defaultValue="orders" className="space-y-4">
           <TabsList>
             <TabsTrigger value="orders">Order List</TabsTrigger>

@@ -819,22 +819,22 @@ export default function AdminOrders() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Orders"
-            value={orders.length}
+            value={filteredOrders.length}
             icon={<ShoppingCart className="h-4 w-4" />}
           />
           <StatCard
             title="Pending Orders"
-            value={orders.filter(o => o.status === 'pending').length}
+            value={filteredOrders.filter(o => o.status === 'pending').length}
             icon={<Clock className="h-4 w-4" />}
           />
           <StatCard
             title="Delivered"
-            value={orders.filter(o => o.status === 'delivered').length}
+            value={filteredOrders.filter(o => o.status === 'delivered').length}
             icon={<Package className="h-4 w-4" />}
           />
           <StatCard
             title="Total Revenue"
-            value={new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(orders.reduce((sum, o) => sum + Number(o.total), 0))}
+            value={new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(filteredOrders.reduce((sum, o) => sum + Number(o.total), 0))}
             icon={<TrendingUp className="h-4 w-4" />}
           />
         </div>

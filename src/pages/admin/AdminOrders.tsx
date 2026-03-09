@@ -1059,10 +1059,10 @@ export default function AdminOrders() {
                       </th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden md:table-cell">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Payment</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Courier</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden lg:table-cell">Payment</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden xl:table-cell">Courier</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
                     </tr>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight, Ban, Trash2 } from 'lucide-react';
+import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight, Ban, Trash2, Users, UserCheck, UserMinus, CreditCard } from 'lucide-react';
 import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -50,6 +50,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { BlockCustomerDialog } from '@/components/admin/BlockCustomerDialog';
 import { BlockedCustomersManager } from '@/components/admin/BlockedCustomersManager';
+import { StatCard } from '@/components/admin/StatCard';
 
 interface Profile {
   id: string;
@@ -369,6 +370,13 @@ export default function AdminCustomers() {
     }
   };
 
+  const totalCustomers = customers.length;
+  const registeredCustomers = customers.filter(c => !c.isGuest).length;
+  const guestCustomers = customers.filter(c => c.isGuest).length;
+  const averageLtv = totalCustomers > 0 
+    ? customers.reduce((sum, c) => sum + (c.totalSpent || 0), 0) / totalCustomers 
+    : 0;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -381,6 +389,29 @@ export default function AdminCustomers() {
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Customers"
+            value={totalCustomers}
+            icon={<Users className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Registered Users"
+            value={registeredCustomers}
+            icon={<UserCheck className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Guest Customers"
+            value={guestCustomers}
+            icon={<UserMinus className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Average LTV"
+            value={formatCurrency(averageLtv)}
+            icon={<CreditCard className="h-4 w-4" />}
+          />
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>

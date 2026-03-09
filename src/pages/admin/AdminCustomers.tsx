@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight, Ban, Trash2 } from 'lucide-react';
+import { Search, User, MoreHorizontal, Eye, Shield, ShieldOff, Download, Filter, X, CalendarIcon, ChevronLeft, ChevronRight, Ban, Trash2, Users, UserCheck, UserMinus, CreditCard } from 'lucide-react';
 import { format, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';

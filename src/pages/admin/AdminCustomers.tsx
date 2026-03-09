@@ -50,6 +50,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { BlockCustomerDialog } from '@/components/admin/BlockCustomerDialog';
 import { BlockedCustomersManager } from '@/components/admin/BlockedCustomersManager';
+import { StatCard } from '@/components/admin/StatCard';
 
 interface Profile {
   id: string;

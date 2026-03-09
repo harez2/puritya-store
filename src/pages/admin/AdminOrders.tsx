@@ -1086,7 +1086,7 @@ export default function AdminOrders() {
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-2 text-muted-foreground">
+                        <td className="py-3 px-2 text-muted-foreground hidden md:table-cell">
                           <div className="flex flex-col">
                             <span className="text-sm">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
                             <span className="text-xs">{format(new Date(order.created_at), 'hh:mm a')}</span>

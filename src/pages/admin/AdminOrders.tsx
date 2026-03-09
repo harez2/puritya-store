@@ -858,8 +858,8 @@ export default function AdminOrders() {
             <Card>
               <CardHeader>
                 <div className="flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                <div className="relative flex-1 max-w-sm">
+              <div className="flex flex-col gap-3">
+                <div className="relative w-full sm:max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="Search by order number..."
@@ -868,25 +868,27 @@ export default function AdminOrders() {
                     className="pl-9"
                   />
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Button onClick={handleExportCSV} variant="outline" disabled={filteredOrders.length === 0}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Export CSV
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full sm:w-[180px]">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Statuses</SelectItem>
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button onClick={handleExportCSV} variant="outline" disabled={filteredOrders.length === 0} className="w-full sm:w-auto">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export CSV
+                  </Button>
+                </div>
               </div>
-              
+
               {/* Date Range Filters */}
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm text-muted-foreground">Date range:</span>

@@ -109,7 +109,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       >
         <AdminSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b border-border bg-background flex items-center px-4 gap-4 sticky top-0 z-10">
+          <header className="h-14 border-b border-border bg-background flex items-center px-2 sm:px-4 gap-2 sm:gap-4 sticky top-0 z-10">
             <SidebarTrigger />
             <div className="flex-1" />
             

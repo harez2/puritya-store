@@ -1444,17 +1444,20 @@ export function OrderAnalytics() {
                 No UTM data for selected period
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={350}>
                 <PieChart>
                   <Pie
                     data={utmSourceChartData}
                     cx="50%"
-                    cy="50%"
-                    outerRadius={100}
+                    cy="40%"
+                    outerRadius={90}
                     paddingAngle={2}
                     dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    labelLine={false}
+                    label={({ name, percent }) => {
+                      const truncated = name.length > 15 ? name.substring(0, 15) + '…' : name;
+                      return `${truncated} ${(percent * 100).toFixed(0)}%`;
+                    }}
+                    labelLine={true}
                   >
                     {utmSourceChartData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
@@ -1464,7 +1467,13 @@ export function OrderAnalytics() {
                     formatter={(value: number) => [formatCurrency(value), 'Revenue']}
                     contentStyle={{ backgroundColor: 'hsl(var(--popover))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
                   />
-                  <Legend />
+                  <Legend 
+                    layout="horizontal"
+                    verticalAlign="bottom"
+                    align="center"
+                    wrapperStyle={{ fontSize: '12px', paddingTop: '12px' }}
+                    formatter={(value: string) => value.length > 25 ? value.substring(0, 25) + '…' : value}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}

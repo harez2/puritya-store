@@ -177,18 +177,18 @@ export default function AdminCategories() {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Categories</h1>
-            <p className="text-muted-foreground">Organize your products into categories</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Categories</h1>
+            <p className="text-sm text-muted-foreground">Organize your products into categories</p>
           </div>
-          <Button onClick={() => handleOpenDialog()}>
+          <Button onClick={() => handleOpenDialog()} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Category
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {loading ? (
             <div className="col-span-full text-center py-8 text-muted-foreground">Loading...</div>
           ) : categories.length === 0 ? (

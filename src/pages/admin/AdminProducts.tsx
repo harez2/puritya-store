@@ -472,11 +472,11 @@ export default function AdminProducts() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Products</h1>
-            <p className="text-muted-foreground">Manage your product catalog</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
+            <p className="text-sm text-muted-foreground">Manage your product catalog</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {activeTab === 'active' && (
@@ -492,7 +492,7 @@ export default function AdminProducts() {
                   categories={categories}
                   onImportComplete={fetchProducts}
                 />
-                <Button onClick={() => navigate('/admin/products/new')}>
+                <Button onClick={() => navigate('/admin/products/new')} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Product
                 </Button>
@@ -533,11 +533,11 @@ export default function AdminProducts() {
 
         {/* Selection Bar */}
         {selectedProductIds.length > 0 && (
-          <div className="bg-muted/50 border rounded-lg p-3 flex items-center justify-between">
+          <div className="bg-muted/50 border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <span className="text-sm font-medium">
               {selectedProductIds.length} product(s) selected
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {activeTab === 'active' ? (
                 <>
                   <Button
@@ -551,7 +551,7 @@ export default function AdminProducts() {
                     ) : (
                       <Copy className="h-4 w-4 mr-1" />
                     )}
-                    Duplicate Selected
+                    Duplicate
                   </Button>
                   <Button
                     variant="destructive"
@@ -559,7 +559,7 @@ export default function AdminProducts() {
                     onClick={() => setIsBulkDeleteDialogOpen(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Move to Trash
+                    Trash
                   </Button>
                 </>
               ) : (
@@ -570,7 +570,7 @@ export default function AdminProducts() {
                     onClick={handleBulkRestore}
                   >
                     <ArchiveRestore className="h-4 w-4 mr-1" />
-                    Restore Selected
+                    Restore
                   </Button>
                   <Button
                     variant="destructive"
@@ -578,7 +578,7 @@ export default function AdminProducts() {
                     onClick={() => setIsBulkDeleteDialogOpen(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Permanently
+                    Delete
                   </Button>
                 </>
               )}
@@ -595,11 +595,11 @@ export default function AdminProducts() {
         )}
 
         <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
+          <CardHeader className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3 sm:gap-4">
               {/* Search Row */}
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="relative flex-1 max-w-sm">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex-1 sm:max-w-sm">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder={activeTab === 'active' ? "Search products..." : "Search trash..."}
@@ -618,14 +618,14 @@ export default function AdminProducts() {
               
               {/* Filter Row - only show for active tab */}
               {activeTab === 'active' && (
-                <div className="flex items-center gap-3 flex-wrap">
-                  <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+                  <div className="hidden sm:flex items-center gap-1.5 text-sm text-muted-foreground">
                     <Filter className="h-4 w-4" />
                     <span>Filters:</span>
                   </div>
                   
                   <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                    <SelectTrigger className="w-[160px] h-9">
+                    <SelectTrigger className="w-[calc(50%-4px)] sm:w-[160px] h-9">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
@@ -640,7 +640,7 @@ export default function AdminProducts() {
                   </Select>
 
                   <Select value={stockFilter} onValueChange={setStockFilter}>
-                    <SelectTrigger className="w-[140px] h-9">
+                    <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px] h-9">
                       <SelectValue placeholder="Stock" />
                     </SelectTrigger>
                     <SelectContent>
@@ -651,7 +651,7 @@ export default function AdminProducts() {
                   </Select>
 
                   <Select value={featuredFilter} onValueChange={setFeaturedFilter}>
-                    <SelectTrigger className="w-[130px] h-9">
+                    <SelectTrigger className="w-[calc(50%-4px)] sm:w-[130px] h-9">
                       <SelectValue placeholder="Featured" />
                     </SelectTrigger>
                     <SelectContent>
@@ -662,7 +662,7 @@ export default function AdminProducts() {
                   </Select>
 
                   <Select value={newArrivalFilter} onValueChange={setNewArrivalFilter}>
-                    <SelectTrigger className="w-[140px] h-9">
+                    <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px] h-9">
                       <SelectValue placeholder="New Arrival" />
                     </SelectTrigger>
                     <SelectContent>

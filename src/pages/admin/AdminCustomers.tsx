@@ -379,19 +379,19 @@ export default function AdminCustomers() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Customers</h1>
-            <p className="text-muted-foreground">Manage your customer base</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Customers</h1>
+            <p className="text-sm text-muted-foreground">Manage your customer base</p>
           </div>
-          <Button onClick={exportCustomers} disabled={customers.length === 0}>
+          <Button onClick={exportCustomers} disabled={customers.length === 0} className="w-full sm:w-auto">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Customers"
             value={totalCustomers}
@@ -422,21 +422,20 @@ export default function AdminCustomers() {
 
           <TabsContent value="customers" className="mt-4">
         <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name or phone..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
+          <CardHeader className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3">
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px]">
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -447,7 +446,7 @@ export default function AdminCustomers() {
                 </Select>
 
                 <Select value={orderCountFilter} onValueChange={setOrderCountFilter}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px]">
                     <SelectValue placeholder="Orders" />
                   </SelectTrigger>
                   <SelectContent>
@@ -464,7 +463,7 @@ export default function AdminCustomers() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-[calc(50%-4px)] sm:w-[140px] justify-start text-left font-normal",
                         !dateFrom && "text-muted-foreground"
                       )}
                     >
@@ -488,7 +487,7 @@ export default function AdminCustomers() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-[calc(50%-4px)] sm:w-[140px] justify-start text-left font-normal",
                         !dateTo && "text-muted-foreground"
                       )}
                     >
@@ -632,10 +631,10 @@ export default function AdminCustomers() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 border-t mt-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t mt-4">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span>
-                        Showing {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
+                        {startIndex + 1}-{Math.min(endIndex, filteredCustomers.length)} of {filteredCustomers.length}
                       </span>
                       <Select value={itemsPerPage.toString()} onValueChange={(v) => { setItemsPerPage(Number(v)); setCurrentPage(1); }}>
                         <SelectTrigger className="w-[70px] h-8">

@@ -840,10 +840,10 @@ export default function AdminOrders() {
         </div>
 
         <Tabs defaultValue="orders" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="orders">Order List</TabsTrigger>
-            <TabsTrigger value="incomplete">Incomplete Orders</TabsTrigger>
-            <TabsTrigger value="trash" className="flex items-center gap-1.5">
+          <TabsList className="w-full sm:w-auto flex">
+            <TabsTrigger value="orders" className="flex-1 sm:flex-none">Order List</TabsTrigger>
+            <TabsTrigger value="incomplete" className="flex-1 sm:flex-none">Incomplete</TabsTrigger>
+            <TabsTrigger value="trash" className="flex-1 sm:flex-none flex items-center gap-1.5">
               <Trash2 className="h-3.5 w-3.5" />
               Trash
               {trashedOrders.length > 0 && (

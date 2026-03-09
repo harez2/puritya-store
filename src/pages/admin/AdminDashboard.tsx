@@ -253,12 +253,35 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 min-w-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Welcome back! Here's what's happening with your store.</p>
         </div>
 
+        {/* Stat Cards */}
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Revenue"
+            value={formatCurrency(stats.totalRevenue)}
+            icon={<DollarSign className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Total Orders"
+            value={stats.totalOrders}
+            icon={<ShoppingCart className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Products"
+            value={stats.totalProducts}
+            icon={<Package className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Customers"
+            value={stats.totalCustomers}
+            icon={<Users className="h-5 w-5" />}
+          />
+        </div>
 
         {/* Low Stock Alert */}
         {lowStockProducts.length > 0 && (

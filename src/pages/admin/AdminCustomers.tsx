@@ -422,21 +422,20 @@ export default function AdminCustomers() {
 
           <TabsContent value="customers" className="mt-4">
         <Card>
-          <CardHeader>
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name or phone..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-                
+          <CardHeader className="p-3 sm:p-6">
+            <div className="flex flex-col gap-3">
+              <div className="relative w-full sm:max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name or phone..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px]">
                     <SelectValue placeholder="Role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -447,7 +446,7 @@ export default function AdminCustomers() {
                 </Select>
 
                 <Select value={orderCountFilter} onValueChange={setOrderCountFilter}>
-                  <SelectTrigger className="w-[140px]">
+                  <SelectTrigger className="w-[calc(50%-4px)] sm:w-[140px]">
                     <SelectValue placeholder="Orders" />
                   </SelectTrigger>
                   <SelectContent>
@@ -464,7 +463,7 @@ export default function AdminCustomers() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-[calc(50%-4px)] sm:w-[140px] justify-start text-left font-normal",
                         !dateFrom && "text-muted-foreground"
                       )}
                     >
@@ -488,7 +487,7 @@ export default function AdminCustomers() {
                     <Button
                       variant="outline"
                       className={cn(
-                        "w-[140px] justify-start text-left font-normal",
+                        "w-[calc(50%-4px)] sm:w-[140px] justify-start text-left font-normal",
                         !dateTo && "text-muted-foreground"
                       )}
                     >

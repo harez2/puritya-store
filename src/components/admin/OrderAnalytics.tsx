@@ -189,27 +189,54 @@ export function OrderAnalytics() {
     }
   }, [datePreset]);
 
+  // Helper to fetch all rows from a table (handles 1000-row limit)
+  async function fetchAllRows<T>(query: any): Promise<T[]> {
+    const PAGE_SIZE = 1000;
+    let allData: T[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await query.range(from, from + PAGE_SIZE - 1);
+      if (error) throw error;
+      if (data) {
+        allData = allData.concat(data);
+        hasMore = data.length === PAGE_SIZE;
+        from += PAGE_SIZE;
+      } else {
+        hasMore = false;
+      }
+    }
+    return allData;
+  }
+
   async function fetchAnalyticsData() {
     try {
-      const [ordersRes, itemsRes, productsRes, categoriesRes, visitorsRes] = await Promise.all([
-        supabase.from('orders').select('id, order_number, total, subtotal, status, created_at, utm_source, utm_medium, utm_campaign').order('created_at', { ascending: false }),
-        supabase.from('order_items').select('id, order_id, product_id, product_name, quantity, price'),
+      const [ordersData, itemsData, productsRes, categoriesRes, visitorsData] = await Promise.all([
+        fetchAllRows<OrderWithItems>(
+          supabase.from('orders')
+            .select('id, order_number, total, subtotal, status, created_at, utm_source, utm_medium, utm_campaign')
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false })
+        ),
+        fetchAllRows<OrderItem>(
+          supabase.from('order_items').select('id, order_id, product_id, product_name, quantity, price')
+        ),
         supabase.from('products').select('id, name, category_id, images'),
         supabase.from('categories').select('id, name'),
-        supabase.from('visitor_sessions').select('id, session_id, utm_source, utm_medium, utm_campaign, created_at'),
+        fetchAllRows<VisitorSession>(
+          supabase.from('visitor_sessions').select('id, session_id, utm_source, utm_medium, utm_campaign, created_at')
+        ),
       ]);
 
-      if (ordersRes.error) throw ordersRes.error;
-      if (itemsRes.error) throw itemsRes.error;
       if (productsRes.error) throw productsRes.error;
       if (categoriesRes.error) throw categoriesRes.error;
-      if (visitorsRes.error) throw visitorsRes.error;
 
-      setOrders(ordersRes.data || []);
-      setOrderItems(itemsRes.data || []);
+      setOrders(ordersData);
+      setOrderItems(itemsData);
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
-      setVisitorSessions(visitorsRes.data || []);
+      setVisitorSessions(visitorsData);
     } catch (error) {
       console.error('Error fetching analytics data:', error);
     } finally {

@@ -533,11 +533,11 @@ export default function AdminProducts() {
 
         {/* Selection Bar */}
         {selectedProductIds.length > 0 && (
-          <div className="bg-muted/50 border rounded-lg p-3 flex items-center justify-between">
+          <div className="bg-muted/50 border rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
             <span className="text-sm font-medium">
               {selectedProductIds.length} product(s) selected
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {activeTab === 'active' ? (
                 <>
                   <Button
@@ -551,7 +551,7 @@ export default function AdminProducts() {
                     ) : (
                       <Copy className="h-4 w-4 mr-1" />
                     )}
-                    Duplicate Selected
+                    Duplicate
                   </Button>
                   <Button
                     variant="destructive"
@@ -559,7 +559,7 @@ export default function AdminProducts() {
                     onClick={() => setIsBulkDeleteDialogOpen(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Move to Trash
+                    Trash
                   </Button>
                 </>
               ) : (
@@ -570,7 +570,7 @@ export default function AdminProducts() {
                     onClick={handleBulkRestore}
                   >
                     <ArchiveRestore className="h-4 w-4 mr-1" />
-                    Restore Selected
+                    Restore
                   </Button>
                   <Button
                     variant="destructive"
@@ -578,7 +578,7 @@ export default function AdminProducts() {
                     onClick={() => setIsBulkDeleteDialogOpen(true)}
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Delete Permanently
+                    Delete
                   </Button>
                 </>
               )}

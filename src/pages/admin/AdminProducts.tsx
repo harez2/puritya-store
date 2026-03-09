@@ -472,11 +472,11 @@ export default function AdminProducts() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-4">
+      <div className="space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Products</h1>
-            <p className="text-muted-foreground">Manage your product catalog</p>
+            <h1 className="text-2xl sm:text-3xl font-bold">Products</h1>
+            <p className="text-sm text-muted-foreground">Manage your product catalog</p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {activeTab === 'active' && (
@@ -492,7 +492,7 @@ export default function AdminProducts() {
                   categories={categories}
                   onImportComplete={fetchProducts}
                 />
-                <Button onClick={() => navigate('/admin/products/new')}>
+                <Button onClick={() => navigate('/admin/products/new')} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Product
                 </Button>

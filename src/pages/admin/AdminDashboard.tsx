@@ -375,10 +375,10 @@ export default function AdminDashboard() {
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden md:table-cell">
                           {getSourceBadge(order)}
                         </td>
-                        <td className="py-3 px-2 text-muted-foreground">
+                        <td className="py-3 px-2 text-muted-foreground hidden sm:table-cell">
                           <div className="flex flex-col">
                             <span>{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
                             <span className="text-xs">{format(new Date(order.created_at), 'h:mm a')}</span>

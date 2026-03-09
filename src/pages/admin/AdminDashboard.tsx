@@ -253,12 +253,35 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 min-w-0">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
           <p className="text-sm text-muted-foreground">Welcome back! Here's what's happening with your store.</p>
         </div>
 
+        {/* Stat Cards */}
+        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Revenue"
+            value={formatCurrency(stats.totalRevenue)}
+            icon={<DollarSign className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Total Orders"
+            value={stats.totalOrders}
+            icon={<ShoppingCart className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Products"
+            value={stats.totalProducts}
+            icon={<Package className="h-5 w-5" />}
+          />
+          <StatCard
+            title="Customers"
+            value={stats.totalCustomers}
+            icon={<Users className="h-5 w-5" />}
+          />
+        </div>
 
         {/* Low Stock Alert */}
         {lowStockProducts.length > 0 && (
@@ -331,11 +354,11 @@ export default function AdminDashboard() {
                     <tr className="border-b">
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Source</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden md:table-cell">Source</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
-                      <th className="text-center py-3 px-2 font-medium text-muted-foreground">Quick View</th>
+                      <th className="text-center py-3 px-2 font-medium text-muted-foreground hidden sm:table-cell">Quick View</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -352,10 +375,10 @@ export default function AdminDashboard() {
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden md:table-cell">
                           {getSourceBadge(order)}
                         </td>
-                        <td className="py-3 px-2 text-muted-foreground">
+                        <td className="py-3 px-2 text-muted-foreground hidden sm:table-cell">
                           <div className="flex flex-col">
                             <span>{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
                             <span className="text-xs">{format(new Date(order.created_at), 'h:mm a')}</span>
@@ -385,7 +408,7 @@ export default function AdminDashboard() {
                         <td className="py-3 px-2 text-right font-medium">
                           {formatCurrency(order.total)}
                         </td>
-                        <td className="py-3 px-2 text-center">
+                        <td className="py-3 px-2 text-center hidden sm:table-cell">
                           <Popover>
                             <PopoverTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8">

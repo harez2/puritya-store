@@ -804,7 +804,7 @@ export default function AdminOrders() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6 min-w-0">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold">Orders</h1>
@@ -964,14 +964,14 @@ export default function AdminOrders() {
               <div className="space-y-4">
                 {/* Bulk Action Bar */}
                 {selectedOrderIds.size > 0 && (
-                  <div className="flex items-center gap-4 p-3 bg-primary/10 border border-primary/20 rounded-lg flex-wrap">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-primary/10 border border-primary/20 rounded-lg">
                     <div className="flex items-center gap-2">
                       <CheckSquare className="h-4 w-4 text-primary" />
                       <span className="font-medium text-sm">
                         {selectedOrderIds.size} order{selectedOrderIds.size > 1 ? 's' : ''} selected
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 ml-auto flex-wrap">
+                    <div className="flex items-center gap-2 sm:ml-auto flex-wrap">
                       <span className="text-sm text-muted-foreground">Update to:</span>
                       <Select onValueChange={openBulkUpdateDialog}>
                         <SelectTrigger className="w-[140px] h-8">
@@ -1059,10 +1059,10 @@ export default function AdminOrders() {
                       </th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Order</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Customer</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Date & Time</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden md:table-cell">Date & Time</th>
                       <th className="text-left py-3 px-2 font-medium text-muted-foreground">Status</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Payment</th>
-                      <th className="text-left py-3 px-2 font-medium text-muted-foreground">Courier</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden lg:table-cell">Payment</th>
+                      <th className="text-left py-3 px-2 font-medium text-muted-foreground hidden xl:table-cell">Courier</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Total</th>
                       <th className="text-right py-3 px-2 font-medium text-muted-foreground">Actions</th>
                     </tr>
@@ -1086,7 +1086,7 @@ export default function AdminOrders() {
                             )}
                           </div>
                         </td>
-                        <td className="py-3 px-2 text-muted-foreground">
+                        <td className="py-3 px-2 text-muted-foreground hidden md:table-cell">
                           <div className="flex flex-col">
                             <span className="text-sm">{format(new Date(order.created_at), 'MMM d, yyyy')}</span>
                             <span className="text-xs">{format(new Date(order.created_at), 'hh:mm a')}</span>
@@ -1113,7 +1113,7 @@ export default function AdminOrders() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden lg:table-cell">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs font-medium text-muted-foreground capitalize">
                               {order.payment_method || 'N/A'}
@@ -1139,7 +1139,7 @@ export default function AdminOrders() {
                             </Select>
                           </div>
                         </td>
-                        <td className="py-3 px-2">
+                        <td className="py-3 px-2 hidden xl:table-cell">
                           {order.courier_tracking_code ? (
                             <div className="flex flex-col gap-1">
                               <a

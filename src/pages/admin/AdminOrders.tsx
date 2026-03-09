@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink, ShoppingCart, Package, CreditCard, TrendingUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
@@ -57,6 +57,7 @@ import { cn } from '@/lib/utils';
 import { useSendOrderSms } from '@/hooks/useSendOrderSms';
 import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { generateInvoice, InvoiceConfig, defaultInvoiceConfig } from '@/components/admin/OrderInvoice';
+import { StatCard } from '@/components/admin/StatCard';
 
 interface Order {
   id: string;
@@ -813,6 +814,29 @@ export default function AdminOrders() {
             <Plus className="h-4 w-4 mr-2" />
             Create Order
           </Button>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <StatCard
+            title="Total Orders"
+            value={orders.length}
+            icon={<ShoppingCart className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Pending Orders"
+            value={orders.filter(o => o.status === 'pending').length}
+            icon={<Clock className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Delivered"
+            value={orders.filter(o => o.status === 'delivered').length}
+            icon={<Package className="h-4 w-4" />}
+          />
+          <StatCard
+            title="Total Revenue"
+            value={new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(orders.reduce((sum, o) => sum + Number(o.total), 0))}
+            icon={<TrendingUp className="h-4 w-4" />}
+          />
         </div>
 
         <Tabs defaultValue="orders" className="space-y-4">

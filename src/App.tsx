@@ -53,6 +53,7 @@ import AdminLandingPageEditor from "./pages/admin/AdminLandingPageEditor";
 import AdminLandingPageAnalytics from "./pages/admin/AdminLandingPageAnalytics";
 import AdminPOS from "./pages/admin/AdminPOS";
 import AdminSmsCampaigns from "./pages/admin/AdminSmsCampaigns";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
@@ -125,6 +126,7 @@ const App = () => (
                         <Route path="/admin/landing-pages/:id/analytics" element={<AdminLandingPageAnalytics />} />
                         <Route path="/admin/pos" element={<AdminPOS />} />
                         <Route path="/admin/sms-campaigns" element={<AdminSmsCampaigns />} />
+                        <Route path="/admin/analytics" element={<AdminAnalytics />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
                         {/* Landing pages - public facing */}
                         <Route path="/lp/:slug" element={<LandingPage />} />

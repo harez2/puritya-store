@@ -1,52 +1,46 @@
 
 
-## Detailed Analytics Page for Admin Panel
+## Invoice Customization System
 
-### What We're Building
-A new **Admin Analytics** page (`/admin/analytics`) with comprehensive e-commerce analytics organized into tabbed sections, each with customizable date range and filter controls.
+### Overview
+Two changes: (1) Add a total quantity summary row to the invoice table, and (2) build an admin Invoice Customization section where admins can toggle on/off each invoice element.
 
-### Page Structure
+### Changes
 
-**Global Filter Bar** (top of page, applies to all tabs):
-- Date range picker (Today, 7d, 30d, 90d, 1y, Custom)
-- Order status filter
-- Order source filter (Cart, POS, Manual)
-- Category filter
-- Export button (CSV/PDF)
+**1. Add total quantity row to invoice (`OrderInvoice.tsx`)**
+- After the items table body, add a summary row showing "Total Items" with the sum of all quantities.
+- This appears as a bold footer row in the autoTable output.
 
-**Tabs:**
+**2. Create Invoice Settings UI (`InvoiceSettingsEditor.tsx`)**
+- New component with toggles for each invoice element:
+  - Show Logo / Store Name
+  - Show Invoice Number
+  - Show Date
+  - Show Order Status
+  - Show Payment Status
+  - Show Bill To (customer info)
+  - Show Payment Method
+  - Show Items Table
+  - Show Total Quantity Row
+  - Show Subtotal
+  - Show Shipping Fee
+  - Show Total
+  - Show Notes
+  - Custom Footer Text (text input, e.g. "Thank you for your purchase!")
+- Stored as `invoice_settings` key in `site_settings` table.
 
-1. **Revenue & Orders** - Revenue over time chart, orders over time, AOV trend, revenue by payment method, orders by status breakdown, revenue by source (Cart/POS/Manual)
+**3. Update `generateInvoice` to respect settings**
+- Accept an optional `invoiceConfig` parameter with the toggle values.
+- Conditionally render each section based on the config.
+- Default all toggles to `true` for backward compatibility.
 
-2. **Customer Analytics** - Total unique customers, new vs returning, Customer LTV distribution, top customers by lifetime value, top customers by order count, average orders per customer, customer city/region breakdown
+**4. Wire it up**
+- Add the `InvoiceSettingsEditor` card to `AdminSettings.tsx`.
+- Where `generateInvoice` is called, fetch `invoice_settings` from site settings and pass it through.
 
-3. **Product Performance** - Top selling products by quantity & revenue, least selling products, product category performance, stock-to-sales ratio, products never sold
-
-4. **Inventory** - Current stock levels overview, low stock alerts, out-of-stock products, stock value (quantity × price), category-wise inventory distribution, stock movement (sold vs remaining)
-
-5. **Marketing & UTM** - Revenue by UTM source/medium/campaign, conversion rates by source, visitor sessions over time, top referrers (reuse existing OrderAnalytics UTM logic)
-
-### Technical Approach
-
-**Files to create:**
-- `src/pages/admin/AdminAnalytics.tsx` - Main page with tabs and global filters
-- `src/components/admin/analytics/RevenueAnalytics.tsx` - Revenue & Orders tab
-- `src/components/admin/analytics/CustomerAnalytics.tsx` - Customer LTV & insights
-- `src/components/admin/analytics/ProductAnalytics.tsx` - Product performance
-- `src/components/admin/analytics/InventoryAnalytics.tsx` - Stock overview
-- `src/components/admin/analytics/MarketingAnalytics.tsx` - UTM & traffic
-
-**Files to modify:**
-- `src/App.tsx` - Add route `/admin/analytics`
-- `src/components/admin/AdminSidebar.tsx` - Add "Analytics" nav item with `BarChart3` icon
-
-**Data sources** - All from existing tables (no DB changes needed):
-- `orders` + `order_items` for revenue, product sales, customer data
-- `products` + `product_variants` for inventory
-- `categories` for category breakdowns
-- `visitor_sessions` for traffic/UTM data
-
-**Libraries** - Existing `recharts` for all charts (BarChart, PieChart, LineChart, AreaChart)
-
-**Responsive** - Uses the established admin layout patterns: `flex-col sm:flex-row` headers, responsive grids `grid-cols-1 sm:grid-cols-2 lg:grid-cols-4` for stat cards, scrollable tables on mobile.
+### Files
+- **Edit**: `src/components/admin/OrderInvoice.tsx` — add total qty row + config-driven rendering
+- **New**: `src/components/admin/InvoiceSettingsEditor.tsx` — admin UI for invoice customization
+- **Edit**: `src/pages/admin/AdminSettings.tsx` — mount InvoiceSettingsEditor
+- **Edit**: Wherever `generateInvoice` is called — pass invoice settings
 

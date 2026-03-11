@@ -126,6 +126,7 @@ const App = () => (
                         <Route path="/admin/landing-pages/:id/analytics" element={<AdminLandingPageAnalytics />} />
                         <Route path="/admin/pos" element={<AdminPOS />} />
                         <Route path="/admin/sms-campaigns" element={<AdminSmsCampaigns />} />
+                        <Route path="/admin/analytics" element={<AdminAnalytics />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
                         {/* Landing pages - public facing */}
                         <Route path="/lp/:slug" element={<LandingPage />} />

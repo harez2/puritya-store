@@ -604,7 +604,13 @@ export default function AdminOrders() {
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.order_number.toLowerCase().includes(searchQuery.toLowerCase());
+    const shipping = order.shipping_address || {};
+    const customerName = shipping.full_name || '';
+    const phone = shipping.phone || '';
+    const matchesSearch = 
+      order.order_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      phone.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     
     const orderDate = new Date(order.created_at);
@@ -862,7 +868,7 @@ export default function AdminOrders() {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Search by order number..."
+                    placeholder="Search by order number, name or phone..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-9"

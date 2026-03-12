@@ -824,27 +824,91 @@ export default function AdminOrders() {
           </Button>
         </div>
 
-        <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Orders"
-            value={filteredOrders.length}
-            icon={<ShoppingCart className="h-4 w-4" />}
-          />
-          <StatCard
-            title="Pending Orders"
-            value={filteredOrders.filter(o => o.status === 'pending').length}
-            icon={<Clock className="h-4 w-4" />}
-          />
-          <StatCard
-            title="Delivered"
-            value={filteredOrders.filter(o => o.status === 'delivered').length}
-            icon={<Package className="h-4 w-4" />}
-          />
-          <StatCard
-            title="Total Revenue"
-            value={new Intl.NumberFormat('en-BD', { style: 'currency', currency: 'BDT', minimumFractionDigits: 0 }).format(filteredOrders.reduce((sum, o) => sum + Number(o.total), 0))}
-            icon={<TrendingUp className="h-4 w-4" />}
-          />
+        <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-4 lg:grid-cols-8">
+          {/* Total Orders */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Total</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.length}</p>
+            </CardContent>
+          </Card>
+          
+          {/* Pending */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Pending</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'pending').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'pending').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Processing */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Processing</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'processing').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'processing').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Shipped */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Shipped</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'shipped').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'shipped').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Delivered */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Delivered</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'delivered').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Returned */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Returned</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'returned').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'returned').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Cancelled */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Cancelled</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'cancelled').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'cancelled').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Total Revenue */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Revenue</p>
+              <p className="text-base sm:text-lg font-bold truncate">
+                {formatCurrency(filteredOrders.filter(o => !['cancelled', 'returned'].includes(o.status)).reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+              <p className="text-[10px] text-muted-foreground">Excl. cancelled/returned</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="orders" className="space-y-4">

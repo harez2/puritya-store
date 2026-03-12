@@ -826,7 +826,7 @@ export default function AdminOrders() {
 
         <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-4 lg:grid-cols-8">
           {/* Total Orders */}
-          <Card className="bg-muted/30">
+          <Card>
             <CardContent className="p-2 sm:p-3">
               <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Total</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.length}</p>
@@ -834,9 +834,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Pending */}
-          <Card className="bg-yellow-50/50 border-yellow-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-yellow-600 uppercase tracking-wide">Pending</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Pending</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'pending').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'pending').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -845,9 +845,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Processing */}
-          <Card className="bg-blue-50/50 border-blue-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-blue-600 uppercase tracking-wide">Processing</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Processing</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'processing').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'processing').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -856,9 +856,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Shipped */}
-          <Card className="bg-purple-50/50 border-purple-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-purple-600 uppercase tracking-wide">Shipped</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Shipped</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'shipped').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'shipped').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -867,9 +867,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Delivered */}
-          <Card className="bg-green-50/50 border-green-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-green-600 uppercase tracking-wide">Delivered</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Delivered</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'delivered').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'delivered').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -878,9 +878,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Returned */}
-          <Card className="bg-orange-50/50 border-orange-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-orange-600 uppercase tracking-wide">Returned</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Returned</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'returned').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'returned').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -889,9 +889,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Cancelled */}
-          <Card className="bg-red-50/50 border-red-200">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-red-600 uppercase tracking-wide">Cancelled</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Cancelled</p>
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'cancelled').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'cancelled').reduce((sum, o) => sum + Number(o.total), 0))}
@@ -900,9 +900,9 @@ export default function AdminOrders() {
           </Card>
           
           {/* Total Revenue */}
-          <Card className="bg-primary/5 border-primary/20">
+          <Card>
             <CardContent className="p-2 sm:p-3">
-              <p className="text-[10px] sm:text-xs text-primary uppercase tracking-wide">Revenue</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Revenue</p>
               <p className="text-base sm:text-lg font-bold truncate">
                 {formatCurrency(filteredOrders.filter(o => !['cancelled', 'returned'].includes(o.status)).reduce((sum, o) => sum + Number(o.total), 0))}
               </p>

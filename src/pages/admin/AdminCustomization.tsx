@@ -1421,14 +1421,15 @@ export default function AdminCustomization() {
                   <div className="flex gap-2">
                     <Input
                       readOnly
-                      value="https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap"
+                      value={`${localSettings.store_url || 'https://puritya-store.lovable.app'}/sitemap.xml`}
                       className="font-mono text-sm"
                     />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText('https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap');
+                        const sitemapUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/sitemap`;
+                        navigator.clipboard.writeText(sitemapUrl);
                         toast({ title: 'Copied!', description: 'Sitemap URL copied to clipboard' });
                       }}
                     >
@@ -1439,7 +1440,7 @@ export default function AdminCustomization() {
                       size="icon"
                       asChild
                     >
-                      <a href="https://kmbcslfbhpcmxvdsokja.supabase.co/functions/v1/sitemap" target="_blank" rel="noopener noreferrer">
+                      <a href={`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/sitemap`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>
@@ -1454,14 +1455,15 @@ export default function AdminCustomization() {
                   <div className="flex gap-2">
                     <Input
                       readOnly
-                      value="https://puritya-store.lovable.app/robots.txt"
+                      value={`${localSettings.store_url || 'https://puritya-store.lovable.app'}/robots.txt`}
                       className="font-mono text-sm"
                     />
                     <Button
                       variant="outline"
                       size="icon"
                       onClick={() => {
-                        navigator.clipboard.writeText('https://puritya-store.lovable.app/robots.txt');
+                        const robotsUrl = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/robots`;
+                        navigator.clipboard.writeText(robotsUrl);
                         toast({ title: 'Copied!', description: 'Robots.txt URL copied to clipboard' });
                       }}
                     >
@@ -1472,7 +1474,7 @@ export default function AdminCustomization() {
                       size="icon"
                       asChild
                     >
-                      <a href="https://puritya-store.lovable.app/robots.txt" target="_blank" rel="noopener noreferrer">
+                      <a href={`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/robots`} target="_blank" rel="noopener noreferrer">
                         <ExternalLink className="h-4 w-4" />
                       </a>
                     </Button>

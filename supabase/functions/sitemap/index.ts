@@ -34,9 +34,21 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get base URL from request or environment
+    // Get base URL from query param or store_url setting
     const url = new URL(req.url);
-    const baseUrl = url.searchParams.get("base_url") || "https://puritya-store.lovable.app";
+    let baseUrl = url.searchParams.get("base_url") || "";
+
+    if (!baseUrl) {
+      const { data: storeUrlSetting } = await supabase
+        .from("site_settings")
+        .select("value")
+        .eq("key", "store_url")
+        .maybeSingle();
+
+      baseUrl = (typeof storeUrlSetting?.value === 'string'
+        ? storeUrlSetting.value.trim().replace(/\/$/, '')
+        : '') || "https://puritya-store.lovable.app";
+    }
 
     console.log("Generating sitemap for base URL:", baseUrl);
 

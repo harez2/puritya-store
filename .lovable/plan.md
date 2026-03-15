@@ -1,62 +1,46 @@
 
 
-## Dynamic Sitemap & Robots.txt with Store URL
+## Invoice Customization System
 
-### Problem
-Currently, both the `robots.txt` file and the `sitemap` edge function use hardcoded URLs (`https://puritya-store.lovable.app`) instead of dynamically pulling from the `store_url` setting in the `site_settings` table. This means they won't reflect the actual custom domain configured by the admin.
+### Overview
+Two changes: (1) Add a total quantity summary row to the invoice table, and (2) build an admin Invoice Customization section where admins can toggle on/off each invoice element.
 
-### Solution
+### Changes
 
-**1. Convert robots.txt to an Edge Function**
-- Create `supabase/functions/robots/index.ts` that:
-  - Reads `store_url` from `site_settings` table (following the pattern used in `facebook-feed`)
-  - Falls back to Lovable preview URL if not set
-  - Generates dynamic robots.txt with correct sitemap URL and domain references
-  - Returns `text/plain` content type
+**1. Add total quantity row to invoice (`OrderInvoice.tsx`)**
+- After the items table body, add a summary row showing "Total Items" with the sum of all quantities.
+- This appears as a bold footer row in the autoTable output.
 
-**2. Update Sitemap Function**
-- Modify `supabase/functions/sitemap/index.ts`:
-  - Replace hardcoded fallback with database lookup
-  - Read `store_url` from `site_settings` table (already has this pattern in facebook-feed)
-  - Use the configured domain instead of hardcoded `https://puritya-store.lovable.app`
+**2. Create Invoice Settings UI (`InvoiceSettingsEditor.tsx`)**
+- New component with toggles for each invoice element:
+  - Show Logo / Store Name
+  - Show Invoice Number
+  - Show Date
+  - Show Order Status
+  - Show Payment Status
+  - Show Bill To (customer info)
+  - Show Payment Method
+  - Show Items Table
+  - Show Total Quantity Row
+  - Show Subtotal
+  - Show Shipping Fee
+  - Show Total
+  - Show Notes
+  - Custom Footer Text (text input, e.g. "Thank you for your purchase!")
+- Stored as `invoice_settings` key in `site_settings` table.
 
-**3. Update Supabase Config**
-- Add `robots` function configuration to `supabase/config.toml` with `verify_jwt = false`
+**3. Update `generateInvoice` to respect settings**
+- Accept an optional `invoiceConfig` parameter with the toggle values.
+- Conditionally render each section based on the config.
+- Default all toggles to `true` for backward compatibility.
 
-**4. Remove Static File**
-- Delete `public/robots.txt` since it will now be served dynamically
+**4. Wire it up**
+- Add the `InvoiceSettingsEditor` card to `AdminSettings.tsx`.
+- Where `generateInvoice` is called, fetch `invoice_settings` from site settings and pass it through.
 
-### Technical Details
-
-**Database Query Pattern** (reuse from facebook-feed):
-```typescript
-const { data: storeUrlSetting } = await supabase
-  .from('site_settings')
-  .select('value')
-  .eq('key', 'store_url')
-  .maybeSingle();
-
-const storeUrl = storeUrlSetting?.value?.trim().replace(/\/$/, '') 
-  || 'https://puritya-store.lovable.app';
-```
-
-**Robots.txt Content** (dynamic):
-- Sitemap URL: `{storeUrl}/robots/sitemap` (points to edge function)
-- Disallow URLs use relative paths (no domain needed)
-- All domain references use `storeUrl` variable
-
-**Files to Modify:**
-- `supabase/functions/sitemap/index.ts` - Update baseUrl logic
-- `supabase/config.toml` - Add robots function config
-
-**Files to Create:**
-- `supabase/functions/robots/index.ts` - New edge function
-
-**Files to Delete:**
-- `public/robots.txt` - No longer needed
-
-### Result
-- SEO tools will see the correct custom domain in both robots.txt and sitemap.xml
-- Admin can change domain in Settings → Store URL and both files update automatically
-- Falls back gracefully to Lovable preview URL if no custom domain is configured
+### Files
+- **Edit**: `src/components/admin/OrderInvoice.tsx` — add total qty row + config-driven rendering
+- **New**: `src/components/admin/InvoiceSettingsEditor.tsx` — admin UI for invoice customization
+- **Edit**: `src/pages/admin/AdminSettings.tsx` — mount InvoiceSettingsEditor
+- **Edit**: Wherever `generateInvoice` is called — pass invoice settings
 

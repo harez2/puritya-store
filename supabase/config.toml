@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.send-sms-campaign]
 verify_jwt = false
+
+[functions.robots]
+verify_jwt = false

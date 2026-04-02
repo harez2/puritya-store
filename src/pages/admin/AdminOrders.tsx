@@ -1335,6 +1335,10 @@ export default function AdminOrders() {
                           {formatCurrency(order.total)}
                         </td>
                         <td className="py-3 px-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewDetails(order)} title="View Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">

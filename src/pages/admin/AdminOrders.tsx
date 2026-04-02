@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
 import { IncompleteOrdersTab } from '@/components/admin/IncompleteOrdersTab';
 import { EditOrderDialog } from '@/components/admin/EditOrderDialog';
+import { StatusUpdateDialog } from '@/components/admin/StatusUpdateDialog';
+import { OrderNotesInput } from '@/components/admin/OrderNotesInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';

@@ -1238,7 +1238,19 @@ export default function AdminOrders() {
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
                         <td className="py-3 px-2">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{order.shipping_address?.full_name || '—'}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium">{order.shipping_address?.full_name || '—'}</span>
+                              {(() => {
+                                const phone = order.shipping_address?.phone;
+                                const count = phone ? (customerOrderCounts.get(phone) || 0) : 0;
+                                return count > 1 ? (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200">
+                                    <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-500 text-amber-500" />
+                                    {count}
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
                             {(order.shipping_address?.phone) && (
                               <span className="text-xs text-muted-foreground">{order.shipping_address.phone}</span>
                             )}

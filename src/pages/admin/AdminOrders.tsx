@@ -1416,6 +1416,7 @@ export default function AdminOrders() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     ))}

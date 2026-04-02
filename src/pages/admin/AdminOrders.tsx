@@ -511,7 +511,6 @@ export default function AdminOrders() {
   const openStatusUpdateDialog = (orderId: string, newStatus: string) => {
     setStatusUpdateOrderId(orderId);
     setStatusUpdateNewStatus(newStatus);
-    setStatusUpdateNotes('');
     setIsStatusUpdateOpen(true);
   };
 

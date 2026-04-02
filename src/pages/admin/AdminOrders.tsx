@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink, ShoppingCart, Package, CreditCard, TrendingUp } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink, ShoppingCart, Package, CreditCard, TrendingUp, MessageSquarePlus, Star, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';

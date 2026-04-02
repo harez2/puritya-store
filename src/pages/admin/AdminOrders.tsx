@@ -194,6 +194,7 @@ export default function AdminOrders() {
       console.error('Error fetching trashed orders:', error);
     } finally {
       setTrashLoading(false);
+    }
   }
 
   async function fetchCustomerOrderCounts() {

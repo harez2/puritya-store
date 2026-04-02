@@ -919,6 +919,17 @@ export default function AdminOrders() {
             </CardContent>
           </Card>
           
+          {/* Confirmed */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Confirmed</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'confirmed').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'confirmed').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
           {/* Processing */}
           <Card>
             <CardContent className="p-2 sm:p-3">

@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
 import { IncompleteOrdersTab } from '@/components/admin/IncompleteOrdersTab';
 import { EditOrderDialog } from '@/components/admin/EditOrderDialog';
+import { StatusUpdateDialog } from '@/components/admin/StatusUpdateDialog';
+import { OrderNotesInput } from '@/components/admin/OrderNotesInput';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
@@ -135,7 +137,7 @@ export default function AdminOrders() {
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
   const [statusUpdateOrderId, setStatusUpdateOrderId] = useState<string | null>(null);
   const [statusUpdateNewStatus, setStatusUpdateNewStatus] = useState<string>('');
-  const [statusUpdateNotes, setStatusUpdateNotes] = useState('');
+  
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());
@@ -152,8 +154,6 @@ export default function AdminOrders() {
   const [courierLoading, setCourierLoading] = useState<Set<string>>(new Set());
   const [customerOrderCounts, setCustomerOrderCounts] = useState<Map<string, number>>(new Map());
   const [orderNotes, setOrderNotes] = useState<any[]>([]);
-  const [newNoteText, setNewNoteText] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -242,26 +242,18 @@ export default function AdminOrders() {
     }
   }
 
-  async function handleAddNote() {
-    if (!selectedOrder || !newNoteText.trim()) return;
-    setAddingNote(true);
-    try {
-      const { error } = await supabase
-        .from('order_notes')
-        .insert({
-          order_id: selectedOrder.id,
-          note: newNoteText.trim(),
-          created_by: user?.id,
-        });
-      if (error) throw error;
-      toast.success('Note added');
-      setNewNoteText('');
-      fetchOrderNotes(selectedOrder.id);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add note');
-    } finally {
-      setAddingNote(false);
-    }
+  async function handleAddNote(noteText: string) {
+    if (!selectedOrder) return;
+    const { error } = await supabase
+      .from('order_notes')
+      .insert({
+        order_id: selectedOrder.id,
+        note: noteText,
+        created_by: user?.id,
+      });
+    if (error) throw error;
+    toast.success('Note added');
+    fetchOrderNotes(selectedOrder.id);
   }
 
   const handleSendToCourier = async (orderId: string) => {
@@ -511,7 +503,7 @@ export default function AdminOrders() {
 
   const handleViewDetails = async (order: Order) => {
     setSelectedOrder(order);
-    setNewNoteText('');
+    
     await Promise.all([fetchOrderItems(order.id), fetchStatusHistory(order.id), fetchOrderNotes(order.id)]);
     setIsDetailsOpen(true);
   };
@@ -519,11 +511,10 @@ export default function AdminOrders() {
   const openStatusUpdateDialog = (orderId: string, newStatus: string) => {
     setStatusUpdateOrderId(orderId);
     setStatusUpdateNewStatus(newStatus);
-    setStatusUpdateNotes('');
     setIsStatusUpdateOpen(true);
   };
 
-  const handleUpdateStatus = async () => {
+  const handleUpdateStatus = async (notes?: string) => {
     if (!statusUpdateOrderId || !statusUpdateNewStatus) return;
     
     const order = orders.find(o => o.id === statusUpdateOrderId);
@@ -544,7 +535,7 @@ export default function AdminOrders() {
           old_status: oldStatus,
           new_status: statusUpdateNewStatus,
           changed_by: user?.id,
-          notes: statusUpdateNotes.trim() || null,
+          notes: notes?.trim() || null,
         });
 
       if (historyError) {
@@ -1825,23 +1816,7 @@ export default function AdminOrders() {
                   Admin Notes
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Add an internal note..."
-                      value={newNoteText}
-                      onChange={(e) => setNewNoteText(e.target.value)}
-                      rows={2}
-                      className="flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddNote}
-                      disabled={addingNote || !newNoteText.trim()}
-                      className="self-end"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                  <OrderNotesInput onSubmit={handleAddNote} />
                   {orderNotes.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No internal notes yet.</p>
                   ) : (
@@ -1871,44 +1846,13 @@ export default function AdminOrders() {
       </Dialog>
 
       {/* Status Update Dialog with Notes */}
-      <Dialog open={isStatusUpdateOpen} onOpenChange={setIsStatusUpdateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Update Order Status</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-sm text-muted-foreground">New Status</Label>
-              <div className="mt-1">
-                <Badge variant="outline" className={`capitalize ${getStatusColor(statusUpdateNewStatus)}`}>
-                  {statusUpdateNewStatus}
-                </Badge>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="status-notes">Notes (optional)</Label>
-              <Textarea
-                id="status-notes"
-                placeholder="Add context for this status change..."
-                value={statusUpdateNotes}
-                onChange={(e) => setStatusUpdateNotes(e.target.value)}
-                rows={3}
-              />
-              <p className="text-xs text-muted-foreground">
-                This note will be visible in the order's status history.
-              </p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setIsStatusUpdateOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateStatus}>
-                Update Status
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      <StatusUpdateDialog
+        open={isStatusUpdateOpen}
+        onOpenChange={setIsStatusUpdateOpen}
+        newStatus={statusUpdateNewStatus}
+        getStatusColor={getStatusColor}
+        onConfirm={(notes) => handleUpdateStatus(notes)}
+      />
 
       {/* Bulk Status Update Dialog */}
       <Dialog open={isBulkUpdateOpen} onOpenChange={setIsBulkUpdateOpen}>

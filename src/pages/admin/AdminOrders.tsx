@@ -242,26 +242,18 @@ export default function AdminOrders() {
     }
   }
 
-  async function handleAddNote() {
-    if (!selectedOrder || !newNoteText.trim()) return;
-    setAddingNote(true);
-    try {
-      const { error } = await supabase
-        .from('order_notes')
-        .insert({
-          order_id: selectedOrder.id,
-          note: newNoteText.trim(),
-          created_by: user?.id,
-        });
-      if (error) throw error;
-      toast.success('Note added');
-      setNewNoteText('');
-      fetchOrderNotes(selectedOrder.id);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to add note');
-    } finally {
-      setAddingNote(false);
-    }
+  async function handleAddNote(noteText: string) {
+    if (!selectedOrder) return;
+    const { error } = await supabase
+      .from('order_notes')
+      .insert({
+        order_id: selectedOrder.id,
+        note: noteText,
+        created_by: user?.id,
+      });
+    if (error) throw error;
+    toast.success('Note added');
+    fetchOrderNotes(selectedOrder.id);
   }
 
   const handleSendToCourier = async (orderId: string) => {

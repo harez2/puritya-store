@@ -899,7 +899,7 @@ export default function AdminOrders() {
           </Button>
         </div>
 
-        <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-4 lg:grid-cols-8">
+        <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-5 lg:grid-cols-9">
           {/* Total Orders */}
           <Card>
             <CardContent className="p-2 sm:p-3">

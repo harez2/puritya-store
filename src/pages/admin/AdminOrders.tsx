@@ -158,6 +158,7 @@ export default function AdminOrders() {
   useEffect(() => {
     fetchOrders();
     fetchTrashedOrders();
+    fetchCustomerOrderCounts();
   }, []);
 
   async function fetchOrders() {

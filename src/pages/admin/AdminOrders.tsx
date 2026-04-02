@@ -514,7 +514,7 @@ export default function AdminOrders() {
     setIsStatusUpdateOpen(true);
   };
 
-  const handleUpdateStatus = async () => {
+  const handleUpdateStatus = async (notes?: string) => {
     if (!statusUpdateOrderId || !statusUpdateNewStatus) return;
     
     const order = orders.find(o => o.id === statusUpdateOrderId);
@@ -535,7 +535,7 @@ export default function AdminOrders() {
           old_status: oldStatus,
           new_status: statusUpdateNewStatus,
           changed_by: user?.id,
-          notes: statusUpdateNotes.trim() || null,
+          notes: notes?.trim() || null,
         });
 
       if (historyError) {

@@ -137,7 +137,7 @@ export default function AdminOrders() {
   const [isStatusUpdateOpen, setIsStatusUpdateOpen] = useState(false);
   const [statusUpdateOrderId, setStatusUpdateOrderId] = useState<string | null>(null);
   const [statusUpdateNewStatus, setStatusUpdateNewStatus] = useState<string>('');
-  const [statusUpdateNotes, setStatusUpdateNotes] = useState('');
+  
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
   const [selectedOrderIds, setSelectedOrderIds] = useState<Set<string>>(new Set());

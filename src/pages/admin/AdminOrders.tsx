@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink, ShoppingCart, Package, CreditCard, TrendingUp } from 'lucide-react';
+import { Search, Eye, MoreHorizontal, Clock, User, FileText, CalendarIcon, X, Download, CheckSquare, Plus, Pencil, Trash2, RotateCcw, AlertTriangle, Truck, RefreshCw, ExternalLink, ShoppingCart, Package, CreditCard, TrendingUp, MessageSquarePlus, Star, Send } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ManualOrderDialog } from '@/components/admin/ManualOrderDialog';
@@ -102,6 +102,7 @@ interface StatusHistory {
 
 const statusOptions = [
   { value: 'pending', label: 'Pending' },
+  { value: 'confirmed', label: 'Confirmed' },
   { value: 'processing', label: 'Processing' },
   { value: 'shipped', label: 'Shipped' },
   { value: 'delivered', label: 'Delivered' },
@@ -149,10 +150,15 @@ export default function AdminOrders() {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [selectedTrashIds, setSelectedTrashIds] = useState<Set<string>>(new Set());
   const [courierLoading, setCourierLoading] = useState<Set<string>>(new Set());
+  const [customerOrderCounts, setCustomerOrderCounts] = useState<Map<string, number>>(new Map());
+  const [orderNotes, setOrderNotes] = useState<any[]>([]);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     fetchOrders();
     fetchTrashedOrders();
+    fetchCustomerOrderCounts();
   }, []);
 
   async function fetchOrders() {
@@ -188,6 +194,73 @@ export default function AdminOrders() {
       console.error('Error fetching trashed orders:', error);
     } finally {
       setTrashLoading(false);
+    }
+  }
+
+  async function fetchCustomerOrderCounts() {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('shipping_address')
+        .is('deleted_at', null);
+      if (error) throw error;
+      const counts = new Map<string, number>();
+      (data || []).forEach((o: any) => {
+        const phone = o.shipping_address?.phone;
+        if (phone) counts.set(phone, (counts.get(phone) || 0) + 1);
+      });
+      setCustomerOrderCounts(counts);
+    } catch (err) {
+      console.error('Error fetching customer order counts:', err);
+    }
+  }
+
+  async function fetchOrderNotes(orderId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('order_notes')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const notesWithNames: any[] = [];
+      for (const note of data || []) {
+        let createdByName = 'Admin';
+        if (note.created_by) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', note.created_by)
+            .maybeSingle();
+          createdByName = profile?.full_name || 'Admin';
+        }
+        notesWithNames.push({ ...note, created_by_name: createdByName });
+      }
+      setOrderNotes(notesWithNames);
+    } catch (err) {
+      console.error('Error fetching order notes:', err);
+    }
+  }
+
+  async function handleAddNote() {
+    if (!selectedOrder || !newNoteText.trim()) return;
+    setAddingNote(true);
+    try {
+      const { error } = await supabase
+        .from('order_notes')
+        .insert({
+          order_id: selectedOrder.id,
+          note: newNoteText.trim(),
+          created_by: user?.id,
+        });
+      if (error) throw error;
+      toast.success('Note added');
+      setNewNoteText('');
+      fetchOrderNotes(selectedOrder.id);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add note');
+    } finally {
+      setAddingNote(false);
     }
   }
 
@@ -438,7 +511,8 @@ export default function AdminOrders() {
 
   const handleViewDetails = async (order: Order) => {
     setSelectedOrder(order);
-    await Promise.all([fetchOrderItems(order.id), fetchStatusHistory(order.id)]);
+    setNewNoteText('');
+    await Promise.all([fetchOrderItems(order.id), fetchStatusHistory(order.id), fetchOrderNotes(order.id)]);
     setIsDetailsOpen(true);
   };
 
@@ -777,6 +851,7 @@ export default function AdminOrders() {
       case 'delivered': return 'bg-green-100 text-green-800 border-green-200';
       case 'shipped': return 'bg-blue-100 text-blue-800 border-blue-200';
       case 'processing': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'confirmed': return 'bg-teal-100 text-teal-800 border-teal-200';
       case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
       case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
       case 'returned': return 'bg-orange-100 text-orange-800 border-orange-200';
@@ -824,7 +899,7 @@ export default function AdminOrders() {
           </Button>
         </div>
 
-        <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-4 lg:grid-cols-8">
+        <div className="grid gap-2 sm:gap-3 grid-cols-3 sm:grid-cols-5 lg:grid-cols-9">
           {/* Total Orders */}
           <Card>
             <CardContent className="p-2 sm:p-3">
@@ -840,6 +915,17 @@ export default function AdminOrders() {
               <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'pending').length}</p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">
                 {formatCurrency(filteredOrders.filter(o => o.status === 'pending').reduce((sum, o) => sum + Number(o.total), 0))}
+              </p>
+            </CardContent>
+          </Card>
+          
+          {/* Confirmed */}
+          <Card>
+            <CardContent className="p-2 sm:p-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wide">Confirmed</p>
+              <p className="text-lg sm:text-xl font-bold">{filteredOrders.filter(o => o.status === 'confirmed').length}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">
+                {formatCurrency(filteredOrders.filter(o => o.status === 'confirmed').reduce((sum, o) => sum + Number(o.total), 0))}
               </p>
             </CardContent>
           </Card>
@@ -1152,7 +1238,19 @@ export default function AdminOrders() {
                         <td className="py-3 px-2 font-medium">{order.order_number}</td>
                         <td className="py-3 px-2">
                           <div className="flex flex-col">
-                            <span className="text-sm font-medium">{order.shipping_address?.full_name || '—'}</span>
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-sm font-medium">{order.shipping_address?.full_name || '—'}</span>
+                              {(() => {
+                                const phone = order.shipping_address?.phone;
+                                const count = phone ? (customerOrderCounts.get(phone) || 0) : 0;
+                                return count > 1 ? (
+                                  <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 bg-amber-50 text-amber-700 border-amber-200">
+                                    <Star className="h-2.5 w-2.5 mr-0.5 fill-amber-500 text-amber-500" />
+                                    {count}
+                                  </Badge>
+                                ) : null;
+                              })()}
+                            </div>
                             {(order.shipping_address?.phone) && (
                               <span className="text-xs text-muted-foreground">{order.shipping_address.phone}</span>
                             )}
@@ -1237,6 +1335,10 @@ export default function AdminOrders() {
                           {formatCurrency(order.total)}
                         </td>
                         <td className="py-3 px-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleViewDetails(order)} title="View Details">
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -1314,6 +1416,7 @@ export default function AdminOrders() {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1713,6 +1816,54 @@ export default function AdminOrders() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Admin Notes */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <MessageSquarePlus className="h-4 w-4" />
+                  Admin Notes
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Add an internal note..."
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleAddNote}
+                      disabled={addingNote || !newNoteText.trim()}
+                      className="self-end"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  {orderNotes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No internal notes yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {orderNotes.map((note: any) => (
+                        <div key={note.id} className="bg-muted/50 p-3 rounded-lg">
+                          <p className="text-sm">{note.note}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {note.created_by_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}

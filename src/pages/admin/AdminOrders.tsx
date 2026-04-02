@@ -150,6 +150,10 @@ export default function AdminOrders() {
   const [orderToDelete, setOrderToDelete] = useState<string | null>(null);
   const [selectedTrashIds, setSelectedTrashIds] = useState<Set<string>>(new Set());
   const [courierLoading, setCourierLoading] = useState<Set<string>>(new Set());
+  const [customerOrderCounts, setCustomerOrderCounts] = useState<Map<string, number>>(new Map());
+  const [orderNotes, setOrderNotes] = useState<any[]>([]);
+  const [newNoteText, setNewNoteText] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
 
   useEffect(() => {
     fetchOrders();

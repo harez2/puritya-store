@@ -1817,6 +1817,54 @@ export default function AdminOrders() {
                   </div>
                 )}
               </div>
+
+              {/* Admin Notes */}
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <MessageSquarePlus className="h-4 w-4" />
+                  Admin Notes
+                </h3>
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder="Add an internal note..."
+                      value={newNoteText}
+                      onChange={(e) => setNewNoteText(e.target.value)}
+                      rows={2}
+                      className="flex-1"
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleAddNote}
+                      disabled={addingNote || !newNoteText.trim()}
+                      className="self-end"
+                    >
+                      <Send className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  {orderNotes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No internal notes yet.</p>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto">
+                      {orderNotes.map((note: any) => (
+                        <div key={note.id} className="bg-muted/50 p-3 rounded-lg">
+                          <p className="text-sm">{note.note}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1">
+                              <User className="h-3 w-3" />
+                              {note.created_by_name}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              {format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>

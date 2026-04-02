@@ -194,6 +194,72 @@ export default function AdminOrders() {
       console.error('Error fetching trashed orders:', error);
     } finally {
       setTrashLoading(false);
+  }
+
+  async function fetchCustomerOrderCounts() {
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('shipping_address')
+        .is('deleted_at', null);
+      if (error) throw error;
+      const counts = new Map<string, number>();
+      (data || []).forEach((o: any) => {
+        const phone = o.shipping_address?.phone;
+        if (phone) counts.set(phone, (counts.get(phone) || 0) + 1);
+      });
+      setCustomerOrderCounts(counts);
+    } catch (err) {
+      console.error('Error fetching customer order counts:', err);
+    }
+  }
+
+  async function fetchOrderNotes(orderId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('order_notes')
+        .select('*')
+        .eq('order_id', orderId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const notesWithNames: any[] = [];
+      for (const note of data || []) {
+        let createdByName = 'Admin';
+        if (note.created_by) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('user_id', note.created_by)
+            .maybeSingle();
+          createdByName = profile?.full_name || 'Admin';
+        }
+        notesWithNames.push({ ...note, created_by_name: createdByName });
+      }
+      setOrderNotes(notesWithNames);
+    } catch (err) {
+      console.error('Error fetching order notes:', err);
+    }
+  }
+
+  async function handleAddNote() {
+    if (!selectedOrder || !newNoteText.trim()) return;
+    setAddingNote(true);
+    try {
+      const { error } = await supabase
+        .from('order_notes')
+        .insert({
+          order_id: selectedOrder.id,
+          note: newNoteText.trim(),
+          created_by: user?.id,
+        });
+      if (error) throw error;
+      toast.success('Note added');
+      setNewNoteText('');
+      fetchOrderNotes(selectedOrder.id);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to add note');
+    } finally {
+      setAddingNote(false);
     }
   }
 

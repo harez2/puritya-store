@@ -1816,23 +1816,7 @@ export default function AdminOrders() {
                   Admin Notes
                 </h3>
                 <div className="space-y-3">
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder="Add an internal note..."
-                      value={newNoteText}
-                      onChange={(e) => setNewNoteText(e.target.value)}
-                      rows={2}
-                      className="flex-1"
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleAddNote}
-                      disabled={addingNote || !newNoteText.trim()}
-                      className="self-end"
-                    >
-                      <Send className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
+                  <OrderNotesInput onSubmit={handleAddNote} />
                   {orderNotes.length === 0 ? (
                     <p className="text-sm text-muted-foreground">No internal notes yet.</p>
                   ) : (

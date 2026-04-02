@@ -503,7 +503,7 @@ export default function AdminOrders() {
 
   const handleViewDetails = async (order: Order) => {
     setSelectedOrder(order);
-    setNewNoteText('');
+    
     await Promise.all([fetchOrderItems(order.id), fetchStatusHistory(order.id), fetchOrderNotes(order.id)]);
     setIsDetailsOpen(true);
   };

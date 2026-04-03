@@ -432,12 +432,13 @@ export default function AdminPOS() {
 
       if (itemsError) throw itemsError;
 
+      const agentName = assignedAgentId ? agentsList.find(a => a.user_id === assignedAgentId)?.full_name : null;
       await supabase.from('order_status_history').insert({
         order_id: order.id,
         old_status: null,
         new_status: 'pending',
         changed_by: user?.id,
-        notes: 'Order created manually by admin (POS)',
+        notes: `Order created manually by admin (POS)${agentName ? ` — Agent: ${agentName}` : ''}`,
       });
 
       toast.success(`Order ${orderNumber} created successfully!`, {

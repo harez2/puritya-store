@@ -52,8 +52,20 @@ export default function Account() {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      checkAgentRole();
     }
   }, [user]);
+
+  const checkAgentRole = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('role', 'agent')
+      .maybeSingle();
+    setIsAgent(!!data);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;

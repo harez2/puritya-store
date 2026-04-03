@@ -408,7 +408,8 @@ export default function AdminPOS() {
             postal_code: postalCode.trim(),
             country,
           },
-        })
+          ...(assignedAgentId ? { assigned_agent_id: assignedAgentId } : {}),
+        } as any)
         .select()
         .single();
 

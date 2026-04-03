@@ -375,6 +375,20 @@ export default function Account() {
                 </CardHeader>
               </Card>
             </Link>
+
+            {isAgent && (
+              <Link to="/account/performance">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
+                  <CardHeader className="flex flex-row items-center gap-4">
+                    <BarChart3 className="h-8 w-8 text-primary" />
+                    <div>
+                      <CardTitle>My Performance</CardTitle>
+                      <p className="text-sm text-muted-foreground">View your sales stats</p>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
           </div>
 
           <Button variant="outline" className="mt-8" onClick={handleSignOut}>

@@ -355,6 +355,7 @@ export default function AdminPOS() {
     setPreviousAddresses([]);
     setAddressMode(null);
     setSkipNotification(true);
+    setAssignedAgentId('');
     searchRef.current?.focus();
   };
 

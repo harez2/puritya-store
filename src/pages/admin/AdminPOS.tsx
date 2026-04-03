@@ -383,7 +383,7 @@ export default function AdminPOS() {
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
-          order_source: orderSource,
+          order_source: skipNotification ? `${orderSource}__silent` : orderSource,
           notes: [notes.trim(), orderDiscountValue > 0 ? `Order Discount: ${orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`} (-৳${orderDiscountAmount.toFixed(0)})` : ''].filter(Boolean).join(' | ') || null,
           shipping_address: {
             full_name: fullName.trim(),

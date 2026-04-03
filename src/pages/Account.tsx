@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Package, Heart, LogOut, MapPin, Save, Loader2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { User, Package, Heart, LogOut, MapPin, Save, Loader2, KeyRound, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ export default function Account() {
   const navigate = useNavigate();
   const { user, loading, signOut } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isAgent, setIsAgent] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
@@ -51,8 +52,20 @@ export default function Account() {
   useEffect(() => {
     if (user) {
       fetchProfile();
+      checkAgentRole();
     }
   }, [user]);
+
+  const checkAgentRole = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('user_roles')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('role', 'agent')
+      .maybeSingle();
+    setIsAgent(!!data);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -362,6 +375,20 @@ export default function Account() {
                 </CardHeader>
               </Card>
             </Link>
+
+            {isAgent && (
+              <Link to="/account/performance">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow h-full">
+                  <CardHeader className="flex flex-row items-center gap-4">
+                    <BarChart3 className="h-8 w-8 text-primary" />
+                    <div>
+                      <CardTitle>My Performance</CardTitle>
+                      <p className="text-sm text-muted-foreground">View your sales stats</p>
+                    </div>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
           </div>
 
           <Button variant="outline" className="mt-8" onClick={handleSignOut}>

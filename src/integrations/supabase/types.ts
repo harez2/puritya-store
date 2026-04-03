@@ -583,6 +583,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          assigned_agent_id: string | null
           courier_consignment_id: string | null
           courier_name: string | null
           courier_status: string | null
@@ -608,6 +609,7 @@ export type Database = {
           utm_source: string | null
         }
         Insert: {
+          assigned_agent_id?: string | null
           courier_consignment_id?: string | null
           courier_name?: string | null
           courier_status?: string | null
@@ -633,6 +635,7 @@ export type Database = {
           utm_source?: string | null
         }
         Update: {
+          assigned_agent_id?: string | null
           courier_consignment_id?: string | null
           courier_name?: string | null
           courier_status?: string | null
@@ -1440,7 +1443,7 @@ export type Database = {
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "admin" | "moderator" | "user"
+      app_role: "admin" | "moderator" | "user" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1568,7 +1571,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "moderator", "user"],
+      app_role: ["admin", "moderator", "user", "agent"],
     },
   },
 } as const

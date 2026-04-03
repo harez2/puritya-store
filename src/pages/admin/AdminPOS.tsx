@@ -83,6 +83,8 @@ export default function AdminPOS() {
   const [orderSource, setOrderSource] = useState('admin_manual');
   const [customerOpen, setCustomerOpen] = useState(true);
   const [skipNotification, setSkipNotification] = useState(true);
+  const [assignedAgentId, setAssignedAgentId] = useState<string>('');
+  const [agentsList, setAgentsList] = useState<{ user_id: string; full_name: string | null }[]>([]);
 
   // Phone lookup state
   const [phoneLookupDone, setPhoneLookupDone] = useState(false);
@@ -202,7 +204,7 @@ export default function AdminPOS() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
+      const [productsRes, categoriesRes, agentRolesRes] = await Promise.all([
         supabase
           .from('products')
           .select('id, name, price, compare_at_price, images, sizes, colors, in_stock, category_id')
@@ -210,6 +212,7 @@ export default function AdminPOS() {
           .is('deleted_at', null)
           .order('name'),
         supabase.from('categories').select('id, name').order('name'),
+        supabase.from('user_roles').select('user_id').eq('role', 'agent'),
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -217,6 +220,16 @@ export default function AdminPOS() {
 
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
+
+      // Fetch agent profiles
+      const agentIds = (agentRolesRes.data || []).map(r => r.user_id);
+      if (agentIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', agentIds);
+        setAgentsList(profiles || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load products');
@@ -342,6 +355,7 @@ export default function AdminPOS() {
     setPreviousAddresses([]);
     setAddressMode(null);
     setSkipNotification(true);
+    setAssignedAgentId('');
     searchRef.current?.focus();
   };
 
@@ -395,7 +409,8 @@ export default function AdminPOS() {
             postal_code: postalCode.trim(),
             country,
           },
-        })
+          ...(assignedAgentId && assignedAgentId !== 'none' ? { assigned_agent_id: assignedAgentId } : {}),
+        } as any)
         .select()
         .single();
 
@@ -418,12 +433,13 @@ export default function AdminPOS() {
 
       if (itemsError) throw itemsError;
 
+      const agentName = assignedAgentId ? agentsList.find(a => a.user_id === assignedAgentId)?.full_name : null;
       await supabase.from('order_status_history').insert({
         order_id: order.id,
         old_status: null,
         new_status: 'pending',
         changed_by: user?.id,
-        notes: 'Order created manually by admin (POS)',
+        notes: `Order created manually by admin (POS)${agentName ? ` — Agent: ${agentName}` : ''}`,
       });
 
       toast.success(`Order ${orderNumber} created successfully!`, {
@@ -897,6 +913,25 @@ export default function AdminPOS() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Assign Agent */}
+                {agentsList.length > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Assign Agent</Label>
+                    <Select value={assignedAgentId} onValueChange={setAssignedAgentId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select agent (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Agent</SelectItem>
+                        {agentsList.map(agent => (
+                          <SelectItem key={agent.user_id} value={agent.user_id}>
+                            {agent.full_name || 'Unknown'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 {/* Shipping Option Selector */}
                 <div className="space-y-1">
                   <Label className="text-xs">Shipping Option</Label>

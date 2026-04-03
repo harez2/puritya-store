@@ -75,6 +75,7 @@ const mainNavItems = [
   { title: 'SMS Campaigns', url: '/admin/sms-campaigns', icon: MessageSquare },
   { title: 'Reviews', url: '/admin/reviews', icon: Star },
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
+  { title: 'Agents', url: '/admin/agents', icon: UserCheck },
 ];
 
 import { Wand2, Search, LayoutGrid, BadgeCheck, BarChart3, UserCheck } from 'lucide-react';

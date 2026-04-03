@@ -129,7 +129,9 @@ const App = () => (
                         <Route path="/admin/pos" element={<AdminPOS />} />
                         <Route path="/admin/sms-campaigns" element={<AdminSmsCampaigns />} />
                         <Route path="/admin/analytics" element={<AdminAnalytics />} />
+                        <Route path="/admin/agents" element={<AdminAgents />} />
                         <Route path="/admin/settings" element={<AdminSettings />} />
+                        <Route path="/account/performance" element={<AgentPerformance />} />
                         {/* Landing pages - public facing */}
                         <Route path="/lp/:slug" element={<LandingPage />} />
                         {/* Dynamic pages - must be last to catch remaining routes */}

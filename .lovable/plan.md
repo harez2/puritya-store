@@ -1,46 +1,74 @@
 
 
-## Invoice Customization System
+## Agent Performance Tracking System
 
 ### Overview
-Two changes: (1) Add a total quantity summary row to the invoice table, and (2) build an admin Invoice Customization section where admins can toggle on/off each invoice element.
+Build an agent role and performance tracking system so social media agents who take orders via Messenger can be assigned to POS orders, and their performance (orders, revenue, items sold) can be tracked by admins and viewed by agents themselves.
 
-### Changes
+### Database Changes
 
-**1. Add total quantity row to invoice (`OrderInvoice.tsx`)**
-- After the items table body, add a summary row showing "Total Items" with the sum of all quantities.
-- This appears as a bold footer row in the autoTable output.
+**1. Add `agent` to the `app_role` enum**
+- Allows assigning the "agent" role to users via the existing User Roles admin page
 
-**2. Create Invoice Settings UI (`InvoiceSettingsEditor.tsx`)**
-- New component with toggles for each invoice element:
-  - Show Logo / Store Name
-  - Show Invoice Number
-  - Show Date
-  - Show Order Status
-  - Show Payment Status
-  - Show Bill To (customer info)
-  - Show Payment Method
-  - Show Items Table
-  - Show Total Quantity Row
-  - Show Subtotal
-  - Show Shipping Fee
-  - Show Total
-  - Show Notes
-  - Custom Footer Text (text input, e.g. "Thank you for your purchase!")
-- Stored as `invoice_settings` key in `site_settings` table.
+**2. Create `orders.assigned_agent_id` column**
+- New nullable UUID column on the `orders` table to link an order to the agent who took it
+- No foreign key to `auth.users` (following project convention)
 
-**3. Update `generateInvoice` to respect settings**
-- Accept an optional `invoiceConfig` parameter with the toggle values.
-- Conditionally render each section based on the config.
-- Default all toggles to `true` for backward compatibility.
+**3. Update RLS** — No new policies needed; existing admin policies cover reads/writes on orders
 
-**4. Wire it up**
-- Add the `InvoiceSettingsEditor` card to `AdminSettings.tsx`.
-- Where `generateInvoice` is called, fetch `invoice_settings` from site settings and pass it through.
+### POS Changes (`AdminPOS.tsx`)
 
-### Files
-- **Edit**: `src/components/admin/OrderInvoice.tsx` — add total qty row + config-driven rendering
-- **New**: `src/components/admin/InvoiceSettingsEditor.tsx` — admin UI for invoice customization
-- **Edit**: `src/pages/admin/AdminSettings.tsx` — mount InvoiceSettingsEditor
-- **Edit**: Wherever `generateInvoice` is called — pass invoice settings
+- Add an "Assign Agent" dropdown in the order form (under Order Source or near customer details)
+- Fetch all users with `agent` role (join `user_roles` + `profiles`) to populate the dropdown
+- Save selected agent ID to `orders.assigned_agent_id` on order creation
+- Include agent name in the order status history note
+
+### Agent Performance Page (`/admin/agents`)
+
+**New admin page** with:
+- **Agent list table** showing each agent's:
+  - Name, phone, email
+  - Total orders assigned
+  - Total revenue generated
+  - Total items sold
+  - Average order value
+- **Date range filter** (Today, 7d, 30d, 90d, custom)
+- **Order source filter** (filter by specific sources like Facebook, Instagram, etc.)
+- **Click into agent** to see their individual order breakdown
+
+Data source: Query `orders` where `assigned_agent_id` is set, join with `order_items` for item counts, join with `profiles` for agent names.
+
+### Agent Self-Service Dashboard (`/account/performance`)
+
+- Agents with the `agent` role who log in see a "My Performance" link
+- Shows their own stats: orders taken, revenue, items sold, filtered by date
+- Uses RLS — agents can only see orders where `assigned_agent_id = auth.uid()`
+- Add a new RLS SELECT policy on `orders`: agents can view orders assigned to them
+
+### Sidebar & Routing
+
+- Add "Agents" menu item in admin sidebar under Main Menu
+- Add route `/admin/agents` → `AdminAgents.tsx`
+- Add route `/account/performance` for agent self-view
+- Update auth redirect logic: agents go to `/account/performance` after login
+
+### Files to Create
+- `src/pages/admin/AdminAgents.tsx` — Admin agent performance dashboard
+- `src/pages/AgentPerformance.tsx` — Agent self-service view
+
+### Files to Modify
+- `src/pages/admin/AdminPOS.tsx` — Add agent assignment dropdown
+- `src/components/admin/AdminSidebar.tsx` — Add Agents nav item
+- `src/App.tsx` — Add new routes
+- `src/pages/Account.tsx` — Add "My Performance" link for agents
+
+### Migration SQL Summary
+```sql
+ALTER TYPE public.app_role ADD VALUE 'agent';
+ALTER TABLE public.orders ADD COLUMN assigned_agent_id uuid;
+-- RLS policy for agents to view their assigned orders
+CREATE POLICY "Agents can view their assigned orders"
+  ON public.orders FOR SELECT TO authenticated
+  USING (assigned_agent_id = auth.uid());
+```
 

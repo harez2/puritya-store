@@ -913,6 +913,25 @@ export default function AdminPOS() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Assign Agent */}
+                {agentsList.length > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Assign Agent</Label>
+                    <Select value={assignedAgentId} onValueChange={setAssignedAgentId}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select agent (optional)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">No Agent</SelectItem>
+                        {agentsList.map(agent => (
+                          <SelectItem key={agent.user_id} value={agent.user_id}>
+                            {agent.full_name || 'Unknown'}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 {/* Shipping Option Selector */}
                 <div className="space-y-1">
                   <Label className="text-xs">Shipping Option</Label>

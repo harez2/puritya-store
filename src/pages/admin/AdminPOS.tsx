@@ -204,7 +204,7 @@ export default function AdminPOS() {
   async function fetchData() {
     setLoading(true);
     try {
-      const [productsRes, categoriesRes] = await Promise.all([
+      const [productsRes, categoriesRes, agentRolesRes] = await Promise.all([
         supabase
           .from('products')
           .select('id, name, price, compare_at_price, images, sizes, colors, in_stock, category_id')
@@ -212,6 +212,7 @@ export default function AdminPOS() {
           .is('deleted_at', null)
           .order('name'),
         supabase.from('categories').select('id, name').order('name'),
+        supabase.from('user_roles').select('user_id').eq('role', 'agent'),
       ]);
 
       if (productsRes.error) throw productsRes.error;
@@ -219,6 +220,16 @@ export default function AdminPOS() {
 
       setProducts(productsRes.data || []);
       setCategories(categoriesRes.data || []);
+
+      // Fetch agent profiles
+      const agentIds = (agentRolesRes.data || []).map(r => r.user_id);
+      if (agentIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name')
+          .in('user_id', agentIds);
+        setAgentsList(profiles || []);
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
       toast.error('Failed to load products');

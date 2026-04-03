@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, X, Search, ShoppingCart, RotateCcw, Percent, Tag } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,8 +79,10 @@ export default function AdminPOS() {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [shippingFee, setShippingFee] = useState(0);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<string>('');
   const [orderSource, setOrderSource] = useState('admin_manual');
   const [customerOpen, setCustomerOpen] = useState(true);
+  const [skipNotification, setSkipNotification] = useState(true);
 
   // Phone lookup state
   const [phoneLookupDone, setPhoneLookupDone] = useState(false);
@@ -132,19 +135,24 @@ export default function AdminPOS() {
     
     setLookingUpPhone(true);
     try {
-      // Search orders by phone in shipping_address
+      // Search orders by phone using text search on shipping_address JSONB
       const { data: orders } = await supabase
         .from('orders')
         .select('shipping_address')
+        .filter('shipping_address->>phone', 'ilike', `%${trimmed.slice(-7)}%`)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (orders && orders.length > 0) {
         const matched: any[] = [];
         const seen = new Set<string>();
         for (const o of orders) {
           const addr = o.shipping_address as any;
-          if (addr?.phone?.replace(/\s/g, '') === trimmed) {
+          const orderPhone = (addr?.phone || '').replace(/[\s\-+]/g, '');
+          const searchPhone = trimmed.replace(/[\s\-+]/g, '');
+          // Match if the last 10 digits match (handles country code variations)
+          if (orderPhone.slice(-10) === searchPhone.slice(-10) || orderPhone === searchPhone) {
             const key = `${addr.full_name}|${addr.address_line1}|${addr.city}`;
             if (!seen.has(key)) {
               seen.add(key);
@@ -155,7 +163,6 @@ export default function AdminPOS() {
         setPreviousAddresses(matched);
         if (matched.length > 0) {
           setAddressMode('select');
-          // Auto-fill name from first match
           if (!fullName && matched[0].full_name) {
             setFullName(matched[0].full_name);
           }
@@ -325,6 +332,7 @@ export default function AdminPOS() {
     setPaymentMethod('cod');
     setPaymentStatus('pending');
     setShippingFee(0);
+    setSelectedShippingOption('');
     setOrderSource('admin_manual');
     setOrderDiscountType('fixed');
     setOrderDiscountValue(0);
@@ -333,6 +341,7 @@ export default function AdminPOS() {
     setPhoneLookupDone(false);
     setPreviousAddresses([]);
     setAddressMode(null);
+    setSkipNotification(true);
     searchRef.current?.focus();
   };
 
@@ -374,7 +383,7 @@ export default function AdminPOS() {
           status: 'pending',
           payment_status: paymentStatus,
           payment_method: paymentMethod,
-          order_source: orderSource,
+          order_source: skipNotification ? `${orderSource}__silent` : orderSource,
           notes: [notes.trim(), orderDiscountValue > 0 ? `Order Discount: ${orderDiscountType === 'percentage' ? `${orderDiscountValue}%` : `৳${orderDiscountValue}`} (-৳${orderDiscountAmount.toFixed(0)})` : ''].filter(Boolean).join(' | ') || null,
           shipping_address: {
             full_name: fullName.trim(),
@@ -888,6 +897,34 @@ export default function AdminPOS() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Shipping Option Selector */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Shipping Option</Label>
+                  <Select
+                    value={selectedShippingOption}
+                    onValueChange={(val) => {
+                      setSelectedShippingOption(val);
+                      const shippingOptions = settings.shipping_options || [];
+                      const option = shippingOptions.find((o: any) => o.id === val);
+                      if (option) {
+                        setShippingFee(option.price || 0);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select shipping option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(settings.shipping_options || [])
+                        .filter((o: any) => o.enabled !== false)
+                        .map((o: any) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.name} — ৳{o.price}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Shipping Fee (BDT)</Label>
                   <Input
@@ -929,6 +966,10 @@ export default function AdminPOS() {
                     placeholder="Internal notes..."
                     rows={2}
                   />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Skip order notification</Label>
+                  <Switch checked={skipNotification} onCheckedChange={setSkipNotification} />
                 </div>
               </div>
             </div>

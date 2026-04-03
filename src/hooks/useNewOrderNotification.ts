@@ -74,6 +74,11 @@ export function useNewOrderNotification() {
     if (!s.enabled) return;
 
     const order = payload.new;
+    
+    // Skip notification for POS orders marked as silent
+    const orderSource = order.order_source || '';
+    if (orderSource.endsWith('__silent')) return;
+
     const orderNumber = order.order_number || 'N/A';
     const total = order.total || 0;
     const shippingAddress = order.shipping_address as any;

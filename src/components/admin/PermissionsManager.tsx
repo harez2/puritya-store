@@ -33,6 +33,7 @@ const roleLabels: Record<AppRole, string> = {
   admin: 'Admin',
   moderator: 'Moderator',
   user: 'User',
+  agent: 'Agent',
 };
 
 export default function PermissionsManager() {

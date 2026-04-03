@@ -83,6 +83,8 @@ export default function AdminPOS() {
   const [orderSource, setOrderSource] = useState('admin_manual');
   const [customerOpen, setCustomerOpen] = useState(true);
   const [skipNotification, setSkipNotification] = useState(true);
+  const [assignedAgentId, setAssignedAgentId] = useState<string>('');
+  const [agentsList, setAgentsList] = useState<{ user_id: string; full_name: string | null }[]>([]);
 
   // Phone lookup state
   const [phoneLookupDone, setPhoneLookupDone] = useState(false);

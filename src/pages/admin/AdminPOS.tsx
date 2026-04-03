@@ -964,6 +964,10 @@ export default function AdminPOS() {
                     rows={2}
                   />
                 </div>
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Skip order notification</Label>
+                  <Switch checked={skipNotification} onCheckedChange={setSkipNotification} />
+                </div>
               </div>
             </div>
           </ScrollArea>

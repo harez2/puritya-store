@@ -132,19 +132,24 @@ export default function AdminPOS() {
     
     setLookingUpPhone(true);
     try {
-      // Search orders by phone in shipping_address
+      // Search orders by phone using text search on shipping_address JSONB
       const { data: orders } = await supabase
         .from('orders')
         .select('shipping_address')
+        .filter('shipping_address->>phone', 'ilike', `%${trimmed.slice(-7)}%`)
+        .is('deleted_at', null)
         .order('created_at', { ascending: false })
-        .limit(50);
+        .limit(200);
 
       if (orders && orders.length > 0) {
         const matched: any[] = [];
         const seen = new Set<string>();
         for (const o of orders) {
           const addr = o.shipping_address as any;
-          if (addr?.phone?.replace(/\s/g, '') === trimmed) {
+          const orderPhone = (addr?.phone || '').replace(/[\s\-+]/g, '');
+          const searchPhone = trimmed.replace(/[\s\-+]/g, '');
+          // Match if the last 10 digits match (handles country code variations)
+          if (orderPhone.slice(-10) === searchPhone.slice(-10) || orderPhone === searchPhone) {
             const key = `${addr.full_name}|${addr.address_line1}|${addr.city}`;
             if (!seen.has(key)) {
               seen.add(key);
@@ -155,7 +160,6 @@ export default function AdminPOS() {
         setPreviousAddresses(matched);
         if (matched.length > 0) {
           setAddressMode('select');
-          // Auto-fill name from first match
           if (!fullName && matched[0].full_name) {
             setFullName(matched[0].full_name);
           }

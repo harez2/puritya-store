@@ -894,6 +894,34 @@ export default function AdminPOS() {
                     </SelectContent>
                   </Select>
                 </div>
+                {/* Shipping Option Selector */}
+                <div className="space-y-1">
+                  <Label className="text-xs">Shipping Option</Label>
+                  <Select
+                    value={selectedShippingOption}
+                    onValueChange={(val) => {
+                      setSelectedShippingOption(val);
+                      const shippingOptions = settings.shipping_options || [];
+                      const option = shippingOptions.find((o: any) => o.id === val);
+                      if (option) {
+                        setShippingFee(option.price || 0);
+                      }
+                    }}
+                  >
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select shipping option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(settings.shipping_options || [])
+                        .filter((o: any) => o.enabled !== false)
+                        .map((o: any) => (
+                          <SelectItem key={o.id} value={o.id}>
+                            {o.name} — ৳{o.price}
+                          </SelectItem>
+                        ))}
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div className="space-y-1">
                   <Label className="text-xs">Shipping Fee (BDT)</Label>
                   <Input

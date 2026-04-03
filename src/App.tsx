@@ -55,6 +55,8 @@ import AdminPOS from "./pages/admin/AdminPOS";
 import AdminSmsCampaigns from "./pages/admin/AdminSmsCampaigns";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import LandingPage from "./pages/LandingPage";
+import AdminAgents from "./pages/admin/AdminAgents";
+import AgentPerformance from "./pages/AgentPerformance";
 
 const queryClient = new QueryClient();
 

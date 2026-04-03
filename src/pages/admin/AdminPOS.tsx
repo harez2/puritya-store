@@ -78,8 +78,10 @@ export default function AdminPOS() {
   const [paymentMethod, setPaymentMethod] = useState('cod');
   const [paymentStatus, setPaymentStatus] = useState('pending');
   const [shippingFee, setShippingFee] = useState(0);
+  const [selectedShippingOption, setSelectedShippingOption] = useState<string>('');
   const [orderSource, setOrderSource] = useState('admin_manual');
   const [customerOpen, setCustomerOpen] = useState(true);
+  const [skipNotification, setSkipNotification] = useState(true);
 
   // Phone lookup state
   const [phoneLookupDone, setPhoneLookupDone] = useState(false);

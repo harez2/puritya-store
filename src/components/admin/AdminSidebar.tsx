@@ -77,7 +77,7 @@ const mainNavItems = [
   { title: 'User Roles', url: '/admin/roles', icon: UserCog },
 ];
 
-import { Wand2, Search, LayoutGrid, BadgeCheck, BarChart3 } from 'lucide-react';
+import { Wand2, Search, LayoutGrid, BadgeCheck, BarChart3, UserCheck } from 'lucide-react';
 
 const customizationSubItems = [
   { title: 'Design Mode', tab: 'design-mode', icon: Wand2 },

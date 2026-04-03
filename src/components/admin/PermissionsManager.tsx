@@ -23,11 +23,11 @@ interface Permission {
 
 interface RolePermission {
   id: string;
-  role: 'admin' | 'moderator' | 'user';
+  role: 'admin' | 'moderator' | 'user' | 'agent';
   permission_id: string;
 }
 
-type AppRole = 'admin' | 'moderator' | 'user';
+type AppRole = 'admin' | 'moderator' | 'user' | 'agent';
 
 const roleLabels: Record<AppRole, string> = {
   admin: 'Admin',

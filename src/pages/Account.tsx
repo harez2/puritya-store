@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Package, Heart, LogOut, MapPin, Save, Loader2, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { User, Package, Heart, LogOut, MapPin, Save, Loader2, KeyRound, Eye, EyeOff, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

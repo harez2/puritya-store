@@ -332,6 +332,7 @@ export default function AdminPOS() {
     setPaymentMethod('cod');
     setPaymentStatus('pending');
     setShippingFee(0);
+    setSelectedShippingOption('');
     setOrderSource('admin_manual');
     setOrderDiscountType('fixed');
     setOrderDiscountValue(0);
@@ -340,6 +341,7 @@ export default function AdminPOS() {
     setPhoneLookupDone(false);
     setPreviousAddresses([]);
     setAddressMode(null);
+    setSkipNotification(true);
     searchRef.current?.focus();
   };
 
